@@ -1,0 +1,14 @@
+{
+  "name": "flik-merchant-dashboard",
+  "version": "3.0.0",
+  "private": true,
+  "description": "FLIK Shipping Phase 1 prototype on Raam's FLIK design system. Example data only.",
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "vendor": "node tools/vendor.mjs",
+    "bundle": "node tools/bundle.mjs",
+    "test": "node tools/smoke.mjs"
+  }
+}

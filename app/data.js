@@ -1,0 +1,146 @@
+/* ===== Example data and the smart courier engine =====
+ * Everything here is made up and seeded, so it is the same on every load. In production these
+ * answers come from FLIK's API (see app/api.js and docs/API.md).
+ */
+
+/* --- Destinations: Raam's address list plus a few outside Java --- */
+ADDR_DB.push(['Pandang','Panakkukang','Kota Makassar','Sulawesi Selatan','90231'],['Darat','Medan Baru','Kota Medan','Sumatera Utara','20153'],['Airlangga','Gubeng','Kota Surabaya','Jawa Timur','60286'],
+  ['Sidokare','Sidoarjo','Kabupaten Sidoarjo','Jawa Timur','61214'],['Cisauk','Cisauk','Kabupaten Tangerang','Banten','15341'],['Braga','Sumur Bandung','Kota Bandung','Jawa Barat','40111'],['Kuta','Kuta','Kabupaten Badung','Bali','80361']);
+const AREA=ADDR_DB.map(a=>({kel:a[0],kec:a[1],city:a[2],prov:a[3],zip:a[4]}));
+const areaTx=a=>`${a.kel}, ${a.kec}, ${a.city}`;
+const ISLAND={'DKI Jakarta':'jawa','Jawa Barat':'jawa','Jawa Tengah':'jawa','DI Yogyakarta':'jawa','Jawa Timur':'jawa','Banten':'jawa','Bali':'bali','Sumatera Utara':'sumatera','Sulawesi Selatan':'sulawesi'};
+const whArea=w=>({kel:'',kec:w.dist,city:w.city,prov:w.prov,zip:w.zip});
+const whByCode=c=>WH.find(w=>w.code===c)||WH_ALL.find(w=>w.code===c);
+
+/* --- Rates: FLIK's discounted price per kg is SERVICES[4]; the published price is the courier's own --- */
+const PUBX={'anteraja|Regular':12500,'sicepat|Regular':8000,'sicepat|GOKIL':40000,'jne|YES':21000,'spx|Standard':8500,'spx|Sameday':25000,'jnt|EZ':10500};
+const pubKg=sv=>sv[5]||PUBX[sv[0]+'|'+sv[1]]||sv[4];
+function zoneMul(o,d){if(o.city===d.city)return .7;if(o.prov===d.prov)return .85;const a=ISLAND[o.prov],b=ISLAND[d.prov];if(a===b)return 1;
+  const far={bali:1.35,sumatera:1.7,sulawesi:2};return far[a==='jawa'?b:a]||1.8}
+const r100=n=>Math.round(n/100)*100;
+/* price of one parcel: published, discounted (what FLIK charges) */
+function rateOf(svIdx,origin,dest,kg){const sv=SERVICES[svIdx],m=zoneMul(origin,dest),k=Math.max(1,Math.ceil(kg||1));
+  const pub=r100(pubKg(sv)*m)*k,net=r100(sv[4]*m)*k;return{pub,net,disc:pub-net,eta:etaOf(sv,m)}}
+function etaOf(sv,m){if(m<1.3||/Same/i.test(sv[3]))return sv[3];const n=sv[3].match(/\d+/g);if(!n)return sv[3];const add=m>=1.6?2:1;return n.length>1?`${+n[0]+add}–${+n[1]+add} days`:`${+n[0]+add} days`}
+/* Sameday only runs inside a province */
+const reach=(i,o,d)=>!/Same/i.test(SERVICES[i][3])||zoneMul(o,d)<=.85;
+const etaMax=sv=>{const n=String(sv[3]).match(/\d+/g);return n?+n[n.length-1]:1};
+
+/* --- Delivery success by area: kecamatan when there are enough shipments, otherwise the city --- */
+const SR_BASE={jne:93,jnt:92,spx:91,ninja:90,lion:89,sicepat:91,anteraja:90};
+const SR_CITY={'Kota Bandung':{jne:4,spx:-5},'Jakarta Selatan':{spx:5,jnt:2,anteraja:2},'Kota Surabaya':{jnt:4,ninja:-5},'Kota Denpasar':{spx:-11,ninja:-8,jne:3},'Kabupaten Badung':{spx:-9,jne:2},
+  'Kota Medan':{jnt:4,spx:-10,anteraja:-7},'Kota Yogyakarta':{sicepat:4,ninja:-5},'Kota Semarang':{jne:2,lion:2},'Kota Malang':{anteraja:-7,jne:2},'Kota Tangerang':{jnt:-6,spx:2},'Kota Makassar':{jne:4,spx:-5,jnt:-3,ninja:-6},'Kabupaten Sidoarjo':{jnt:3},'Kabupaten Tangerang':{spx:1}};
+const clampSr=v=>Math.max(68,Math.min(98.6,v));
+function srOf(k,a){const c=clampSr(SR_BASE[k]+((SR_CITY[a.city]||{})[k]||0)+((hsh(a.city+k)%30)/10-1.5));
+  const n=hsh(a.kec+'|'+k)%260;if(n<45)return{sr:Math.round(c*10)/10,level:'city',n:900+hsh(a.city+k)%2400};
+  return{sr:Math.round(clampSr(c+(hsh(a.kec+k)%80)/10-4)*10)/10,level:'kecamatan',n}}
+/* --- Red zones: 'cod' means the courier won't take COD there, 'all' means it doesn't deliver there --- */
+const RZ={spx:{'Denpasar Barat':'cod','Kuta':'cod','Medan Petisah':'all','Medan Baru':'cod'},jnt:{'Cipondoh':'cod'},ninja:{'Denpasar Barat':'cod','Gedongtengen':'cod','Panakkukang':'cod'},anteraja:{'Medan Petisah':'cod','Klojen':'cod'},sicepat:{'Gayungan':'cod'},lion:{'Panakkukang':'all'},jne:{}};
+const rzOf=(k,a)=>(RZ[k]||{})[a.kec]||null;
+const rzBlocks=(k,a,pay)=>{const z=rzOf(k,a);return z==='all'||(z==='cod'&&pay==='cod')};
+const RZ_TX={cod:'Red zone for COD',all:'Not delivered'};
+
+/* --- Shopper score: phone delivery history across FLIK plus the area's success rate. Higher is safer.
+   Example data only; Legal still has to confirm how phone history may be used. --- */
+function phist(p){const h=hsh(normPhone(p));if(h%13===0)return{fails:0,deliveries:0,isNew:true};return{fails:h%23===0?3:h%11===0?2:h%6===0?1:0,deliveries:1+h%9,isNew:false}}
+function shopperScore(p,a){const h=phist(p),asr=sum(COURIERS,c=>srOf(c.k,a).sr)/COURIERS.length;
+  const ph=h.isNew?80:Math.max(10,100-h.fails*26);const s=Math.round(.6*ph+.4*asr);
+  const band=s>=80?['Safe','ok']:s>=60?['Watch','warn']:['Risky','bad'];
+  const why=`${h.isNew?'New to FLIK: no delivery history for this phone yet':h.fails?`${h.fails} of ${h.deliveries+h.fails} COD deliveries to this phone failed`:`${h.deliveries} of ${h.deliveries} deliveries to this phone succeeded`}. ${fpct(asr)} of parcels to ${a.kec} arrive.`;
+  return{score:s,band:band[0],cls:band[1],why,fails:h.fails}}
+const scorePill=sc=>`<span class="st ${sc.cls} sm" title="${esc(sc.why)}">${sc.score} · ${sc.band}</span>`;
+
+/* --- Courier recommendation for a set of parcels: best delivery rate where they go, no red zones --- */
+function recommend(ships,group='reg'){const out=[];
+  SERVICES.forEach((sv,i)=>{if(sv[2]!==group||!svcOn(sv[0],sv[1])||ships.some(s=>!reach(i,s.origin,s.area)))return;
+    const srs=ships.map(s=>srOf(sv[0],s.area)),red=ships.filter(s=>rzBlocks(sv[0],s.area,s.pay));
+    out.push({i,k:sv[0],sr:Math.round(sum(srs,x=>x.sr)/Math.max(1,srs.length)*10)/10,city:srs.filter(x=>x.level==='city').length,red,
+      net:sum(ships,s=>rateOf(i,s.origin,s.area,s.kg).net),pub:sum(ships,s=>rateOf(i,s.origin,s.area,s.kg).pub)})});
+  const clean=out.filter(o=>!o.red.length),pool=clean.length?clean:out;
+  const best=pool.slice().sort((a,b)=>b.sr-a.sr||a.net-b.net)[0],cheap=out.slice().sort((a,b)=>a.net-b.net)[0];
+  return{list:out,best:best&&best.i,cheap:cheap&&cheap.i}}
+/* for one parcel the chosen courier can't take: the best courier in the same group that can */
+function bestFor(s,group,prefer){const ok=SERVICES.map((sv,i)=>[sv,i]).filter(([sv,i])=>sv[2]===group&&svcOn(sv[0],sv[1])&&(!s.origin||reach(i,s.origin,s.area))&&!rzBlocks(sv[0],s.area,s.pay));
+  if(prefer!=null&&ok.some(([,i])=>i===prefer))return prefer;ok.sort((a,b)=>srOf(b[0][0],s.area).sr-srOf(a[0][0],s.area).sr);return ok.length?ok[0][1]:null}
+
+/* ===== Shipments of the active merchant ===== */
+const SST3={pickup:['Awaiting pickup','gr'],picked:['Picked up','gr'],transit:['In transit','gr'],ofd:['Out for delivery','pu'],delivered:['Delivered','ok'],failed:['Delivery failed','warn'],returning:['Returning','warn'],returned:['Returned','gr'],lost:['Lost or damaged','bad']};
+const MON3={ontrack:['On track','pu'],delayed:['Delayed','warn'],risk:['At risk','or'],problem:['Problem','bad'],safe:['Safe','ok']};
+const SEV3={problem:['Critical','bad',0],risk:['High','or',1],delayed:['Medium','warn',2]};
+const stPill3=s=>`<span class="st ${SST3[s][1]} sm">${SST3[s][0]}</span>`;
+const monPill=m=>`<span class="st ${MON3[m][1]} sm">${MON3[m][0]}</span>`;
+const sevPill3=m=>SEV3[m]?`<span class="st ${SEV3[m][1]} sm">${SEV3[m][0]}</span>`:'';
+const SH=[],BATCH=[],TK=[];
+const FN=['Rina','Budi','Sari','Andi','Dewi','Fajar','Maya','Rizky','Putri','Agus','Nadia','Yoga','Intan','Bayu','Citra','Dimas','Eka','Gita','Hendra','Indah','Joko','Kartika','Lukman','Mega'],LN=['Putri','Santoso','Wulandari','Pratama','Lestari','Nugroho','Sari','Ramadhan','Ayu','Setiawan','Rahma','Saputra','Permata','Hidayat','Kusuma','Wijaya'];
+const PRODUCTS=[['Linen shirt · White',289000,.4],['Canvas tote bag',149000,.3],['Wide-leg trousers',219000,.5],['Basic tee · Black',99000,.2],['Voile scarf · Floral',125000,.1],['Leather sneakers',459000,1.2],['Batik dress · Indigo',375000,.5]];
+const STREETS=['Jl. Melati','Jl. Kenanga','Jl. Mawar','Jl. Anggrek','Jl. Cempaka','Jl. Flamboyan','Jl. Merdeka','Jl. Sudirman','Jl. Diponegoro','Jl. Gajah Mada'];
+const AWBP={spx:'SPXID0',jnt:'JP',jne:'JNE0',ninja:'NLIDAP',lion:'99LP',sicepat:'0045',anteraja:'1000'};
+let awbSeq=0;const mkAwb=k=>AWBP[k]+String(4100000000+(++awbSeq)*7919);
+const ageOf=s=>(NOW-s.created)/DAY;
+/* monitoring status from the shipment status and how long it has been quiet */
+function monOf(s){const q=(NOW-s.upd)/HOUR;
+  if(s.st==='delivered'||s.st==='returned')return'safe';
+  if(s.st==='lost'||(s.st==='failed'&&s.tries>=2))return'problem';
+  if(s.st==='failed'||s.st==='returning')return'risk';
+  if(s.st==='pickup')return ageOf(s)>1.2?'delayed':'ontrack';
+  if(q>=96)return'risk';if(q>=48||ageOf(s)>etaMax(SERVICES[s.svc])+1)return'delayed';return'ontrack'}
+/* what the issue is and what to do about it */
+function issueOf(s){const m=monOf(s);if(m==='safe'||m==='ontrack')return null;
+  if(s.st==='lost')return{t:'Lost or damaged',act:'claim',next:'File a claim with the courier. FLIK handles it.'};
+  if(s.st==='failed')return{t:s.tries>=2?`Delivery failed ${s.tries} times`:'Delivery attempt failed',act:'customer',next:'Confirm the address and a good time with the shopper.'};
+  if(s.st==='returning')return{t:'Returning to you',act:'customer',next:'Contact the shopper to save the order.'};
+  if(s.st==='pickup')return{t:'Pickup missed',act:'support',next:'Ask FLIK support to reschedule the pickup.'};
+  const q=(NOW-s.upd)/HOUR;return q>=96?{t:`No update for ${Math.floor(q/24)} days`,act:'support',next:'Ask FLIK support to chase the courier.'}:{t:q>=48?'No update for 48 hours':'Past the delivery estimate',act:'support',next:'Ask FLIK support to follow up with the courier.'}}
+/* Open → Acknowledged (an action was taken) → Resolved (the monitoring status is Safe again) */
+const rstate=s=>{const m=monOf(s);if(s.tk&&m!=='safe')return'ack';if((s.tk||s.had)&&m==='safe')return'resolved';return m==='delayed'||m==='risk'||m==='problem'?'open':null};
+
+function genActive(){const R=mkRng(4242),pk=a=>a[Math.floor(R()*a.length)];SH.length=0;BATCH.length=0;TK.length=0;awbSeq=0;
+  const codes=['JKT-01','JKT-01','BDG-01','SBY-01'],mix=['spx','spx','jnt','jnt','jne','jne','ninja','ninja','sicepat','lion','anteraja'];
+  const regOf=k=>SERVICES.findIndex(v=>v[0]===k&&v[2]==='reg');
+  const dests=AREA.map((a,i)=>[a,i<14?3:1]).flatMap(([a,w])=>Array(w).fill(a));
+  let bseq=0;
+  for(let b=0;b<64;b++){
+    const created=new Date(NOW-(b*2.85+R()*1.2)*DAY-R()*6*HOUR),k=pk(mix),svc=regOf(k),wh=pk(codes),n=b%4===0?30+Math.floor(R()*46):4+Math.floor(R()*23);
+    const id=`B-${String(created.getFullYear()).slice(2)}${String(created.getMonth()+1).padStart(2,'0')}${String(created.getDate()).padStart(2,'0')}-${String(++bseq).padStart(3,'0')}`;
+    BATCH.push({id,created,k,svc,wh});
+    for(let j=0;j<n;j++){const a=pk(dests),p=pk(PRODUCTS),qty=1+Math.floor(R()*3),pay=R()<.8?'cod':'non',kg=Math.max(.1,Math.round(p[2]*qty*10)/10);
+      const s={id:'S'+(SH.length+1),batch:id,created:new Date(created.getTime()+j*60000),svc,k,wh,area:a,street:`${pk(STREETS)} No. ${1+Math.floor(R()*120)}`,
+        name:pk(FN)+' '+pk(LN),phone:'628'+(1+Math.floor(R()*8))+String(Math.floor(1e8+R()*8.9e8)),items:p[0],qty,kg,pay,val:p[1]*qty,tries:0,tk:null,had:null};
+      const r=rateOf(svc,whArea(whByCode(wh)),a,kg);s.pub=r.pub;s.cost=r.net;s.codFee=pay==='cod'?Math.round(s.val*.03):0;
+      const age=ageOf(s),eta=etaMax(SERVICES[svc]),sr=srOf(k,a).sr-(pay==='cod'?2+phist(s.phone).fails*13:0),x=R();
+      if(age<.35){s.st='pickup';s.upd=s.created}
+      else if(age<1){s.st='picked';s.upd=new Date(s.created.getTime()+.3*DAY)}
+      else if(age<eta+.5){s.st=x<.75?'transit':'ofd';s.upd=new Date(NOW-R()*20*HOUR)}
+      else if(age<eta+5&&x>sr/100){s.st=x>.995?'lost':R()<.55?'failed':'returning';s.tries=s.st==='failed'?1+Math.floor(R()*2):2;s.upd=new Date(NOW-(2+R()*30)*HOUR)}
+      else if(x>sr/100){s.st=x>.997?'lost':'returned';s.tries=2;s.upd=new Date(s.created.getTime()+(eta+3+R()*3)*DAY)}
+      else{s.st='delivered';s.upd=new Date(s.created.getTime()+(Math.max(1,eta-1)+R()*1.6)*DAY)}
+      if(s.upd>NOW)s.upd=new Date(NOW-HOUR*(1+R()*3));
+      s.awb=s.st==='pickup'&&R()<.3?null:mkAwb(k);SH.push(s)}}
+  /* a few quiet parcels, so Monitoring has delays to show */
+  SH.filter(s=>s.st==='transit').slice(0,22).forEach((s,i)=>{s.upd=new Date(NOW-(i%3===0?4.3:2.2+(i%4)*.3)*DAY)});
+  SH.filter(s=>s.st==='pickup').slice(0,2).forEach(s=>{s.created=new Date(NOW-1.6*DAY);s.upd=s.created});
+  /* some issues already handled: tickets in progress, and earlier delays that ended well */
+  const iss=SH.filter(s=>issueOf(s));iss.filter((s,i)=>i%4===1).forEach((s,i)=>addTicket(s,issueOf(s).act,'Merchant',new Date(NOW-(3+i*5)*HOUR)));
+  SH.filter(s=>s.st==='delivered'||s.st==='returned').filter((s,i)=>i%41===3).slice(0,14).forEach((s,i)=>{s.had={t:i%3?'No update for 48 hours':'Delivery attempt failed',act:i%3?'support':'customer'};
+    const t=addTicket(s,s.had.act,'Merchant',new Date(s.upd.getTime()-2*DAY));t.st='resolved';t.log.unshift([s.st==='delivered'?'Delivered. Ticket closed':'Returned to sender. Ticket closed',s.upd])});
+  SH.sort((a,b)=>b.created-a.created)}
+
+/* ===== Tickets: claims, follow-ups with FLIK support, contacting the shopper (WhatsApp through Qontak) ===== */
+const TKT={claim:['Claim','File a claim','FLIK claims team'],support:['Follow-up','Contact support','FLIK support'],customer:['Contact shopper','Contact customer','WhatsApp via Qontak']};
+const TKST={open:['Open','warn'],progress:['In progress','pu'],resolved:['Resolved','ok']};
+let tkSeq=4180;
+function addTicket(s,type,by='Merchant',at=NOW,note=''){const t={id:'TK-'+(++tkSeq),type,sid:s.id,awb:s.awb,created:at,st:type==='customer'?'progress':'open',ch:TKT[type][2],note,
+  log:[[type==='customer'?'WhatsApp sent to the shopper through Qontak':type==='claim'?'Claim filed with '+cName(s.k):'Sent to FLIK support',at]]};
+  TK.unshift(t);s.tk=t.id;return t}
+
+/* ===== Example answers for FLIK.api (app/api.js) ===== */
+FLIK.mock('merchant',()=>({id:FLIK.config.merchantId,name:'Aruna Studio',products:FLAGS[PS.flags].w,verified:PS.verified}));
+FLIK.mock('pickupAddresses',()=>WH.filter(w=>w.active));
+FLIK.mock('rates',q=>{const o=whArea(whByCode(q.from)),d=q.to;return SERVICES.map((sv,i)=>({i,courier:sv[0],service:sv[1],group:sv[2],...rateOf(i,o,d,q.kg),...srOf(sv[0],d),redZone:rzOf(sv[0],d)})).filter(r=>svcOn(r.courier,r.service)&&reach(r.i,o,d))});
+FLIK.mock('recommend',q=>recommend(q.ships,q.group));
+FLIK.mock('shopperScore',q=>shopperScore(q.phone,q.area));
+FLIK.mock('tracking',awbs=>awbs.map(a=>SH.find(s=>s.awb===a)||null));
+FLIK.mock('createShipments',q=>({batches:q.batches.map(b=>({id:b.ref,awbs:b.shipments.map(()=>null)}))}));
+FLIK.mock('createTicket',q=>({id:'TK-'+(tkSeq+1),status:'open'}));
+FLIK.mock('geocode',q=>{const t=String(q.query||'').toLowerCase();return AREA.filter(a=>[a.kel,a.kec,a.city,a.zip].join(' ').toLowerCase().includes(t)).slice(0,8)});
+FLIK.mock('shipments',()=>SH);
