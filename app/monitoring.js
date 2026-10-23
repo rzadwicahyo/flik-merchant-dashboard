@@ -6,7 +6,11 @@ document.querySelector('.main').insertAdjacentHTML('beforeend','<main class="con
 const MS={cl:{st:'',cat:''},tab:'summary',days:30,f:{wh:'',k:'',pay:''},rt:'open',open:new Set(),allB:false,perf:'city',hArea:'city',
   l:{q:'',st:'',mon:'',pg:0},reset(){this.cl={st:'',cat:''};this.tab='summary';this.f={wh:'',k:'',pay:''};this.rt='open';this.open=new Set();this.allB=false;this.l={q:'',st:'',mon:'',pg:0}}};
 const MTABS=[['summary','Summary'],['health','Health'],['perf','Courier performance'],['list','All shipments'],['claims','Claims'],['tickets','Tickets']];
-const msBase=()=>SH.filter(s=>(!MS.days||s.created>=new Date(NOW-MS.days*DAY))&&(!MS.f.wh||s.wh===MS.f.wh)&&(!MS.f.k||s.k===MS.f.k)&&(!MS.f.pay||s.pay===MS.f.pay));
+/* period: 'today', 'yday', a number of days, or 0 for all time */
+const dayStart=(o=0)=>{const d=new Date(NOW);d.setHours(0,0,0,0);return new Date(d-o*DAY)};
+const inPeriod=d=>MS.days==='today'?d>=dayStart():MS.days==='yday'?d>=dayStart(1)&&d<dayStart():!MS.days||d>=new Date(NOW-MS.days*DAY);
+const periodTx=()=>MS.days==='today'?'Today':MS.days==='yday'?'Yesterday':MS.days?`Last ${MS.days} days`:'All time';
+const msBase=()=>SH.filter(s=>inPeriod(s.created)&&(!MS.f.wh||s.wh===MS.f.wh)&&(!MS.f.k||s.k===MS.f.k)&&(!MS.f.pay||s.pay===MS.f.pay));
 const finL=l=>l.filter(s=>s.st==='delivered'||s.st==='returned'||s.st==='lost');
 const srL=l=>{const f=finL(l);return f.length?pct(f.filter(s=>s.st==='delivered').length,f.length):null};
 const sevRank=s=>{const m=monOf(s);return SEV3[m]?SEV3[m][2]:9};
@@ -21,13 +25,13 @@ function renderMon(){const el=document.getElementById('view-mon');
   const base=msBase(),open=SH.filter(s=>rstate(s)==='open').length;
   el.innerHTML=`<div class="ph"><h1>Monitoring</h1><button class="btn btn-p" data-newshp>${ic('plus',15,2)}Create shipment</button></div>
   <div class="tabs" role="tablist">${MTABS.map(t=>`<button class="tab${MS.tab===t[0]?' on':''}" data-mt="${t[0]}">${t[1]}${t[0]==='summary'&&open?`<span class="badge">${open}</span>`:t[0]==='tickets'&&TK.filter(k=>k.st!=='resolved').length?`<span class="ct">${TK.filter(k=>k.st!=='resolved').length}</span>`:t[0]==='claims'&&CL.filter(c=>c.st==='submitted'||c.st==='review').length?`<span class="ct">${CL.filter(c=>c.st==='submitted'||c.st==='review').length}</span>`:''}</button>`).join('')}</div>
-  <div class="filters">${fchip('days','Created',MS.days?`Last ${MS.days} days`:'All time')}${fchip('wh','Warehouse',MS.f.wh)}${fchip('k','Courier',MS.f.k&&cName(MS.f.k))}${fchip('pay','Payment',MS.f.pay&&(MS.f.pay==='cod'?'COD':'Non-COD'))}
+  <div class="filters">${fchip('days','Created',periodTx())}${fchip('wh','Warehouse',MS.f.wh)}${fchip('k','Courier',MS.f.k&&cName(MS.f.k))}${fchip('pay','Payment',MS.f.pay&&(MS.f.pay==='cod'?'COD':'Non-COD'))}
     ${MS.f.wh||MS.f.k||MS.f.pay?'<button class="lnk" data-fclear>Clear filters</button>':''}<div class="fright"><span class="ms-n">${plural(base.length,'shipment')}</span></div></div>
   <div id="mon-body">${({summary:monSummary,health:monHealth,perf:monPerf,list:monList,claims:monClaims,tickets:monTickets})[MS.tab](base)}</div>`;
   track('monitoring_viewed',{tab:MS.tab})}
 const fchip=(k,l,v)=>`<button class="chip${v?' set':''}" data-fc="${k}">${v?'':ic('pluscirc')}<span>${l}</span>${v?` <span class="val">${esc(v)}</span>`:''}</button>`;
 function fpop(b,k){if(popFor===b){closePop();return}popFor=b;
-  const O=k==='days'?[[7,'Last 7 days'],[30,'Last 30 days'],[90,'Last 90 days'],[0,'All time']]:k==='wh'?[['','All warehouses'],...WH.map(w=>[w.code,`${w.n} · ${w.code}`])]:k==='k'?[['','All couriers'],...COURIERS.map(c=>[c.k,c.n])]:[['','COD and non-COD'],['cod','COD'],['non','Non-COD']];
+  const O=k==='days'?[['today','Today'],['yday','Yesterday'],[7,'Last 7 days'],[30,'Last 30 days'],[90,'Last 90 days'],[0,'All time']]:k==='wh'?[['','All warehouses'],...WH.map(w=>[w.code,`${w.n} · ${w.code}`])]:k==='k'?[['','All couriers'],...COURIERS.map(c=>[c.k,c.n])]:[['','COD and non-COD'],['cod','COD'],['non','Non-COD']];
   const cur=k==='days'?MS.days:MS.f[k];
   pop.innerHTML=`<h6>${({days:'Created',wh:'Warehouse',k:'Courier',pay:'Payment'})[k]}</h6>${O.map((o,i)=>`<button class="opt" data-o="${i}"><span class="rdo${cur===o[0]?' on':''}"></span>${o[1]}</button>`).join('')}`;
   pop.querySelectorAll('[data-o]').forEach(x=>x.onclick=()=>{const v=O[+x.dataset.o][0];if(k==='days')MS.days=v;else MS.f[k]=v;MS.l.pg=0;closePop();track('monitoring_filtered',{filter:k});renderMon()});placePop(b,false)}
@@ -41,15 +45,39 @@ function batchStats(id,l){const s=l.filter(x=>x.batch===id),f=finL(s);return{s,n
 function monSummary(base){const ids=[...new Set(base.map(s=>s.batch))],bs=ids.map(id=>({b:BATCH.find(x=>x.id===id),...batchStats(id,base)})).filter(x=>x.b).sort((a,b)=>b.b.created-a.b.created);
   const shown=MS.allB?bs:bs.slice(0,9);
   DL['m-batches']=()=>['flik-batches',['Batch','Courier','Service','Pickup from','Created','Shipments','Delivered','Returned','Success rate','Need resolving'],bs.map(x=>[x.b.id,cName(x.b.k),SERVICES[x.b.svc][1],x.b.wh,fdateY(x.b.created),x.n,x.del,x.ret,x.sr==null?'':x.sr+'%',x.issues])];
-  return tiles(base)+secH('Batches','Click a batch to see its shipments.','m-batches')+
+  return tiles(base)+waHtml()+secH('Batches','Click a batch to see its shipments.','m-batches')+
   `<div class="bt-g">${shown.map(x=>{const o=MS.open.has(x.b.id);return`<div class="bt${o?' open':''}"><button class="bt-c" data-bt="${x.b.id}" aria-expanded="${o}">
-    <div class="bt-h"><span class="mono">${x.b.id}</span>${x.issues?`<span class="st warn sm">${x.issues} to resolve</span>`:''}<span class="chev">${ic('chev',15)}</span></div>
+    <div class="bt-h"><span class="mono">${x.b.id}</span>${x.b.auto?`<span class="st ok sm" title="Booked automatically when the shopper confirmed on WhatsApp">${ic('chat2',11)}Auto-booked</span>`:''}${x.issues?`<span class="st warn sm">${x.issues} to resolve</span>`:''}<span class="chev">${ic('chev',15)}</span></div>
     <div class="bt-k">${cLogo(x.b.k)}<span>${cName(x.b.k)} ${SERVICES[x.b.svc][1]}</span><span class="src">· ${fdate(x.b.created)}</span></div>
     <dl class="bt-n"><div><dt>Shipments</dt><dd>${x.n}</dd></div><div><dt>Delivered</dt><dd>${x.del}</dd></div><div><dt>Returned</dt><dd>${x.ret}</dd></div><div><dt>Success</dt><dd>${x.sr==null?'—':fpct(x.sr)}</dd></div></dl>
     <span class="bar"><i style="width:${x.sr||0}%"></i></span></button>
     ${o?batchList(x):''}</div>`}).join('')}</div>
   ${bs.length>9?`<div class="sx-row" style="justify-content:center"><button class="btn btn-o" data-allb>${MS.allB?'Show fewer':`Show all ${bs.length} batches`}</button></div>`:''}
   ${resolveHtml(base)}`}
+/* ---- Risky COD shoppers being checked on WhatsApp ---- */
+function waHtml(){if(!PEND.length)return'';const L=PEND.slice(0,8),open=PEND.filter(p=>p.st==='sent').length;
+  DL['m-wa']=()=>['flik-whatsapp-checks',['Check','Shopper','Phone','City','COD amount','Status','Sent','AWB'],PEND.map(p=>[p.id,p.s.name,'+'+p.s.phone,p.s.area.city,p.s.val,PENDST[p.st][0],fdateY(p.sent),p.awb||''])];
+  const left=p=>{const h=Math.max(0,(p.exp-NOW)/HOUR);return h>=1?`${Math.round(h)} h left`:`${Math.max(1,Math.round(h*60))} min left`};
+  return secH('Waiting for shopper confirmation',`Risky COD shoppers get a WhatsApp through Qontak. A reply of YA books the shipment automatically; no reply in ${WA_HOURS} hours cancels it.`,'m-wa',open?`<span class="st warn sm">${open} waiting</span>`:'')+
+  `<div class="tbl-wrap"><table class="mt"><thead><tr><th>Shopper</th><th>Destination</th><th class="r">COD</th><th>Score</th><th>WhatsApp</th><th>Sent</th><th class="r">Action</th></tr></thead><tbody>
+  ${L.map(p=>{const sc=shopperScore(p.s.phone,p.s.area);return`<tr data-wa="${p.id}"><td><b>${esc(p.s.name)}</b><span class="src">${fphone(p.s.phone)}</span></td><td>${esc(p.s.area.kec)}<span class="src">${esc(p.s.area.city)}</span></td><td class="r num">${rp(p.s.val)}</td><td>${scorePill(sc)}</td>
+    <td><span class="st ${PENDST[p.st][1]} sm">${PENDST[p.st][0]}</span>${p.st==='sent'?`<span class="src">${left(p)}</span>`:p.awb?`<span class="src mono">${p.awb}</span>`:''}</td><td class="upd">${ago(p.sent)}</td>
+    <td class="r act">${p.st==='sent'?`<button class="btn btn-o" data-wasim="${p.id}" title="Prototype: the shopper's reply">${ic('chat2',14)}Shopper replies YA</button><button class="dots-b" data-wam="${p.id}" aria-label="Other actions">${ic('dots',16)}</button>`:''}</td></tr>`}).join('')}</tbody></table></div>`}
+function waAct(p,a){if(a==='ya'){const sh=confirmPend(p);track('shopper_verified',{auto_booked:true});track('shipment_auto_booked',{courier:sh.k});toast(`Confirmed on WhatsApp. ${sh.awb} booked automatically`)}
+  else if(a==='batal'){p.st='declined';p.log.unshift(['Shopper replied BATAL. Parcel cancelled, nothing charged',NOW]);track('shopper_declined',{});toast('Shopper declined. Nothing was booked or charged')}
+  else if(a==='ship'){const sh=confirmPend(p);VERIFIED.delete(normPhone(p.s.phone));p.st='shipped';p.log.splice(0,2,['You shipped it without waiting · '+sh.awb,NOW]);track('risky_shipped_anyway',{});toast(`${sh.awb} booked`)}
+  else if(a==='cancel'){p.st='cancelled';p.log.unshift(['Cancelled by you. Nothing charged',NOW]);track('risky_cancelled',{});toast('Cancelled. Nothing was charged')}
+  closeDetail();renderMon()}
+function waDrawer(id){drawer.classList.remove('chat');const p=PEND.find(x=>x.id===id),sc=shopperScore(p.s.phone,p.s.area);
+  drawer.innerHTML=`<div class="dh"><span class="kind">${ic('chat2',15)}WhatsApp check</span><button class="ib" data-dclose aria-label="Close">${ic('x',18)}</button></div>
+  <div class="db"><div class="d-hd"><b>${esc(p.s.name)}</b><div class="pills"><span class="st ${PENDST[p.st][1]} sm">${PENDST[p.st][0]}</span></div></div>
+  <div class="wa-chat"><div class="wa-m out"><span>${esc(waText(p.s))}</span><em>${fdateY(p.sent)} · Qontak</em></div>
+    ${p.st==='booked'?`<div class="wa-m in"><span>YA</span><em>Shopper</em></div>`:p.st==='declined'?`<div class="wa-m in"><span>BATAL</span><em>Shopper</em></div>`:''}</div>
+  <div class="dsec"><dl class="kv"><dt>Score now</dt><dd>${scorePill(sc)}<span class="src">${esc(sc.why)}</span></dd><dt>COD</dt><dd class="num">${rp(p.s.val)}</dd><dt>Courier</dt><dd>${cName(SERVICES[p.svc][0])} ${SERVICES[p.svc][1]} · from ${p.wh}</dd><dt>Address</dt><dd>${esc(p.s.street)}, ${esc(areaTx(p.s.area))}</dd>${p.sid?`<dt>Shipment</dt><dd><button class="lnk mono" data-sid2="${p.sid}">${p.awb}</button></dd>`:''}</dl></div>
+  <div class="dsec"><h5>Log</h5><div class="tl">${p.log.map((l,i)=>`<div class="tli ${i===0&&p.st==='booked'?'ok':''}"><i>${i===0&&p.st==='booked'?ic('check',11,3):''}</i><div><b>${esc(l[0])}</b><span>${fdateY(l[1])}</span></div></div>`).join('')}</div></div>
+  ${p.st==='sent'?`<div class="d-acts"><button class="btn btn-o" data-waa="ship">Ship now without waiting</button><button class="btn btn-o" data-waa="cancel">Cancel</button></div>
+  <div class="dsec proto"><h5>Prototype</h5><p class="d-sub">Simulate the shopper's reply.</p><div class="d-acts"><button class="btn btn-o" data-waa="ya">Shopper replies YA</button><button class="btn btn-o" data-waa="batal">Shopper replies BATAL</button></div></div>`:''}</div>`;
+  openDrawer();drawer.onclick=e=>{const b=e.target.closest('[data-waa]');if(b)waAct(p,b.dataset.waa)};track('whatsapp_check_opened',{status:p.st})}
 function batchList(x){const id='m-b-'+x.b.id;DL[id]=()=>['flik-'+x.b.id,SHIP_HEAD,x.s.map(shipRow)];
   return`<div class="bt-l"><div class="sec-h"><b>${plural(x.n,'shipment')} in ${x.b.id}</b><div class="sec-a">${dlBtn(id)}</div></div><div class="tbl-wrap"><table class="mt"><thead><tr><th>AWB</th><th>Created</th><th>Shipment status</th><th>Monitoring</th><th>Courier</th><th>Updated</th><th>Shopper</th><th>Phone</th></tr></thead><tbody>
   ${x.s.map(s=>`<tr data-sid="${s.id}">${awbTd(s)}<td class="date">${fdate(s.created)}</td><td>${stPill3(s.st)}</td><td>${monPill(monOf(s))}</td>${cTd(s)}<td class="upd">${ago(s.upd)}</td><td>${esc(s.name)}</td><td class="mono">${fphone(s.phone)}</td></tr>`).join('')}</tbody></table></div></div>`}
@@ -126,16 +154,66 @@ function monClaims(base){const ids=new Set(base.map(x=>x.id)),all=CL.filter(c=>i
     ['Rejected',all.filter(c=>c.st==='rejected').length,compact(sum(all.filter(c=>c.st==='rejected'),c=>c.amount))+' not paid',all.filter(c=>c.st==='rejected').length?'bad':''],['Days to pay out',done.length?(Math.round(settle*10)/10).toLocaleString('id-ID'):'—','From filing to balance']];
   const cats=Object.entries(CLCAT).map(([k,v])=>{const l=all.filter(c=>c.cat===k);return`<button class="cl-c${F.cat===k?' on':''}" data-clcat="${k}"><span>${v[0]}</span><b class="num">${l.length}</b><small>${compact(sum(l,c=>c.amount))} · ${l.filter(clOpen).length} open</small><em>${v[1]}</em></button>`}).join('');
   const ST=[['','All'],['open','Open'],['approved','Approved'],['paid','Paid out'],['rejected','Rejected']];
-  return`<div class="kp">${T.map(t=>`<div class="kp-t${t[3]?' '+t[3]:''}"><span>${t[0]}</span><b class="num">${t[1]}</b><small>${t[2]}</small></div>`).join('')}</div>
+  return`<div class="sx-row cl-top"><p class="sec-sub">Claims for parcels lost or damaged, returned without asking you, or delivered late by AnterAja.</p><button class="btn btn-p" data-clnew>${ic('plus',15,2)}File a claim</button></div><div class="kp">${T.map(t=>`<div class="kp-t${t[3]?' '+t[3]:''}"><span>${t[0]}</span><b class="num">${t[1]}</b><small>${t[2]}</small></div>`).join('')}</div>
   ${secH('By category','Pick one to filter the list.','')}<div class="cl-g">${cats}</div>
   ${secH('All claims',`${plural(rows.length,'claim')}${F.cat?` · ${CLCAT[F.cat][0]} <button class="lnk" data-clcat="">Clear</button>`:''}`,'m-claims')}
   <div class="tabs sm" role="tablist">${ST.map(t=>`<button class="tab${F.st===t[0]?' on':''}" data-clst="${t[0]}">${t[1]}<span class="ct">${t[0]?all.filter(c=>t[0]==='open'?clOpen(c):c.st===t[0]).length:all.length}</span></button>`).join('')}</div>
   <div class="tbl-wrap"><table class="mt"><thead><tr><th>Claim ID</th><th>AWB</th><th>Courier</th><th>Claim category</th><th>Claim status</th><th>Filed</th><th class="r">Claim value</th><th>Last update</th></tr></thead><tbody>
   ${rows.length?rows.map(c=>`<tr data-cl="${c.id}"><td class="mono">${c.id}</td><td class="mono">${c.awb||'—'}</td>${cTd(c)}<td>${CLCAT[c.cat][0]}</td><td><span class="st ${CLST[c.st][1]} sm">${CLST[c.st][0]}</span></td><td class="date">${fdate(c.filed)}</td><td class="r num">${rp(c.amount)}</td><td class="upd">${ago(c.log[0][1])}</td></tr>`).join('')
     :`<tr><td colspan="8" style="height:auto;border:0;cursor:default"><div class="empty"><b>No claims here</b>File a claim from Needs resolving when a parcel is lost, damaged, returned without asking you, or late on AnterAja.</div></td></tr>`}</tbody></table></div>`}
-function stepper(flow,lab,cur,bad){const at=flow.indexOf(cur);return`<div class="stp">${flow.map((k,i)=>`<div class="stp-i ${i<at||(i===at&&!bad)?'done':''}${i===at?' cur':''}${i===at&&bad?' bad':''}"><i>${i<at||(i===at&&!bad)?ic('check',10,3):''}</i>${lab[k][0]}</div>`).join('')}</div>`}
+function stepper(flow,lab,cur,bad){const at=flow.indexOf(cur);return`<div class="tstp">${flow.map((k,i)=>`<div class="stp-i ${i<at||(i===at&&!bad)?'done':''}${i===at?' cur':''}${i===at&&bad?' bad':''}"><i>${i<at||(i===at&&!bad)?ic('check',10,3):''}</i>${lab[k][0]}</div>`).join('')}</div>`}
 const logTl=(log,LAB)=>`<div class="tl">${log.map((l,i)=>{const cl=l[2]&&LAB[l[2]]?LAB[l[2]][1]:'';return`<div class="tli ${i===0?(cl==='ok'?'ok':cl==='bad'?'bad':''):''}"><i>${i===0&&cl==='ok'?ic('check',11,3):''}</i><div><b>${esc(l[0])}</b><span>${l[2]&&LAB[l[2]]?`<em class="st ${LAB[l[2]][1]} sm">${LAB[l[2]][0]}</em> `:''}${fdateY(l[1])}</span></div></div>`}).join('')}</div>`;
-function claimDrawer(id){const c=CL.find(x=>x.id===id),s=SH.find(x=>x.id===c.sid);
+/* ---- Filing a claim: which cases this shipment can be claimed for, and why not ---- */
+function claimCases(s){const dup=cat=>CL.find(c=>c.sid===s.id&&c.cat===cat&&c.st!=='rejected'),days=(s.upd-s.created)/DAY,eta=etaMax(SERVICES[s.svc]),since=(NOW-s.upd)/DAY;
+  const out=[];
+  {let ok=false,why,need='Photos of the parcel and the item, and the order invoice';
+    if(s.st==='lost'){ok=true;why=`${cName(s.k)} reported the parcel lost.`;need='The order invoice'}
+    else if(s.st==='delivered'&&since<=2){ok=true;why='Delivered less than 2 days ago, so damage can still be reported.'}
+    else if(s.st==='delivered'){why=`Damage has to be reported within 2 days of delivery. This one was delivered ${Math.floor(since)} days ago.`}
+    else if(['transit','picked','ofd'].includes(s.st)&&since>=7){ok=true;why='No tracking update for 7 days, so it counts as lost.';need='The order invoice'}
+    else if(['transit','picked','ofd','pickup'].includes(s.st)){why=`The parcel is still on its way. It can be claimed as lost after 7 days with no update (last update ${ago(s.upd)}).`}
+    else why='Only lost parcels, or parcels damaged on delivery, can be claimed.';
+    out.push({cat:'lost',ok,why,need})}
+  {let ok=false,why,need='';const t=s.tk&&TK.find(k=>k.id===s.tk);
+    if(s.st!=='returned'&&s.st!=='returning')why='The parcel was not returned.';
+    else if(t){why=`The return was agreed in ${t.id}, so it was not without confirmation.`}
+    else{ok=true;why=`${cName(s.k)} returned it without asking you first.`}
+    out.push({cat:'ret',ok,why,need})}
+  {let ok=false,why,need='';
+    if(s.k!=='anteraja')why=`Only AnterAja has an SLA FLIK can claim on today. This parcel went with ${cName(s.k)}.`;
+    else if(s.st!=='delivered')why='Over SLA can be claimed once the parcel is delivered.';
+    else if(days>eta+1){ok=true;why=`Delivered in ${(Math.round(days*10)/10).toLocaleString('id-ID')} days; the SLA is ${eta} days.`}
+    else why=`Delivered within the SLA: ${(Math.round(days*10)/10).toLocaleString('id-ID')} of ${eta} days.`;
+    out.push({cat:'sla',ok,why,need})}
+  out.forEach(c=>{const d=dup(c.cat);if(d&&c.ok){c.ok=false;c.why=`Already claimed in ${d.id} (${CLST[d.st][0].toLowerCase()}).`}});return out}
+function claimExamples(){const f=(fn)=>SH.find(fn);return[['Lost parcel',f(s=>s.st==='lost'&&!CL.some(c=>c.sid===s.id))],['Returned, not asked',f(s=>s.st==='returned'&&!s.tk&&!CL.some(c=>c.sid===s.id))],['AnterAja, late',f(s=>slaOver(s)&&!CL.some(c=>c.sid===s.id))],
+  ['Just delivered',f(s=>s.st==='delivered'&&(NOW-s.upd)/DAY<=2)],['Delivered on time, J&T',f(s=>s.st==='delivered'&&s.k==='jnt'&&(NOW-s.upd)/DAY>3)],['Still on the way',f(s=>['transit','picked','ofd'].includes(s.st))]].filter(x=>x[1])}
+function claimModal(sid){const C={sid:sid||null,cat:null,proof:false,q:''};modal.classList.add('wide');
+  const draw=()=>{const s=C.sid&&SH.find(x=>x.id===C.sid),cases=s?claimCases(s):[];if(s&&(!C.cat||!cases.find(c=>c.cat===C.cat&&c.ok)))C.cat=(cases.find(c=>c.ok)||{}).cat||null;
+    const cur=cases.find(c=>c.cat===C.cat),amt=s&&C.cat?clAmount(s,C.cat):0,can=s&&cur&&cur.ok&&(!cur.need||C.proof);
+    modal.innerHTML=`<div class="mh"><h3>File a claim</h3><button class="ib" data-mclose aria-label="Close">${ic('x',18)}</button></div>
+    <div class="mb">${s?`<div class="tk-s">${cLogo(s.k)}<span><b class="mono">${s.awb||'—'}</b> · ${cName(s.k)} ${SERVICES[s.svc][1]} · ${esc(s.area.city)}</span>${stPill3(s.st)}${sid?'':'<button class="lnk" id="cl-chg">Change</button>'}</div>
+      <div class="fld"><label>What happened</label><div class="cl-cases">${cases.map(c=>`<button class="cl-case${c.cat===C.cat?' on':''}" data-cc="${c.cat}" ${c.ok?'':'disabled'}><span class="rdo${c.cat===C.cat?' on':''}"></span><div><b>${CLCAT[c.cat][0]}</b><span>${esc(c.why)}</span>${c.ok?`<em>${CLCAT[c.cat][1]}</em>`:''}</div>${c.ok?'<span class="st ok sm">Can claim</span>':'<span class="st gr sm">Not eligible</span>'}</button>`).join('')}</div></div>
+      ${cur&&cur.ok?`<div class="fld"><label>Claim value</label><div class="cl-amt"><b class="num">${rp(amt)}</b><span class="src">${C.cat==='lost'?'The goods value on the shipment':C.cat==='ret'?'Shipping both ways':'The shipping cost'}</span></div></div>
+      ${cur.need?`<div class="fld"><label>Proof · ${cur.need}</label><button class="vf-up${C.proof?' done':''}" id="cl-proof">${ic(C.proof?'check':'upload',16)}${C.proof?'3 files added':'Add files'}</button></div>`:''}
+      <div class="fld"><label for="cl-n">Note</label><input id="cl-n" placeholder="Optional"></div>`:cases.length&&!cases.some(c=>c.ok)?`<div class="sx-note">${ic('bulb',16)}<span>This shipment can't be claimed right now. If something else went wrong, contact FLIK support from the shipment.</span></div>`:''}`
+    :`<div class="fld"><label for="cl-q">Tracking number (AWB)</label><input id="cl-q" placeholder="Type or paste an AWB" value="${esc(C.q)}" autocomplete="off"></div><div id="cl-res">${clRes(C.q)}</div>
+      <div class="fld"><label>Try a case</label><div class="cl-ex">${claimExamples().map(([l,x])=>`<button class="chip" data-clpick="${x.id}">${l}</button>`).join('')}</div></div>`}</div>
+    <div class="mf"><button class="btn btn-o" data-mclose>Cancel</button><button class="btn btn-p" id="cl-go" ${can?'':'disabled'}>Submit claim${amt&&can?` · ${rp(amt)}`:''}</button></div>`;
+    mscrim.classList.add('open');
+    const q=document.getElementById('cl-q');if(q){q.focus();q.setSelectionRange(q.value.length,q.value.length);q.oninput=()=>{C.q=q.value;document.getElementById('cl-res').innerHTML=clRes(C.q)}}}
+  const clRes=v=>{v=v.trim().toUpperCase();if(v.length<4)return'';const l=SH.filter(s=>s.awb&&s.awb.includes(v)).slice(0,5);
+    return l.length?`<div class="cl-res">${l.map(s=>`<button class="opt" data-clpick="${s.id}">${cLogo(s.k)}<span class="mono">${s.awb}</span><span class="src">${esc(s.area.city)}</span>${stPill3(s.st)}</button>`).join('')}</div>`:'<p class="sec-sub">No shipment with that AWB.</p>'};
+  modal.onclick=e=>{const t=e.target.closest('button');if(!t)return;
+    if(t.dataset.clpick){C.sid=t.dataset.clpick;C.cat=null;C.proof=false;draw();return}
+    if(t.id==='cl-chg'){C.sid=null;draw();return}
+    if(t.dataset.cc){C.cat=t.dataset.cc;C.proof=false;draw();return}
+    if(t.id==='cl-proof'){C.proof=true;draw();return}
+    if(t.id==='cl-go'){const s=SH.find(x=>x.id===C.sid),n=(document.getElementById('cl-n')||{}).value||'';
+      FLIK.api.createTicket({awb:s.awb,type:'claim',reason:CLCAT[C.cat][0],note:n});const c=addClaim(s,C.cat);track('claim_filed',{category:C.cat,courier:s.k});
+      closeModal();closeDetail();MS.tab='claims';MS.cl={st:'',cat:''};renderMon();toast(`${c.id} submitted to ${cName(s.k)}`);claimDrawer(c.id)}};
+  draw()}
+function claimDrawer(id){drawer.classList.remove('chat');const c=CL.find(x=>x.id===id),s=SH.find(x=>x.id===c.sid);
   drawer.innerHTML=`<div class="dh"><span class="kind">${ic('shield',15)}Claim</span><button class="ib" data-dclose aria-label="Close">${ic('x',18)}</button></div>
   <div class="db"><div class="d-hd"><b class="mono">${c.id}</b><div class="pills"><span class="st ${CLST[c.st][1]} sm">${CLST[c.st][0]}</span></div></div>
   ${stepper(c.st==='rejected'?['submitted','review','rejected']:CL_FLOW,CLST,c.st,c.st==='rejected')}
@@ -161,7 +239,7 @@ function timeline(s){const sv=SERVICES[s.svc],w=whByCode(s.wh),at=f=>new Date(s.
   if(s.st==='returning'||s.st==='returned')ev.push(['Delivery attempt 2 failed: shopper refused the parcel',to,at(.88),'warn'],['Return started',to,at(.92),'warn']);
   if(s.st==='returned')ev.push(['Returned to sender',from,s.upd,'bad']);if(s.st==='lost')ev.push(['Reported lost at the sorting hub',to,s.upd,'bad']);
   return ev.reverse()}
-function openShipment(id){const s=SH.find(x=>x.id===id);if(!s)return;const is=issueOf(s),m=monOf(s),t=s.tk&&TK.find(k=>k.id===s.tk);
+function openShipment(id){drawer.classList.remove('chat');const s=SH.find(x=>x.id===id);if(!s)return;const is=issueOf(s),m=monOf(s),t=s.tk&&TK.find(k=>k.id===s.tk);
   drawer.innerHTML=`<div class="dh"><span class="kind">${ic('truck',15)}Shipment</span><button class="ib" data-dclose aria-label="Close">${ic('x',18)}</button></div>
   <div class="db"><div class="d-hd"><b class="mono">${s.awb||'AWB after pickup'}</b><div class="pills">${stPill3(s.st)} ${monPill(m)} ${sevPill3(m)}</div></div>
   ${is&&rstate(s)==='open'?`<div class="d-iss"><b>${is.t}</b><span>${is.next}</span><div class="d-acts">${['claim','support','customer'].map(a=>`<button class="btn ${a===is.act?'btn-p':'btn-o'}" data-act="${s.id}" data-a="${a}">${TKT[a][1]}</button>`).join('')}</div></div>`:''}
@@ -174,7 +252,7 @@ function openShipment(id){const s=SH.find(x=>x.id===id);if(!s)return;const is=is
   openDrawer();track('shipment_opened',{monitoring:m})}
 
 /* ---- Actions → tickets ---- */
-function actionModal(id,type){const s=SH.find(x=>x.id===id),is=issueOf(s)||{t:''};let note='';
+function actionModal(id,type){if(type==='claim'){claimModal(id);return}const s=SH.find(x=>x.id===id),is=issueOf(s)||{t:''};let note='';
   const def=s.st==='returned'||s.st==='returning'?'ret':slaOver(s)?'sla':'lost';
   const body=type==='claim'?`<div class="fld"><label for="tk-c">Claim category</label><select id="tk-c">${Object.entries(CLCAT).map(([k,v])=>`<option value="${k}"${k===def?' selected':''}${k==='sla'&&s.k!=='anteraja'?' disabled':''}>${v[0]}${k==='sla'&&s.k!=='anteraja'?' (AnterAja only)':''}</option>`).join('')}</select><span class="src" id="tk-cs" style="margin-top:6px">${CLCAT[def][1]}</span></div><div class="fld"><label for="tk-v">Claim value</label><div class="pre"><em>Rp</em><input id="tk-v" value="${clAmount(s,def).toLocaleString('id-ID')}"></div></div><div class="fld"><label>Proof</label><button class="vf-up" data-toast="Opens file picker">${ic('upload',16)}Add photos or the invoice</button></div>`
     :type==='support'?`<div class="fld"><label for="tk-r">What should FLIK do</label><select id="tk-r"><option>Chase the courier for an update</option><option>Reschedule the pickup</option><option>Change the delivery address</option><option>Hold and return the parcel</option></select></div>`
@@ -187,19 +265,35 @@ function actionModal(id,type){const s=SH.find(x=>x.id===id),is=issueOf(s)||{t:''
   document.getElementById('tk-go').onclick=async()=>{note=document.getElementById('tk-n').value;const r=document.getElementById('tk-r')||(cs&&{value:CLCAT[cs.value][0]});
     if(cs){const c=addClaim(s,cs.value);track('claim_filed',{category:cs.value,courier:s.k})}await FLIK.api.createTicket({awb:s.awb,type,reason:r?r.value:'',note});
     const t=addTicket(s,type,'Merchant',NOW,(r?r.value+'. ':'')+note);closeModal();closeDetail();track('issue_action_taken',{action:type,monitoring:monOf(s)});
-    toast(`${t.id} created. It's now in Acknowledged`);renderMon()}}
+    toast(`${t.id} created. It's now in Acknowledged`);renderMon();if(type!=='claim')ticketDrawer(t.id)}}
+/* a ticket opens as a chat with FLIK support, like Intercom; FLIK and the courier's team answer from FLIK's ticketing platform */
+function chatHtml(t,s){const who=m=>m.from==='me'?['You','']:m.from==='flik'?AGENT.flik:AGENT.k(s.k);
+  return t.chat.map(m=>m.from==='sys'?`<div class="ch-sys">${esc(m.text)} · ${fdateY(m.at)}</div>`:`<div class="ch-m ${m.from==='me'?'me':'them'}">${m.from==='me'?'':`<span class="ch-av ${m.from}">${m.from==='flik'?'F':cLogo(s.k)}</span>`}<div><em>${who(m)[0]}${who(m)[1]?` · ${who(m)[1]}`:''}</em><span>${esc(m.text)}</span><small>${ago(m.at)}</small></div></div>`).join('')}
 function ticketDrawer(id){const t=TK.find(k=>k.id===id),s=SH.find(x=>x.id===t.sid);
-  drawer.innerHTML=`<div class="dh"><span class="kind">${ic('ticket',15)}Ticket</span><button class="ib" data-dclose aria-label="Close">${ic('x',18)}</button></div>
-  <div class="db"><div class="d-hd"><b class="mono">${t.id}</b><div class="pills"><span class="st ${TKST[t.st][1]} sm">${TKST[t.st][0]}</span></div></div>
-  <p class="d-sub" style="margin-top:-4px">${esc(tkSubj(t))}</p>
-  ${stepper(['open','progress','resolved'],TKST,t.st)}
-  <div class="d-acts" style="margin:4px 0 14px"><button class="btn btn-o" data-toast="Opens ${t.id} in FLIK's ticketing platform. It will be connected in a later release">${ic('ext',15)}Open in FLIK ticketing</button></div>
-  <div class="dsec"><h5>Details</h5><dl class="kv"><dt>Type</dt><dd>${TKT[t.type][0]}</dd><dt>Channel</dt><dd>${t.ch}</dd><dt>Shipment</dt><dd><button class="lnk mono" data-sid2="${s.id}">${s.awb||s.id}</button> ${monPill(monOf(s))}</dd><dt>Created</dt><dd>${fdateY(t.created)}</dd>${t.note?`<dt>Note</dt><dd>${esc(t.note)}</dd>`:''}</dl></div>
-  <div class="dsec"><h5>Status log</h5>${logTl(t.log,TKST)}</div>
-  ${t.st!=='resolved'?`<div class="dsec proto"><h5>Prototype</h5><p class="d-sub">Simulate the courier's next update for this shipment.</p><div class="d-acts"><button class="btn btn-o" id="tk-sim">${s.st==='returning'?'Parcel returned to you':'Courier delivers it'}</button></div></div>`:''}</div>`;
+  drawer.classList.add('chat');
+  drawer.innerHTML=`<div class="dh"><span class="kind">${ic('chat2',15)}${t.id} · ${esc(tkSubj(t))}</span><button class="ib" data-dclose aria-label="Close">${ic('x',18)}</button></div>
+  <div class="ch-top"><div class="ch-who"><span class="ch-av flik">F</span><span class="ch-av">${cLogo(s.k)}</span><div><b>FLIK support and ${cName(s.k)}</b><span>Usually reply within an hour, 08:00–21:00</span></div></div><span class="st ${TKST[t.st][1]} sm">${TKST[t.st][0]}</span></div>
+  <div class="db ch-body" id="ch-body">
+    <button class="ch-ship" data-sid2="${s.id}">${cLogo(s.k)}<span><b class="mono">${s.awb||'AWB after pickup'}</b> · ${esc(s.area.kec)}, ${esc(s.area.city)}</span>${monPill(monOf(s))}</button>
+    ${chatHtml(t,s)}
+    <details class="ch-log"><summary>Status log</summary>${tstepHtml(t)}${logTl(t.log,TKST)}</details>
+  </div>
+  ${t.st==='resolved'?`<div class="ch-closed">This ticket is resolved. <button class="lnk" data-tkre>Reopen</button></div>`:`<div class="ch-in"><textarea id="ch-t" rows="2" placeholder="Write a message to FLIK support"></textarea><div class="ch-acts"><button class="ib" data-toast="Opens file picker" aria-label="Attach">${ic('upload',16)}</button><span class="sp"></span><button class="btn btn-o sm-b" id="ch-sim" title="Prototype">${cName(s.k)} replies</button><button class="btn btn-o sm-b" id="tk-sim" title="Prototype">${s.st==='returning'?'Parcel returned':'Courier delivers'}</button><button class="btn btn-p" id="ch-send">Send</button></div></div>`}`;
   openDrawer();track('ticket_opened',{type:t.type,status:t.st});
+  const body=document.getElementById('ch-body');body.scrollTop=body.scrollHeight;
+  const redraw=()=>{ticketDrawer(id);renderMon()};
+  const send=document.getElementById('ch-send');if(send){const ta=document.getElementById('ch-t');
+    ta.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send.click()}};
+    send.onclick=()=>{const v=ta.value.trim();if(!v)return;t.chat.push({from:'me',text:v,at:new Date()});track('ticket_message_sent',{type:t.type});ticketDrawer(id);
+      /* prototype: FLIK support picks it up */
+      setTimeout(()=>{if(!drawer.classList.contains('open'))return;if(t.st==='open'){t.st='progress';t.log.unshift(['FLIK support picked it up',new Date(),'progress'])}
+        agentSay(t,'flik',`Thanks! I've passed this to ${cName(s.k)} and will update you here as soon as they reply.`,new Date());if(document.getElementById('ch-body'))redraw()},1800)}}
+  const cs=document.getElementById('ch-sim');if(cs)cs.onclick=()=>{if(t.st==='open'){t.st='progress';t.log.unshift(['FLIK support picked it up',new Date(),'progress'])}
+    agentSay(t,'3pl',s.st==='returning'?'The shopper refused the parcel, so it is on its way back to your warehouse.':'We checked with our hub: the parcel is out for delivery today.',new Date());redraw()};
   const b=document.getElementById('tk-sim');if(b)b.onclick=()=>{s.st=s.st==='returning'?'returned':'delivered';s.upd=new Date(NOW.getTime()+5*60000);t.st='resolved';
-    t.log.unshift([s.st==='delivered'?`${cName(s.k)}: delivered. Ticket closed`:'Returned to sender. Ticket closed',s.upd,'resolved']);toast(`${t.id} resolved: the shipment is safe`);ticketDrawer(id);renderMon()}}
+    t.log.unshift([s.st==='delivered'?`${cName(s.k)}: delivered. Ticket closed`:'Returned to sender. Ticket closed',s.upd,'resolved']);agentSay(t,'sys',s.st==='delivered'?'Delivered. Ticket closed':'Returned to sender. Ticket closed',new Date());toast(`${t.id} resolved: the shipment is safe`);redraw()};
+  const re=drawer.querySelector('[data-tkre]');if(re)re.onclick=()=>{t.st='open';t.log.unshift(['Reopened by you',new Date(),'open']);agentSay(t,'sys','Reopened',new Date());redraw()}}
+const tstepHtml=t=>stepper(['open','progress','resolved'],TKST,t.st);
 
 /* ---- events ---- */
 document.getElementById('view-mon').addEventListener('click',e=>{const t=e.target.closest('button,tr,select');if(!t)return;const d=t.dataset;
@@ -215,7 +309,13 @@ document.getElementById('view-mon').addEventListener('click',e=>{const t=e.targe
     pop.innerHTML=`<div class="menu">${['claim','support','customer'].map(a=>`<button class="opt" data-pa="${a}">${ic(a==='claim'?'shield':a==='support'?'chat2':'phone2',15)}${TKT[a][1]}</button>`).join('')}<button class="opt" data-pa="open">${ic('ext',15)}Open shipment</button></div>`;
     pop.querySelectorAll('[data-pa]').forEach(o=>o.onclick=()=>{closePop();o.dataset.pa==='open'?openShipment(s.id):actionModal(s.id,o.dataset.pa)});placePop(t,true);return}
   if(d.tk){e.stopPropagation();ticketDrawer(d.tk);return}
+  if(d.wasim){e.stopPropagation();waAct(PEND.find(p=>p.id===d.wasim),'ya');return}
+  if(d.wam){e.stopPropagation();if(popFor===t){closePop();return}popFor=t;const p=PEND.find(x=>x.id===d.wam);
+    pop.innerHTML=`<div class="menu"><button class="opt" data-pw="ship">${ic('truck',15)}Ship now without waiting</button><button class="opt" data-pw="cancel">${ic('x',15)}Cancel parcel</button><button class="opt" data-pw="batal">${ic('chat2',15)}Shopper replies BATAL (prototype)</button><button class="opt" data-pw="open">${ic('ext',15)}Open</button></div>`;
+    pop.querySelectorAll('[data-pw]').forEach(o=>o.onclick=()=>{closePop();o.dataset.pw==='open'?waDrawer(p.id):waAct(p,o.dataset.pw)});placePop(t,true);return}
+  if(d.wa){waDrawer(d.wa);return}
   if(d.cl){claimDrawer(d.cl);return}
+  if('clnew' in d){claimModal();return}
   if('clcat' in d){MS.cl.cat=MS.cl.cat===d.clcat?'':d.clcat;renderMon();return}
   if('clst' in d){MS.cl.st=d.clst;renderMon();return}
   if(d.ha){MS.hArea=d.ha;renderMon();return}

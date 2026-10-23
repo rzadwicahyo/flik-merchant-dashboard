@@ -31,7 +31,11 @@ PS.bal=BAL;
 const setBal=v=>{PS.bal=v;document.getElementById('balv').textContent=rp(v)};
 const defWh=()=>(WH.find(w=>w.def&&w.active)||WH.find(w=>w.active)||{}).code||'';
 const newShip3=()=>({phone:'',name:'',addr:null,wh:defWh(),pay:'cod',items:'',qty:1,kg:'',l:'',w:'',h:'',val:'',open:true});
-const blank3=()=>({step:0,how:'manual',ships:[newShip3()],bk:null,svc:null,map:{},day:null,slot:null,done:null,group:'reg'});
+const blank3=()=>({step:0,how:'manual',ships:[newShip3()],bk:null,svc:null,map:{},day:null,slot:null,done:null,group:'reg',hold:{}});
+/* Risky COD shoppers: 'wa' = confirm on WhatsApp first (default), 'ship' = ship now, 'rm' = remove */
+const riskyAt=i=>{const s=X.ships[i];return s.pay==='cod'&&s.addr&&shopperScore(s.phone,s.addr.area).band==='Risky'};
+const holdOf=i=>X.hold[i]||(riskyAt(i)?'wa':null);
+const booksNow=i=>{const h=holdOf(i);return h!=='wa'&&h!=='rm'};
 const kgOf3=s=>Math.max(1,Math.ceil(+s.kg||0),Math.ceil((+s.l||0)*(+s.w||0)*(+s.h||0)/6000));
 const valOf=s=>+String(s.val).replace(/\D/g,'')||0;
 const shipOk3=s=>phoneOk(normPhone(s.phone))&&s.name.trim()&&s.addr&&whCodes().includes(s.wh)&&+s.kg>0&&s.items.trim()&&+s.qty>=1&&(s.pay!=='cod'||valOf(s)>0);
@@ -47,7 +51,7 @@ const sxSync=()=>{const b=document.getElementById('sx-next');if(b)b.disabled=!st
 
 /* costs: published rate − FLIK discount + COD fee + platform fee */
 function costs(){const o={pub:0,disc:0,net:0,cod:0,codFee:0,plat:0,now:0,later:0,nCod:0,nNon:0,codTot:0};
-  X.ships.forEach((s,i)=>{const si=svcFor3(i);if(si==null)return;const p=parcel(s),r=rateOf(si,p.origin,p.area,p.kg),cf=s.pay==='cod'?Math.round(p.val*CODFEE):0;
+  X.ships.forEach((s,i)=>{const si=svcFor3(i);if(si==null||!booksNow(i))return;const p=parcel(s),r=rateOf(si,p.origin,p.area,p.kg),cf=s.pay==='cod'?Math.round(p.val*CODFEE):0;
     o.pub+=r.pub;o.disc+=r.disc;o.net+=r.net;o.codFee+=cf;o.plat+=PLATFORM3;
     if(s.pay==='cod'){o.nCod++;o.codTot+=p.val;o.later+=r.net+cf+PLATFORM3}else{o.nNon++;o.now+=r.net+PLATFORM3}});
   o.total=o.pub-o.disc+o.codFee+o.plat;return o}
@@ -110,15 +114,26 @@ function splitModal(){const sv=X.svc,red=X.ships.map((s,i)=>[s,i]).filter(([s])=
   const all=document.getElementById('sp-all');if(all)all.onclick=()=>{X.svc=X.rec.best;X.map={};closeModal();X.step=2;drawSx()}}
 
 /* ---- pickups: one per courier and warehouse ---- */
-function pickups(){const m={};X.ships.forEach((s,i)=>{const si=svcFor3(i),k=si+'|'+s.wh;(m[k]=m[k]||{svc:si,wh:s.wh,ships:[]}).ships.push(i)});return Object.values(m)}
+function pickups(){const m={};X.ships.forEach((s,i)=>{if(!booksNow(i))return;const si=svcFor3(i),k=si+'|'+s.wh;(m[k]=m[k]||{svc:si,wh:s.wh,ships:[]}).ships.push(i)});return Object.values(m)}
 const DAYS3=[0,1,2].map(i=>new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()+1+i));
 const pickupTx3=()=>X.day==null?'—':`${DOW[DAYS3[X.day].getDay()]}, ${fday(DAYS3[X.day])} · ${SLOTS[X.slot]}`;
 function reviewHtml(){const pk=pickups();
   return`<h2>Review shipments</h2><p class="sx-lead">Check everything before you book.</p>
+  ${riskyHtml()}
   <section><div class="sx-h">Pickups · ${pickupTx3()}</div>${pk.map(p=>{const w=whByCode(p.wh);return`<div class="sx-card sx-whc"><span class="ic">${cLogo(SERVICES[p.svc][0])}</span><div><b>${cName(SERVICES[p.svc][0])} ${SERVICES[p.svc][1]} · ${plural(p.ships.length,'parcel')}</b><span>${esc(w.n)} (${w.code}) · ${esc(whAddr(w))}</span></div><button class="btn btn-o" data-go3="2">Edit</button></div>`}).join('')}</section>
   <section><div class="sx-h">Shipments</div><div class="tbl-wrap"><table class="rv"><thead><tr><th>#</th><th>Customer</th><th>Destination</th><th>From</th><th>Courier</th><th>Payment</th><th>Shopper score</th><th class="r">Shipping</th></tr></thead><tbody>
-  ${X.ships.slice(X.rpg*50,X.rpg*50+50).map((s,j)=>{const i=X.rpg*50+j,si=svcFor3(i),p=parcel(s),r=rateOf(si,p.origin,p.area,p.kg);return`<tr><td class="rn">${i+1}</td><td><b>${esc(s.name)}</b><span class="src">${fphone(s.phone)}</span></td><td>${esc(s.addr.area.kec)}<span class="src">${esc(s.addr.area.city)}</span></td><td>${s.wh}</td><td><div class="sx-cl">${cLogo(SERVICES[si][0])}<span>${cName(SERVICES[si][0])}</span></div>${X.map[i]!=null?'<span class="src">Moved: red zone</span>':''}</td><td>${s.pay==='cod'?`<span class="st pu sm">COD</span> <span class="num">${rp(valOf(s))}</span>`:'<span class="st gr sm">Non-COD</span>'}</td><td>${scorePill(shopperScore(s.phone,s.addr.area))}</td><td class="r num">${rp(r.net)}</td></tr>`}).join('')}</tbody></table></div>
+  ${X.ships.slice(X.rpg*50,X.rpg*50+50).map((s,j)=>{const i=X.rpg*50+j,si=svcFor3(i),p=parcel(s),r=rateOf(si,p.origin,p.area,p.kg);return`<tr><td class="rn">${i+1}</td><td><b>${esc(s.name)}</b><span class="src">${fphone(s.phone)}</span></td><td>${esc(s.addr.area.kec)}<span class="src">${esc(s.addr.area.city)}</span></td><td>${s.wh}</td><td><div class="sx-cl">${cLogo(SERVICES[si][0])}<span>${cName(SERVICES[si][0])}</span></div>${X.map[i]!=null?'<span class="src">Moved: red zone</span>':''}</td><td>${s.pay==='cod'?`<span class="st pu sm">COD</span> <span class="num">${rp(valOf(s))}</span>`:'<span class="st gr sm">Non-COD</span>'}</td><td>${scorePill(shopperScore(s.phone,s.addr.area))}${holdOf(i)==='wa'?'<span class="src">WhatsApp check first</span>':holdOf(i)==='rm'?'<span class="src">Removed</span>':''}</td><td class="r num">${rp(r.net)}</td></tr>`}).join('')}</tbody></table></div>
   ${X.ships.length>50?`<div class="foot"><span>Showing <b>${X.rpg*50+1}–${Math.min(X.ships.length,X.rpg*50+50)}</b> of <b>${X.ships.length}</b></span><div class="pager"><button class="btn btn-o" data-rpg="-1" ${X.rpg?'':'disabled'}>Previous</button><button class="btn btn-o" data-rpg="1" ${(X.rpg+1)*50<X.ships.length?'':'disabled'}>Next</button></div></div>`:''}${X.how==='manual'?`<div class="sx-row"><button class="btn btn-o" data-go3="0">Edit shipments</button></div>`:''}</section>`}
+const heldN=()=>X.ships.filter((s,i)=>holdOf(i)==='wa').length;
+function riskyHtml(){const R=X.ships.map((s,i)=>[s,i]).filter(([s,i])=>riskyAt(i));if(!R.length)return'';
+  const O=[['wa','Confirm on WhatsApp first'],['ship','Ship now'],['rm','Remove']];
+  return`<section class="sx-card rk"><div class="rk-h"><span class="qic">${ic('shield',18,1.6)}</span><div><b>${plural(R.length,'Risky COD shopper')}: FLIK checks with them on WhatsApp first</b>
+    <span>These parcels aren't booked yet. FLIK sends each shopper a WhatsApp through Qontak. When the shopper replies YA, their score goes up and the shipment is booked automatically into the next pickup. No reply in ${WA_HOURS} hours cancels it, with nothing charged.</span></div></div>
+  <div class="tbl-wrap"><table class="rv"><thead><tr><th>Shopper</th><th>Destination</th><th class="r">COD</th><th>Score</th><th>What to do</th></tr></thead><tbody>
+  ${(X.rkAll?R:R.slice(0,4)).map(([s,i])=>{const sc=shopperScore(s.phone,s.addr.area),h=holdOf(i);return`<tr><td><b>${esc(s.name)}</b><span class="src">${fphone(s.phone)}</span></td><td>${esc(s.addr.area.kec)}<span class="src">${esc(s.addr.area.city)}</span></td><td class="r num">${rp(valOf(s))}</td><td>${scorePill(sc)}<span class="src rk-why">${esc(sc.why)}</span></td>
+    <td><div class="seg sm">${O.map(o=>`<button class="${h===o[0]?'on':''}" data-hold="${i}" data-hv="${o[0]}">${o[1]}</button>`).join('')}</div></td></tr>`}).join('')}</tbody></table></div>
+  ${R.length>4?`<div class="sx-row" style="justify-content:center"><button class="lnk" data-rkall>${X.rkAll?'Show fewer':`Show all ${R.length}`}</button></div>`:''}
+  ${R.length>1?`<div class="sx-row" style="gap:8px"><span class="src">For all:</span>${O.map(o=>`<button class="lnk" data-holdall="${o[0]}">${o[1]}</button>`).join('')}</div>`:''}</section>`}
 function payHtml(){const c=costs(),low=PS.bal<c.now;
   return`<h2>Payment</h2><p class="sx-lead">Non-COD shipping is paid now from your FLIK balance. COD shipping is deducted from the COD when the parcel is delivered, or from your balance if it comes back.</p>
   <div class="sx-pay"><div class="sx-bal"><span>FLIK balance</span><b class="num">${rp(PS.bal)}</b>${low?`<button class="lnk" data-topup>Top up</button>`:''}</div><div class="sx-due"><span>You pay now</span><b class="num">${rp(c.now)}</b></div></div>
@@ -129,9 +144,10 @@ function payHtml(){const c=costs(),low=PS.bal<c.now;
     return rows.map(r=>`<tr><td>${r[0]}${r[1]?`<span class="src">${r[1]}</span>`:''}</td><td class="r num">${r[3]}${rp(r[2][0])}</td><td class="r num">${r[3]}${rp(r[2][1])}</td><td class="r num">${r[3]}${rp(r[2][0]+r[2][1])}</td></tr>`).join('')})()}
   <tr class="t"><td>Total payable</td><td class="r num">${rp(c.now)}</td><td class="r num">${rp(c.later)}</td><td class="r num">${rp(c.total)}</td></tr>
   <tr class="when"><td>When it's charged</td><td class="r">Now, from your balance</td><td class="r">When delivered or returned</td><td></td></tr></tbody></table></section>
+  ${heldN()?`<div class="sx-note">${ic('chat2',16)}<span>${plural(heldN(),'Risky COD parcel')} ${heldN()>1?'are':'is'} not in this payment. Each one is booked and charged the same way once the shopper confirms on WhatsApp.</span></div>`:''}
   ${c.nCod?`<p class="sx-foot-n">When all ${c.nCod} COD parcels are delivered, ${rp(c.codTot-c.later)} goes to your balance (${rp(c.codTot)} collected, minus ${rp(c.later)}).</p>`:''}`}
-function doneHtml(){const d=X.done;return`<div class="sx-done"><div class="sx-ok"><i>${ic('check',18,2.6)}</i><b>${plural(d.n,'shipment')} booked<span>${d.batches.map(b=>b.id).join(' · ')}</span></b><button class="btn btn-o" data-toast="Printing ${d.n} shipping labels">${ic('print',15)}Print labels</button></div>
-  <div class="sx-next">${d.batches.map(b=>`<div><span class="ic">${cLogo(b.k)}</span><b>${cName(b.k)} · ${plural(b.n,'parcel')}</b><span>Pickup from ${esc(b.whn)} on ${d.when}.</span></div>`).join('')}<div><span class="ic">${ic('pulse',19)}</span><b>Follow them in Monitoring</b><span>Anything delayed or at risk shows up there with what to do.</span></div></div>
+function doneHtml(){const d=X.done;return`<div class="sx-done"><div class="sx-ok"><i>${ic('check',18,2.6)}</i><b>${plural(d.n,'shipment')} booked<span>${d.batches.map(b=>b.id).join(' · ')||'Nothing booked yet'}</span></b><button class="btn btn-o" data-toast="Printing ${d.n} shipping labels">${ic('print',15)}Print labels</button></div>
+  <div class="sx-next">${d.batches.map(b=>`<div><span class="ic">${cLogo(b.k)}</span><b>${cName(b.k)} · ${plural(b.n,'parcel')}</b><span>Pickup from ${esc(b.whn)} on ${d.when}.</span></div>`).join('')}${d.held.length?`<div class="wa-n"><span class="ic">${ic('chat2',19)}</span><b>${plural(d.held.length,'Risky shopper')} asked on WhatsApp</b><span>FLIK books each parcel automatically when the shopper replies YA, into the next pickup. No reply in ${WA_HOURS} hours cancels it, with nothing charged.</span></div>`:''}<div><span class="ic">${ic('pulse',19)}</span><b>Follow them in Monitoring</b><span>Anything delayed or at risk shows up there with what to do.</span></div></div>
   <div class="sx-row" style="margin-top:24px;justify-content:flex-end"><button class="btn btn-o" data-again>Create another</button><button class="btn btn-p" data-tomon>View in Monitoring</button></div></div>`}
 
 function drawSx(){const st=X.step;
@@ -173,11 +189,18 @@ async function book(){const c=costs(),pk=pickups(),when=pickupTx3().replace(' ·
   await FLIK.api.createShipments({pickup:{date:DAYS3[X.day].toISOString().slice(0,10),slot:SLOTS[X.slot]},batches:pk.map((p,j)=>({ref:batches[j].id,warehouse:p.wh,courier:SERVICES[p.svc][0],service:SERVICES[p.svc][1],
     shipments:p.ships.map(i=>{const s=X.ships[i],q=parcel(s);return{recipient:{name:s.name,phone:normPhone(s.phone),street:s.addr.street,kelurahan:q.area.kel,kecamatan:q.area.kec,city:q.area.city,province:q.area.prov,postcode:q.area.zip,pin:s.addr.pin||null},
       items:s.items,qty:+s.qty,weight_kg:q.kg,dims_cm:[+s.l||0,+s.w||0,+s.h||0],payment:s.pay==='cod'?'COD':'NON_COD',cod_amount:s.pay==='cod'?q.val:0,item_value:q.val}})}))});
+  /* held Risky COD parcels: ask the shopper on WhatsApp; they book themselves when the shopper confirms */
+  const held=[];for(const [i,s] of X.ships.entries()){if(holdOf(i)!=='wa')continue;const q=parcel(s);
+    await FLIK.api.verifyShopper({phone:normPhone(s.phone),cod_amount:q.val,courier:SERVICES[svcFor3(i)][0],service:SERVICES[svcFor3(i)][1],warehouse:s.wh});
+    held.push(addPend({area:q.area,street:s.addr.street,name:s.name,phone:normPhone(s.phone),items:s.items,qty:+s.qty,kg:q.kg,pay:'cod',val:q.val},svcFor3(i),s.wh));track('shopper_verification_sent',{})}
   setBal(PS.bal-c.now);ckDone('created');ckDone('paid');
   /* the first transaction tags the merchant: a new merchant becomes a Shipping merchant */
   if(!has('ship')){PS.flags=PS.mode==='new'?'ship':'payship';syncBar();track('merchant_tagged',{products:FLAGS[PS.flags].w.join('+')})}
-  track('shipment_booked',{shipments:X.ships.length,batches:batches.length,cod:c.nCod,non_cod:c.nNon,paid_now:c.now,split:Object.keys(X.map).length>0});
-  X.done={n:X.ships.length,batches,when};drawSx();sxBody.scrollTop=0}
+  track('shipment_booked',{held_for_whatsapp:X.ships.filter((s,i)=>holdOf(i)==='wa').length,removed:X.ships.filter((s,i)=>holdOf(i)==='rm').length,shipments:X.ships.filter((s,i)=>booksNow(i)).length,batches:batches.length,cod:c.nCod,non_cod:c.nNon,paid_now:c.now,split:Object.keys(X.map).length>0});
+  X.done={n:X.ships.filter((s,i)=>booksNow(i)).length,batches,when,held};drawSx();sxBody.scrollTop=0;
+  /* prototype: the first shopper answers a few seconds later, so the automatic booking can be seen */
+  if(held.length)setTimeout(()=>{const p=held[0];if(p.st!=='sent')return;const sh=confirmPend(p);track('shopper_verified',{auto_booked:true});track('shipment_auto_booked',{courier:sh.k});
+    toast(`${p.s.name.split(' ')[0]} confirmed on WhatsApp. ${sh.awb} booked automatically`);if(!document.getElementById('view-mon').hidden)renderMon()},12000)}
 
 /* the create flow owns its events (Raam's handlers for the old flow never see them) */
 sx.addEventListener('click',e=>{if(!e.target.closest('#sx-body,#sx-foot'))return;e.stopPropagation();closePop();
@@ -200,6 +223,9 @@ sx.addEventListener('click',e=>{if(!e.target.closest('#sx-body,#sx-foot'))return
   else if(d.slot!=null)X.slot=+d.slot;
   else if(d.go3!=null)X.step=+d.go3;
   else if(d.rpg){X.rpg+=+d.rpg}
+  else if(d.hold!=null){X.hold[+d.hold]=d.hv;track('risky_choice',{choice:d.hv})}
+  else if('rkall' in d){X.rkAll=!X.rkAll}
+  else if(d.holdall){X.ships.forEach((s,i)=>{if(riskyAt(i))X.hold[i]=d.holdall})}
   else if('topup' in d){topupModal();return}
   else if('again' in d){X=blank3()}
   else if('tomon' in d){MS.tab='summary';go('monitoring');return}

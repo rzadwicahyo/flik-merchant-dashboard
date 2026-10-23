@@ -38,6 +38,7 @@ window.FLIK = window.FLIK || {};
     shipments:       (q)     => call('shipments', 'GET', '/v1/shipping/shipments' + (q ? '?' + new URLSearchParams(q) : '')),
     tracking:        (awbs)  => call('tracking', 'GET', '/v1/shipping/tracking?awb=' + encodeURIComponent(awbs.join(','))),
     createTicket:    (q)     => call('createTicket', 'POST', '/v1/support/tickets', q),
+    verifyShopper:   (q)     => call('verifyShopper', 'POST', '/v1/shipping/shopper-verifications', q),
     geocode:         (q)     => call('geocode', 'POST', '/v1/maps/geocode', q)
   };
 })();

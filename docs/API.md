@@ -45,6 +45,8 @@ Paths are relative to `FLIK_API_BASE`. Field names follow the example answers in
 | `shipments` | `GET /v1/shipping/shipments?from=&to=&status=` | Monitoring (local data today) | query string | `[shipment]` |
 | `tracking` | `GET /v1/shipping/tracking?awb=A,B` | Monitoring drawer (local data today) | AWB list | `[{awb, status, events}]` |
 | `createTicket` | `POST /v1/support/tickets` | Monitoring, Take action | `{awb, type: claim\|support\|customer, reason, note}` | `{id, status}` |
+| `verifyShopper` | `POST /v1/shipping/shopper-verifications` | Create shipment, held Risky parcels | `{batch, shipment, phone, channel: "whatsapp", expires_h: 24}` | `{id, status: sent}` |
+| `ticketMessages` (proposed) | `GET/POST /v1/support/tickets/{id}/messages` | Ticket chat | `{text, files}` | `[{from: merchant\|flik\|courier\|system, name, text, at}]` |
 | `geocode` | `POST /v1/maps/geocode` | Address search, Check rate | `{query}` | `[{kel, kec, city, prov, zip, lat, lng}]` |
 
 `area` objects are `{kel, kec, city, prov, zip}`. Money is in rupiah, as integers. Rates are per parcel: `pub` is the courier's published price, `net` is what FLIK charges, `disc = pub − net`.
@@ -79,8 +81,23 @@ One batch per pickup, meaning one warehouse with one courier service.
 - Non-COD: shipping and platform fee are paid from the FLIK balance when booking.
 - COD: shipping, COD fee and platform fee are deducted from the COD when the parcel is delivered, or from the balance if it is returned.
 
+### WhatsApp check for Risky shoppers
+
+1. The merchant books; parcels held for a check are sent to `verifyShopper`, not to `createShipments`.
+2. FLIK sends the WhatsApp message (through Qontak) and waits up to 24 hours.
+3. On **YA**, FLIK's server marks the phone verified (shopper score +28) and creates the shipment itself in the next pickup, then sends a `shipment.created` webhook. The screen does not need to be open.
+4. On **BATAL** or no reply, the parcel is cancelled and nothing is charged.
+
+### Claim rules the screens apply
+
+- Lost or damaged: courier reported it lost or damaged, damage reported within 2 days of delivery, or no tracking update for 7 days.
+- Returned without confirmation: the parcel came back and no ticket asked to return it.
+- Over SLA: delivered later than promised. AnterAja only for now.
+- One open claim per shipment.
+
 ## Open items
 
 - Shopper score uses a phone number's delivery history. Legal has to confirm this before it uses real data.
 - The Google Maps key in `config.js` is reserved. The prototype shows a built-in map preview.
 - Tickets are meant to go through Qontak (FLIK already uses it) or FLIK's own ticketing tool. `createTicket` is the single place to connect either.
+- WhatsApp checks to shoppers need the consent wording confirmed by legal.

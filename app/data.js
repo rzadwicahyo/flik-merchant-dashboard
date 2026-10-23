@@ -43,11 +43,11 @@ const RZ_TX={cod:'Red zone for COD',all:'Not delivered'};
 /* --- Shopper score: phone delivery history across FLIK plus the area's success rate. Higher is safer.
    Example data only; Legal still has to confirm how phone history may be used. --- */
 function phist(p){const h=hsh(normPhone(p));if(h%13===0)return{fails:0,deliveries:0,isNew:true};return{fails:h%23===0?3:h%11===0?2:h%6===0?1:0,deliveries:1+h%9,isNew:false}}
-function shopperScore(p,a){const h=phist(p),asr=sum(COURIERS,c=>srOf(c.k,a).sr)/COURIERS.length;
-  const ph=h.isNew?80:Math.max(10,100-h.fails*26);const s=Math.round(.6*ph+.4*asr);
+function shopperScore(p,a){const h=phist(p),asr=sum(COURIERS,c=>srOf(c.k,a).sr)/COURIERS.length,ok=VERIFIED.has(normPhone(p));
+  const ph=h.isNew?80:Math.max(10,100-h.fails*26);const s=Math.min(99,Math.round(.6*ph+.4*asr)+(ok?28:0));
   const band=s>=80?['Safe','ok']:s>=60?['Watch','warn']:['Risky','bad'];
-  const why=`${h.isNew?'New to FLIK: no delivery history for this phone yet':h.fails?`${h.fails} of ${h.deliveries+h.fails} COD deliveries to this phone failed`:`${h.deliveries} of ${h.deliveries} deliveries to this phone succeeded`}. ${fpct(asr)} of parcels to ${a.kec} arrive.`;
-  return{score:s,band:band[0],cls:band[1],why,fails:h.fails}}
+  const why=`${ok?'Confirmed this order on WhatsApp. ':''}${h.isNew?'New to FLIK: no delivery history for this phone yet':h.fails?`${h.fails} of ${h.deliveries+h.fails} COD deliveries to this phone failed`:`${h.deliveries} of ${h.deliveries} deliveries to this phone succeeded`}. ${fpct(asr)} of parcels to ${a.kec} arrive.`;
+  return{score:s,band:band[0],cls:band[1],why,fails:h.fails,verified:ok}}
 const scorePill=sc=>`<span class="st ${sc.cls} sm" title="${esc(sc.why)}">${sc.score} · ${sc.band}</span>`;
 
 /* --- Courier recommendation for a set of parcels: best delivery rate where they go, no red zones --- */
@@ -70,7 +70,7 @@ const SEV3={problem:['Critical','bad',0],risk:['High','or',1],delayed:['Medium',
 const stPill3=s=>`<span class="st ${SST3[s][1]} sm">${SST3[s][0]}</span>`;
 const monPill=m=>`<span class="st ${MON3[m][1]} sm">${MON3[m][0]}</span>`;
 const sevPill3=m=>SEV3[m]?`<span class="st ${SEV3[m][1]} sm">${SEV3[m][0]}</span>`:'';
-const SH=[],BATCH=[],TK=[],CL=[];
+const SH=[],BATCH=[],TK=[],CL=[],PEND=[],VERIFIED=new Set();
 const FN=['Rina','Budi','Sari','Andi','Dewi','Fajar','Maya','Rizky','Putri','Agus','Nadia','Yoga','Intan','Bayu','Citra','Dimas','Eka','Gita','Hendra','Indah','Joko','Kartika','Lukman','Mega'],LN=['Putri','Santoso','Wulandari','Pratama','Lestari','Nugroho','Sari','Ramadhan','Ayu','Setiawan','Rahma','Saputra','Permata','Hidayat','Kusuma','Wijaya'];
 const PRODUCTS=[['Linen shirt · White',289000,.4],['Canvas tote bag',149000,.3],['Wide-leg trousers',219000,.5],['Basic tee · Black',99000,.2],['Voile scarf · Floral',125000,.1],['Leather sneakers',459000,1.2],['Batik dress · Indigo',375000,.5]];
 const STREETS=['Jl. Melati','Jl. Kenanga','Jl. Mawar','Jl. Anggrek','Jl. Cempaka','Jl. Flamboyan','Jl. Merdeka','Jl. Sudirman','Jl. Diponegoro','Jl. Gajah Mada'];
@@ -94,7 +94,7 @@ function issueOf(s){const m=monOf(s);if(m==='safe'||m==='ontrack')return null;
 /* Open → Acknowledged (an action was taken) → Resolved (the monitoring status is Safe again) */
 const rstate=s=>{const m=monOf(s);if(s.tk&&m!=='safe')return'ack';if((s.tk||s.had)&&m==='safe')return'resolved';return m==='delayed'||m==='risk'||m==='problem'?'open':null};
 
-function genActive(){const R=mkRng(4242),pk=a=>a[Math.floor(R()*a.length)];SH.length=0;BATCH.length=0;TK.length=0;CL.length=0;awbSeq=0;clSeq=0;
+function genActive(){const R=mkRng(4242),pk=a=>a[Math.floor(R()*a.length)];SH.length=0;BATCH.length=0;TK.length=0;CL.length=0;PEND.length=0;VERIFIED.clear();awbSeq=0;clSeq=0;
   const codes=['JKT-01','JKT-01','BDG-01','SBY-01'],mix=['spx','spx','jnt','jnt','jne','jne','ninja','ninja','sicepat','lion','anteraja'];
   const regOf=k=>SERVICES.findIndex(v=>v[0]===k&&v[2]==='reg');
   const dests=AREA.map((a,i)=>[a,i<14?3:1]).flatMap(([a,w])=>Array(w).fill(a));
@@ -120,11 +120,16 @@ function genActive(){const R=mkRng(4242),pk=a=>a[Math.floor(R()*a.length)];SH.le
   SH.filter(s=>s.st==='transit').slice(0,22).forEach((s,i)=>{s.upd=new Date(NOW-(i%3===0?4.3:2.2+(i%4)*.3)*DAY)});
   SH.filter(s=>s.st==='pickup').slice(0,2).forEach(s=>{s.created=new Date(NOW-1.6*DAY);s.upd=s.created});
   /* some issues already handled: tickets in progress, and earlier delays that ended well */
-  const iss=SH.filter(s=>issueOf(s));iss.filter((s,i)=>i%4===1).forEach((s,i)=>addTicket(s,issueOf(s).act,'Merchant',new Date(NOW-(3+i*5)*HOUR)));
+  const iss=SH.filter(s=>issueOf(s));iss.filter((s,i)=>i%4===1).forEach((s,i)=>{const t=addTicket(s,issueOf(s).act,'Merchant',new Date(NOW-(3+i*5)*HOUR));
+    if(i%2===0){t.st='progress';t.log.unshift(['FLIK support picked it up',new Date(t.created.getTime()+30*60000),'progress']);agentSay(t,'flik',`Hi, Dewi from FLIK support. I have asked ${cName(s.k)} for an update on this parcel.`,new Date(t.created.getTime()+30*60000))}});
   SH.filter(s=>s.st==='delivered'||s.st==='returned').filter((s,i)=>i%41===3).slice(0,14).forEach((s,i)=>{s.had={t:i%3?'No update for 48 hours':'Delivery attempt failed',act:i%3?'support':'customer'};
     const t=addTicket(s,s.had.act,'Merchant',new Date(s.upd.getTime()-2*DAY));t.st='resolved';
-    t.log.unshift([s.st==='delivered'?'Delivered. Ticket closed':'Returned to sender. Ticket closed',s.upd,'resolved'],[t.type==='customer'?'Shopper replied on WhatsApp and confirmed the address':'FLIK support is chasing '+cName(s.k),new Date(t.created.getTime()+4*HOUR),'progress'])});
-  SH.sort((a,b)=>b.created-a.created);seedClaims()}
+    t.log.unshift([s.st==='delivered'?'Delivered. Ticket closed':'Returned to sender. Ticket closed',s.upd,'resolved'],[t.type==='customer'?'Shopper replied on WhatsApp and confirmed the address':'FLIK support is chasing '+cName(s.k),new Date(t.created.getTime()+4*HOUR),'progress']);
+    const t1=new Date(t.created.getTime()+25*60000),t2=new Date(t.created.getTime()+4*HOUR);
+    agentSay(t,'flik',t.type==='customer'?'Hi! The shopper replied on WhatsApp and confirmed the address. I have passed it to the courier.':`Hi, Dewi here from FLIK support. I have asked ${cName(s.k)} to check this parcel and will update you here.`,t1);
+    agentSay(t,'3pl',s.st==='delivered'?'Our hub found the parcel. It is out for delivery today.':'The shopper refused the parcel at the door, so we are sending it back to the warehouse.',t2);
+    agentSay(t,'sys',s.st==='delivered'?'Delivered. Ticket closed':'Returned to sender. Ticket closed',s.upd)});
+  SH.sort((a,b)=>b.created-a.created);seedClaims();seedPend(R,pk)}
 
 /* ===== Tickets: claims, follow-ups with FLIK support, contacting the shopper (WhatsApp through Qontak) ===== */
 const TKT={claim:['Claim','File a claim','FLIK claims team'],support:['Follow-up','Contact support','FLIK support'],customer:['Contact shopper','Contact customer','WhatsApp via Qontak']};
@@ -132,7 +137,37 @@ const TKST={open:['Open','warn'],progress:['In progress','pu'],resolved:['Resolv
 let tkSeq=4180;
 function addTicket(s,type,by='Merchant',at=NOW,note=''){const t={id:'TK-'+(++tkSeq),type,sid:s.id,awb:s.awb,created:at,st:type==='customer'?'progress':'open',ch:TKT[type][2],note,
   log:[[type==='customer'?'WhatsApp sent to the shopper through Qontak':type==='claim'?'Claim filed with '+cName(s.k):'Sent to FLIK support',at,type==='customer'?'progress':'open']]};
+  /* the ticket is a conversation: the merchant on one side, FLIK support and the courier's team on the other (they reply from FLIK's ticketing platform) */
+  t.chat=[{from:'me',text:note||(type==='claim'?'I want to file a claim for this parcel.':type==='support'?'Can you check on this parcel?'+(issueOf(s)?' '+issueOf(s).t+'.':''):'Please help me reach the shopper about this parcel.'),at}];
+  if(type==='customer')t.chat.push({from:'sys',text:'WhatsApp sent to '+s.name.split(' ')[0]+' through Qontak',at});
   TK.unshift(t);s.tk=t.id;return t}
+const AGENT={flik:['Dewi','FLIK support'],k:k=>[({jne:'Rudi',jnt:'Hendra',spx:'Wulan',ninja:'Sinta',lion:'Arif',sicepat:'Yudi',anteraja:'Lina'})[k]||'Agent',cName(k)+' team']};
+function agentSay(t,who,text,at=NOW){t.chat.push({from:who,text,at});return t}
+
+/* ===== WhatsApp check for Risky COD shoppers (Qontak) =====
+ * A Risky COD parcel is held instead of booked. FLIK asks the shopper on WhatsApp to confirm the order.
+ * Confirmed: the score goes up and the shipment is booked automatically into the next pickup.
+ * Declined or no reply in 24 hours: the parcel is cancelled and nothing is charged.
+ */
+const PENDST={sent:['Waiting for reply','warn'],booked:['Confirmed · booked','ok'],declined:['Shopper declined','bad'],expired:['No reply · cancelled','gr'],cancelled:['Cancelled by you','gr'],shipped:['Shipped without check','pu']};
+const WA_HOURS=24;let pendSeq=0;
+const waText=s=>`Halo ${s.name.split(' ')[0]}, pesanan COD Anda dari Aruna Studio (${s.items}, ${rp(s.val)}) siap dikirim ke ${s.area.kec}. Balas YA untuk konfirmasi, atau BATAL jika tidak jadi. Terima kasih.`;
+function addPend(s,svc,wh,at=NOW){const p={id:'WA-'+String(5100+(++pendSeq)),s,svc,wh,sent:at,exp:new Date(at.getTime()+WA_HOURS*HOUR),st:'sent',log:[['WhatsApp sent through Qontak',at]]};PEND.unshift(p);return p}
+/* the shopper confirmed: mark the phone verified, then book the shipment into the next pickup without the merchant */
+function confirmPend(p,at=NOW){VERIFIED.add(normPhone(p.s.phone));const k=SERVICES[p.svc][0],d=new Date(at);
+  const id=`B-${String(d.getFullYear()).slice(2)}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${String(BATCH.length+1).padStart(3,'0')}`;
+  const b={id,created:at,k,svc:p.svc,wh:p.wh,auto:true};BATCH.unshift(b);
+  const r=rateOf(p.svc,whArea(whByCode(p.wh)),p.s.area,p.s.kg);
+  const sh={...p.s,id:'S'+(SH.length+1),batch:id,created:at,svc:p.svc,k,wh:p.wh,pub:r.pub,cost:r.net,codFee:Math.round(p.s.val*.03),tries:0,st:'pickup',upd:at,awb:mkAwb(k),tk:null,had:null};
+  SH.unshift(sh);p.st='booked';p.sid=sh.id;p.awb=sh.awb;p.log.unshift(['Booked automatically into the next pickup · '+sh.awb,at],['Shopper replied YA on WhatsApp',at]);return sh}
+function riskyPhone(seed){for(let i=0;i<5000;i++){const ph='628'+(1+(seed+i)%8)+String(100000000+((seed*7919+i*104729)%899999999));const h=hsh(normPhone(ph));if(h%13!==0&&h%23===0)return ph}return'6281200000000'}
+function seedPend(R,pk){pendSeq=0;
+  const mk=(i)=>{const p=pk(PRODUCTS),a=AREA[(i*5+3)%AREA.length],qty=1;return{area:a,street:`${pk(STREETS)} No. ${1+Math.floor(R()*120)}`,name:pk(FN)+' '+pk(LN),phone:riskyPhone(i*31+7),items:p[0],qty,kg:Math.max(.1,p[2]),pay:'cod',val:p[1]*qty}};
+  const svc=SERVICES.findIndex(v=>v[0]==='jnt'&&v[2]==='reg');
+  [[9,'expired'],[5,'booked'],[2.5,'declined'],[3.2,'sent'],[1.4,'sent'],[.6,'sent']].forEach(([h,st],i)=>{const p=addPend(mk(i),svc,i%2?'BDG-01':'JKT-01',new Date(NOW-h*HOUR*(st==='expired'?3.4:1)));
+    if(st==='booked')confirmPend(p,new Date(p.sent.getTime()+1.5*HOUR));
+    else if(st==='declined'){p.st='declined';p.log.unshift(['Shopper replied BATAL. Parcel cancelled, nothing charged',new Date(p.sent.getTime()+40*60000)])}
+    else if(st==='expired'){p.st='expired';p.log.unshift(['No reply in 24 hours. Parcel cancelled, nothing charged',p.exp])}})}
 
 /* ===== Claims: what the merchant is owed by the courier ===== */
 const CLCAT={lost:['Lost or damaged','Courier pays the goods value'],ret:['Returned without confirmation','The courier returned it without asking you first; shipping both ways is refunded'],
@@ -154,10 +189,10 @@ function seedClaims(){
   SH.filter(s=>s.k==='anteraja'&&s.st==='delivered').filter((s,i)=>i%2===0).slice(0,12).forEach(s=>{const late=new Date(s.created.getTime()+(etaMax(SERVICES[s.svc])+2.5)*DAY);if(late<NOW)s.upd=late});
   /* a claim older than ten days has been settled one way or the other */
   const pick=(l,f,cat)=>l.forEach((s,i)=>{let st=f(i,s);const at=new Date(s.upd.getTime()+6*HOUR);if((NOW-at)/DAY>10&&st!=='rejected')st='paid';addClaim(s,cat,at,st)});
-  pick(SH.filter(s=>s.st==='lost'),i=>['review','approved','submitted','paid'][i%4],'lost');
+  pick(SH.filter(s=>s.st==='lost').slice(1),i=>['review','approved','submitted','paid'][i%4],'lost');
   pick(SH.filter(s=>s.st==='delivered'&&hsh(s.id)%53===0).slice(0,5),i=>['paid','rejected','review','approved','paid'][i%5],'lost');
   pick(SH.filter(s=>s.st==='returned'&&hsh(s.id)%4===0).slice(0,9),i=>['paid','approved','review','submitted','paid','rejected','approved','paid','review'][i%9],'ret');
-  pick(SH.filter(slaOver),i=>['paid','approved','review','submitted','paid','approved','paid','submitted'][i%8],'sla');
+  pick(SH.filter(slaOver).slice(1),i=>['paid','approved','review','submitted','paid','approved','paid','submitted'][i%8],'sla');
   CL.sort((a,b)=>b.filed-a.filed)}
 
 /* ===== Example answers for FLIK.api (app/api.js) ===== */
@@ -171,3 +206,4 @@ FLIK.mock('createShipments',q=>({batches:q.batches.map(b=>({id:b.ref,awbs:b.ship
 FLIK.mock('createTicket',q=>({id:'TK-'+(tkSeq+1),status:'open'}));
 FLIK.mock('geocode',q=>{const t=String(q.query||'').toLowerCase();return AREA.filter(a=>[a.kel,a.kec,a.city,a.zip].join(' ').toLowerCase().includes(t)).slice(0,8)});
 FLIK.mock('shipments',()=>SH);
+FLIK.mock('verifyShopper',q=>({id:'WA-'+(pendSeq+1),status:'sent',channel:'whatsapp',provider:'qontak',expires_in_hours:WA_HOURS}));

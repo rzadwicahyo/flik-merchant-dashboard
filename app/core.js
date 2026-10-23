@@ -71,7 +71,7 @@ function setMode(m){PS.mode=m;
   /* a merchant is tagged with a product at their first transaction; until then Home treats them as Payments */
   PS.flags=PS.qFlags||(m==='new'?'pay':PS.flags==='pay'?'payship':PS.flags);PS.vd={};PS.vStep=0;PS.vLater=false;MS.reset&&MS.reset();
   WH.length=0;
-  if(m==='new'){PS.verified=false;PS.first={addr:false,created:false,paid:false};SH.length=0;TK.length=0;CL.length=0}
+  if(m==='new'){PS.verified=false;PS.first={addr:false,created:false,paid:false};SH.length=0;TK.length=0;CL.length=0;PEND.length=0;VERIFIED.clear()}
   else{PS.verified=true;PS.first={addr:true,created:true,paid:true};WH_ALL.forEach(w=>WH.push({...w}));genActive()}
   whSync();syncBar();
   if(/^#shipments\/create/.test(location.hash))location.hash='home';else show()}
@@ -199,3 +199,5 @@ function verifyGate(action,cont){
         toast(cont?'Business verified. Continuing where you left off':'Business verified');if(cont)setTimeout(cont,250)}};
   };
   draw();mscrim.classList.add('open')}
+/* a ticket chat widens the drawer; any other drawer goes back to normal */
+{const _cd=closeDetail;closeDetail=function(){_cd();drawer.classList.remove('chat')}}

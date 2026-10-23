@@ -43,7 +43,7 @@ The dark bar at the bottom is for the prototype only, not part of the product.
 
 You can also open a state directly: `?merchant=new`, `?products=pay`, `?products=ship`, `?products=payship` or `?products=all`.
 
-## What's in v3 (and v3.1)
+## What's in v3 (v3.1 and v3.2)
 
 | Area | What to try |
 | --- | --- |
@@ -54,6 +54,10 @@ You can also open a state directly: `?merchant=new`, `?products=pay`, `?products
 | Courier | FLIK recommends the courier with the best delivery rate in the shoppers' kecamatan, falling back to the city. Picking a courier with red-zone parcels offers a split. |
 | Payment | Published rate − FLIK discount + 3% COD fee + platform fee. Non-COD is paid now from the balance; COD is deducted on delivery or return. |
 | Shipping › Monitoring | Batches, a Needs resolving queue sorted by severity (Open, Acknowledged, Resolved), health, courier performance by city or service, and all shipments. **Claims** has a summary and every claim (lost or damaged, returned without confirmation, and over SLA, which is AnterAja only for now) with its status log. **Tickets** open to their details and status log; the link to FLIK's ticketing platform comes later. Every section exports. |
+| Risky shoppers (v3.2) | On the Review step, COD parcels for Risky shoppers are held, not deleted, and the shopper gets a WhatsApp check. When they reply **YA**, the score rises and the shipment is booked into the next pickup automatically. No reply in 24 hours cancels it, with nothing charged. The merchant can still pick **Ship now** or **Remove** per parcel. Held parcels show on Monitoring › Summary. |
+| Tickets as chat (v3.2) | Opening a ticket opens a chat with FLIK support and the courier team, with the status log underneath. FLIK and 3PL teams answer from the ticketing platform. |
+| Claim cases (v3.2) | **File a claim** checks what the parcel qualifies for: lost or damaged, returned without confirmation, or over SLA (AnterAja only), with the reason when it doesn't. |
+| Date filter (v3.2) | Monitoring can show Today, Yesterday, 7, 30 or 90 days, or all time. |
 | Shipping › Check rate | Any warehouse to any destination: published and discounted rate, delivery success, and red zones. |
 | Shipping › Analytics | One compact grid: trends, findings, COD against non-COD, return reasons, COD by shopper score, the courier scorecard and top destinations. Payments analytics sits under Payments. |
 | Pickup addresses | In the account menu (top left). |

@@ -298,12 +298,12 @@ table.cost,table.cmp,.an-2 table,.kv table{min-width:0}
 .cl-c:hover{border-color:var(--line-2)}.cl-c.on{border-color:var(--primary)}
 .cl-c span{color:var(--muted);font-size:13px}.cl-c b{font-size:22px;font-weight:600;color:var(--ink)}.cl-c small{color:var(--ink);font-size:12.5px}
 .cl-c em{font-style:normal;color:var(--muted);font-size:12px;line-height:1.45;margin-top:6px}
-.stp{display:flex;gap:8px;margin:6px 0 14px;flex-wrap:wrap}
+.tstp{display:flex;gap:8px;margin:6px 0 14px;flex-wrap:wrap}
 .stp-i{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--faint);white-space:nowrap}
 .stp-i+.stp-i::before{content:'';width:16px;height:1px;background:var(--line-2);margin-right:4px}
-.stp i{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line-2);display:inline-flex;align-items:center;justify-content:center}
-.stp .done{color:var(--ink)}.stp .done i{background:var(--ok-bg);border-color:var(--ok-bd);color:var(--ok-tx)}
-.stp .cur{font-weight:600;color:var(--ink);width:auto;padding-right:0}.stp .bad i{background:var(--bad-bg);border-color:var(--bad-bd)}
+.tstp i{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line-2);display:inline-flex;align-items:center;justify-content:center}
+.tstp .done{color:var(--ink)}.tstp .done i{background:var(--ok-bg);border-color:var(--ok-bd);color:var(--ok-tx)}
+.tstp .cur{font-weight:600;color:var(--ink);width:auto;padding-right:0}.tstp .bad i{background:var(--bad-bg);border-color:var(--bad-bd)}
 .tli span .st{font-style:normal;margin-right:4px}
 .tli.bad i{background:var(--bad-bg);border-color:var(--bad-bd)}
 @media (max-width:900px){.cl-g{grid-template-columns:minmax(0,1fr)}}
@@ -333,3 +333,48 @@ table.cost,table.cmp,.an-2 table,.kv table{min-width:0}
 .an-w .hbar>span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .an-w .hbar{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 28px 40px}
 .ins-i p{-webkit-line-clamp:2}
+/* v3.2 Risky COD: WhatsApp check before booking */
+.rk{margin-bottom:18px;border:1px solid var(--warn-bd);background:#FFFCF5}
+.rk-h{display:grid;grid-template-columns:38px 1fr;gap:12px;margin-bottom:10px}.rk-h b{display:block;color:var(--ink);font-weight:600}.rk-h span{color:var(--muted);font-size:13px;line-height:1.5}
+.rk table.rv{min-width:0}.rk td{vertical-align:top;padding-top:8px;padding-bottom:8px;height:auto;white-space:normal}
+.rk .rk-why{max-width:220px;font-size:11.5px;line-height:1.35;margin-top:3px}
+.rk .seg.sm button{white-space:nowrap}
+.sx-next .wa-n{border-color:var(--warn-bd)}
+.wa-chat{background:#EFEAE2;border-radius:10px;padding:12px;display:grid;gap:8px;margin:4px 0 14px}
+.wa-m{max-width:85%;padding:8px 10px;border-radius:8px;font-size:13px;line-height:1.45;box-shadow:0 1px 1px rgba(0,0,0,.06)}
+.wa-m.out{background:#D9FDD3;justify-self:end}.wa-m.in{background:#fff;justify-self:start}
+.wa-m span{display:block;color:var(--ink)}.wa-m em{display:block;font-style:normal;font-size:11px;color:var(--muted);margin-top:3px;text-align:right}
+/* v3.2 Tickets as a chat with FLIK support (Intercom-style) */
+.drawer.chat{display:flex;flex-direction:column}
+.drawer.chat .dh .kind{max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ch-top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 20px;border-bottom:1px solid var(--line)}
+.ch-who{display:flex;align-items:center;gap:6px}.ch-who>div{margin-left:4px}.ch-who b{display:block;font-size:13.5px;color:var(--ink)}.ch-who>div span{font-size:12px;color:var(--muted)}
+.ch-av{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#fff;border:1px solid var(--line);overflow:hidden;flex:none;font-size:12px;font-weight:700}
+.ch-av.flik{background:var(--primary);color:#fff;border-color:var(--primary)}.ch-av img{width:20px;height:20px;object-fit:contain}
+.ch-body{flex:1;overflow:auto;display:flex;flex-direction:column;gap:10px;background:#FAFAFB}
+.ch-ship{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:12.5px;text-align:left}.ch-ship img{width:20px;height:20px;object-fit:contain}.ch-ship span:not(.st){flex:1}
+.ch-m{display:flex;gap:8px;max-width:88%}.ch-m.me{align-self:flex-end}
+.ch-m>div{border-radius:12px;padding:8px 12px;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.06)}
+.ch-m.me>div{background:var(--primary);color:#fff;border-bottom-right-radius:4px}.ch-m.them>div{border-bottom-left-radius:4px}
+.ch-m em{display:block;font-style:normal;font-size:11.5px;font-weight:600;color:var(--muted);margin-bottom:2px}.ch-m.me em{display:none}
+.ch-m span{display:block;font-size:13.5px;line-height:1.45;color:inherit}.ch-m.them span{color:var(--ink)}
+.ch-m small{display:block;font-size:10.5px;opacity:.7;margin-top:3px;text-align:right}
+.ch-sys{align-self:center;font-size:11.5px;color:var(--muted);background:var(--line);border-radius:10px;padding:3px 10px}
+.ch-log{margin-top:6px;font-size:13px}.ch-log summary{cursor:pointer;color:var(--muted);font-weight:500}.ch-log[open] summary{margin-bottom:10px}
+.ch-in{border-top:1px solid var(--line);padding:10px 16px 14px;background:#fff}
+.ch-in textarea{width:100%;border:1px solid var(--line-2);border-radius:8px;padding:8px 10px;font:inherit;font-size:13.5px;resize:none}
+.ch-acts{display:flex;align-items:center;gap:6px;margin-top:8px}.ch-acts .sp{flex:1}.ch-acts .sm-b{height:32px;padding:0 10px;font-size:12px}
+.ch-closed{border-top:1px solid var(--line);padding:14px 20px;font-size:13px;color:var(--muted);background:#fff}
+/* v3.2 Filing a claim */
+.cl-top{justify-content:space-between;align-items:center;margin-top:16px;gap:12px}.cl-top .sec-sub{margin:0}
+.cl-cases{display:grid;gap:8px}
+.cl-case{display:grid;grid-template-columns:18px 1fr auto;gap:10px;align-items:start;text-align:left;border:1px solid var(--line-2);border-radius:10px;padding:10px 12px;background:#fff}
+.cl-case.on{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary)}
+.cl-case:disabled{background:#FAFAFB;cursor:default}.cl-case:disabled b{color:var(--muted)}
+.cl-case b{display:block;color:var(--ink);font-weight:600;font-size:13.5px}.cl-case span:not(.st):not(.rdo){display:block;color:var(--muted);font-size:12.5px;line-height:1.45;margin-top:2px}
+.cl-case em{display:block;font-style:normal;font-size:12px;color:var(--ok-tx);margin-top:4px}
+.cl-case .rdo{margin-top:2px}
+.cl-amt{display:flex;align-items:baseline;gap:10px}.cl-amt b{font-size:20px;color:var(--ink)}
+.cl-ex{display:flex;flex-wrap:wrap;gap:6px}
+.cl-res{display:grid;gap:2px;margin:-4px 0 12px}.cl-res .opt{display:flex;align-items:center;gap:8px}.cl-res img{width:20px;height:20px;object-fit:contain}
+.vf-up.done{border-style:solid;border-color:var(--ok-bd);color:var(--ok-tx);background:var(--ok-bg)}
