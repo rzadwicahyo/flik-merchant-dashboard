@@ -1,11 +1,11 @@
 /* ===== Shipping › Monitoring: what needs action, at the level of detail of AG's Loanbook =====
- * Tabs: Summary (batches, needs resolving), Health, Courier performance, All shipments, Tickets.
+ * Tabs: Summary (batches, needs resolving), Health, Courier performance, All shipments, Claims, Tickets.
  * Every section exports straight to the device.
  */
 document.querySelector('.main').insertAdjacentHTML('beforeend','<main class="content" id="view-mon" hidden></main>');
-const MS={tab:'summary',days:30,f:{wh:'',k:'',pay:''},rt:'open',open:new Set(),allB:false,perf:'city',hArea:'city',
-  l:{q:'',st:'',mon:'',pg:0},reset(){this.tab='summary';this.f={wh:'',k:'',pay:''};this.rt='open';this.open=new Set();this.allB=false;this.l={q:'',st:'',mon:'',pg:0}}};
-const MTABS=[['summary','Summary'],['health','Health'],['perf','Courier performance'],['list','All shipments'],['tickets','Tickets']];
+const MS={cl:{st:'',cat:''},tab:'summary',days:30,f:{wh:'',k:'',pay:''},rt:'open',open:new Set(),allB:false,perf:'city',hArea:'city',
+  l:{q:'',st:'',mon:'',pg:0},reset(){this.cl={st:'',cat:''};this.tab='summary';this.f={wh:'',k:'',pay:''};this.rt='open';this.open=new Set();this.allB=false;this.l={q:'',st:'',mon:'',pg:0}}};
+const MTABS=[['summary','Summary'],['health','Health'],['perf','Courier performance'],['list','All shipments'],['claims','Claims'],['tickets','Tickets']];
 const msBase=()=>SH.filter(s=>(!MS.days||s.created>=new Date(NOW-MS.days*DAY))&&(!MS.f.wh||s.wh===MS.f.wh)&&(!MS.f.k||s.k===MS.f.k)&&(!MS.f.pay||s.pay===MS.f.pay));
 const finL=l=>l.filter(s=>s.st==='delivered'||s.st==='returned'||s.st==='lost');
 const srL=l=>{const f=finL(l);return f.length?pct(f.filter(s=>s.st==='delivered').length,f.length):null};
@@ -20,10 +20,10 @@ function renderMon(){const el=document.getElementById('view-mon');
   if(!SH.length){el.innerHTML=`<h1>Monitoring</h1><section class="card w-empty"><span class="qic">${ic('pulse',22,1.6)}</span><div><b>Nothing to monitor yet</b><span>After your first shipment, this page shows each batch, anything delayed or at risk, and how each courier performs for you.</span></div><button class="btn btn-p" data-newshp>Create shipment</button></section>`;return}
   const base=msBase(),open=SH.filter(s=>rstate(s)==='open').length;
   el.innerHTML=`<div class="ph"><h1>Monitoring</h1><button class="btn btn-p" data-newshp>${ic('plus',15,2)}Create shipment</button></div>
-  <div class="tabs" role="tablist">${MTABS.map(t=>`<button class="tab${MS.tab===t[0]?' on':''}" data-mt="${t[0]}">${t[1]}${t[0]==='summary'&&open?`<span class="badge">${open}</span>`:t[0]==='tickets'&&TK.filter(k=>k.st!=='resolved').length?`<span class="ct">${TK.filter(k=>k.st!=='resolved').length}</span>`:''}</button>`).join('')}</div>
+  <div class="tabs" role="tablist">${MTABS.map(t=>`<button class="tab${MS.tab===t[0]?' on':''}" data-mt="${t[0]}">${t[1]}${t[0]==='summary'&&open?`<span class="badge">${open}</span>`:t[0]==='tickets'&&TK.filter(k=>k.st!=='resolved').length?`<span class="ct">${TK.filter(k=>k.st!=='resolved').length}</span>`:t[0]==='claims'&&CL.filter(c=>c.st==='submitted'||c.st==='review').length?`<span class="ct">${CL.filter(c=>c.st==='submitted'||c.st==='review').length}</span>`:''}</button>`).join('')}</div>
   <div class="filters">${fchip('days','Created',MS.days?`Last ${MS.days} days`:'All time')}${fchip('wh','Warehouse',MS.f.wh)}${fchip('k','Courier',MS.f.k&&cName(MS.f.k))}${fchip('pay','Payment',MS.f.pay&&(MS.f.pay==='cod'?'COD':'Non-COD'))}
     ${MS.f.wh||MS.f.k||MS.f.pay?'<button class="lnk" data-fclear>Clear filters</button>':''}<div class="fright"><span class="ms-n">${plural(base.length,'shipment')}</span></div></div>
-  <div id="mon-body">${({summary:monSummary,health:monHealth,perf:monPerf,list:monList,tickets:monTickets})[MS.tab](base)}</div>`;
+  <div id="mon-body">${({summary:monSummary,health:monHealth,perf:monPerf,list:monList,claims:monClaims,tickets:monTickets})[MS.tab](base)}</div>`;
   track('monitoring_viewed',{tab:MS.tab})}
 const fchip=(k,l,v)=>`<button class="chip${v?' set':''}" data-fc="${k}">${v?'':ic('pluscirc')}<span>${l}</span>${v?` <span class="val">${esc(v)}</span>`:''}</button>`;
 function fpop(b,k){if(popFor===b){closePop();return}popFor=b;
@@ -116,12 +116,40 @@ function monList(base){const rows=listRows(base),L=MS.l,pages=Math.max(1,Math.ce
     :`<tr><td colspan="9" style="height:auto;border:0;cursor:default"><div class="empty"><b>No shipments match</b>Try another AWB, or clear the filters.</div></td></tr>`}</tbody></table></div>
   <div class="foot"><span><b>${rows.length.toLocaleString('id-ID')}</b> ${rows.length===1?'shipment':'shipments'}</span><div class="pager"><button class="btn btn-o" data-lpg="-1" ${L.pg?'':'disabled'}>Previous</button><button class="btn btn-o" data-lpg="1" ${L.pg<pages-1?'':'disabled'}>Next</button></div></div>`}
 
+/* ---- Claims: what couriers owe the merchant ---- */
+const clOpen=c=>c.st==='submitted'||c.st==='review';
+function monClaims(base){const ids=new Set(base.map(x=>x.id)),all=CL.filter(c=>ids.has(c.sid)),F=MS.cl,rows=all.filter(c=>(!F.st||(F.st==='open'?clOpen(c):c.st===F.st))&&(!F.cat||c.cat===F.cat));
+  DL['m-claims']=()=>['flik-claims',['Claim ID','AWB','Courier','Claim category','Claim status','Filed','Claim value','Last update'],rows.map(c=>[c.id,c.awb||'',cName(c.k),CLCAT[c.cat][0],CLST[c.st][0],fdateY(c.filed),c.amount,fdateY(c.log[0][1])])];
+  const done=all.filter(c=>c.st==='paid'),settle=done.length?sum(done,c=>(c.log[0][1]-c.filed)/DAY)/done.length:0;
+  const T=[['Claims',all.length.toLocaleString('id-ID'),compact(sum(all,c=>c.amount))+' claimed'],['Open',all.filter(clOpen).length,compact(sum(all.filter(clOpen),c=>c.amount))+' waiting',all.filter(clOpen).length?'':''],
+    ['Approved',all.filter(c=>c.st==='approved').length,compact(sum(all.filter(c=>c.st==='approved'),c=>c.amount))+' to be paid'],['Paid out',done.length,compact(sum(done,c=>c.amount))+' to your balance','ok'],
+    ['Rejected',all.filter(c=>c.st==='rejected').length,compact(sum(all.filter(c=>c.st==='rejected'),c=>c.amount))+' not paid',all.filter(c=>c.st==='rejected').length?'bad':''],['Days to pay out',done.length?(Math.round(settle*10)/10).toLocaleString('id-ID'):'—','From filing to balance']];
+  const cats=Object.entries(CLCAT).map(([k,v])=>{const l=all.filter(c=>c.cat===k);return`<button class="cl-c${F.cat===k?' on':''}" data-clcat="${k}"><span>${v[0]}</span><b class="num">${l.length}</b><small>${compact(sum(l,c=>c.amount))} · ${l.filter(clOpen).length} open</small><em>${v[1]}</em></button>`}).join('');
+  const ST=[['','All'],['open','Open'],['approved','Approved'],['paid','Paid out'],['rejected','Rejected']];
+  return`<div class="kp">${T.map(t=>`<div class="kp-t${t[3]?' '+t[3]:''}"><span>${t[0]}</span><b class="num">${t[1]}</b><small>${t[2]}</small></div>`).join('')}</div>
+  ${secH('By category','Pick one to filter the list.','')}<div class="cl-g">${cats}</div>
+  ${secH('All claims',`${plural(rows.length,'claim')}${F.cat?` · ${CLCAT[F.cat][0]} <button class="lnk" data-clcat="">Clear</button>`:''}`,'m-claims')}
+  <div class="tabs sm" role="tablist">${ST.map(t=>`<button class="tab${F.st===t[0]?' on':''}" data-clst="${t[0]}">${t[1]}<span class="ct">${t[0]?all.filter(c=>t[0]==='open'?clOpen(c):c.st===t[0]).length:all.length}</span></button>`).join('')}</div>
+  <div class="tbl-wrap"><table class="mt"><thead><tr><th>Claim ID</th><th>AWB</th><th>Courier</th><th>Claim category</th><th>Claim status</th><th>Filed</th><th class="r">Claim value</th><th>Last update</th></tr></thead><tbody>
+  ${rows.length?rows.map(c=>`<tr data-cl="${c.id}"><td class="mono">${c.id}</td><td class="mono">${c.awb||'—'}</td>${cTd(c)}<td>${CLCAT[c.cat][0]}</td><td><span class="st ${CLST[c.st][1]} sm">${CLST[c.st][0]}</span></td><td class="date">${fdate(c.filed)}</td><td class="r num">${rp(c.amount)}</td><td class="upd">${ago(c.log[0][1])}</td></tr>`).join('')
+    :`<tr><td colspan="8" style="height:auto;border:0;cursor:default"><div class="empty"><b>No claims here</b>File a claim from Needs resolving when a parcel is lost, damaged, returned without asking you, or late on AnterAja.</div></td></tr>`}</tbody></table></div>`}
+function stepper(flow,lab,cur,bad){const at=flow.indexOf(cur);return`<div class="stp">${flow.map((k,i)=>`<div class="stp-i ${i<at||(i===at&&!bad)?'done':''}${i===at?' cur':''}${i===at&&bad?' bad':''}"><i>${i<at||(i===at&&!bad)?ic('check',10,3):''}</i>${lab[k][0]}</div>`).join('')}</div>`}
+const logTl=(log,LAB)=>`<div class="tl">${log.map((l,i)=>{const cl=l[2]&&LAB[l[2]]?LAB[l[2]][1]:'';return`<div class="tli ${i===0?(cl==='ok'?'ok':cl==='bad'?'bad':''):''}"><i>${i===0&&cl==='ok'?ic('check',11,3):''}</i><div><b>${esc(l[0])}</b><span>${l[2]&&LAB[l[2]]?`<em class="st ${LAB[l[2]][1]} sm">${LAB[l[2]][0]}</em> `:''}${fdateY(l[1])}</span></div></div>`}).join('')}</div>`;
+function claimDrawer(id){const c=CL.find(x=>x.id===id),s=SH.find(x=>x.id===c.sid);
+  drawer.innerHTML=`<div class="dh"><span class="kind">${ic('shield',15)}Claim</span><button class="ib" data-dclose aria-label="Close">${ic('x',18)}</button></div>
+  <div class="db"><div class="d-hd"><b class="mono">${c.id}</b><div class="pills"><span class="st ${CLST[c.st][1]} sm">${CLST[c.st][0]}</span></div></div>
+  ${stepper(c.st==='rejected'?['submitted','review','rejected']:CL_FLOW,CLST,c.st,c.st==='rejected')}
+  <div class="dsec"><dl class="kv"><dt>Category</dt><dd>${CLCAT[c.cat][0]}<span class="src">${CLCAT[c.cat][1]}</span></dd><dt>Courier</dt><dd><div class="sx-cl">${cLogo(c.k)}<span>${cName(c.k)}</span></div></dd><dt>Shipment</dt><dd><button class="lnk mono" data-sid2="${s.id}">${c.awb||s.id}</button></dd><dt>Claim value</dt><dd class="num">${rp(c.amount)}</dd><dt>Filed</dt><dd>${fdateY(c.filed)}</dd></dl></div>
+  <div class="dsec"><h5>Status log</h5>${logTl(c.log,CLST)}</div></div>`;
+  openDrawer();track('claim_opened',{category:c.cat,status:c.st})}
+
 /* ---- Tickets ---- */
-function monTickets(){DL['m-tickets']=()=>['flik-tickets',['Ticket','Type','AWB','Channel','Status','Created','Last update','Note'],TK.map(t=>[t.id,TKT[t.type][0],t.awb||'',t.ch,TKST[t.st][0],fdateY(t.created),fdateY(t.log[0][1]),t.note])];
-  return secH('Tickets','Claims and follow-ups go to FLIK support. Messages to shoppers go out on WhatsApp through Qontak, and replies land here.','m-tickets',`<span class="st ok sm">${ic('check',12,2.4)}Qontak connected</span>`)+
-  `<div class="tbl-wrap"><table class="mt"><thead><tr><th>Ticket</th><th>Type</th><th>AWB</th><th>Channel</th><th>Status</th><th>Created</th><th>Last update</th></tr></thead><tbody>
-  ${TK.length?TK.map(t=>`<tr data-tk="${t.id}"><td class="mono">${t.id}</td><td>${TKT[t.type][0]}</td><td class="mono">${t.awb||'—'}</td><td>${t.ch}</td><td><span class="st ${TKST[t.st][1]} sm">${TKST[t.st][0]}</span></td><td class="date">${fdate(t.created)}</td><td class="upd">${ago(t.log[0][1])}</td></tr>`).join('')
-    :`<tr><td colspan="7" style="height:auto;border:0;cursor:default"><div class="empty"><b>No tickets</b>Actions you take in Needs resolving create tickets here.</div></td></tr>`}</tbody></table></div>`}
+const tkSubj=t=>{const s=SH.find(x=>x.id===t.sid),is=s&&(issueOf(s)||s.had);return is?is.t:TKT[t.type][0]};
+function monTickets(){DL['m-tickets']=()=>['flik-tickets',['Ticket','Type','Subject','AWB','Channel','Status','Created','Last update','Note'],TK.map(t=>[t.id,TKT[t.type][0],tkSubj(t),t.awb||'',t.ch,TKST[t.st][0],fdateY(t.created),fdateY(t.log[0][1]),t.note])];
+  return secH('Tickets','Follow-ups go to FLIK support and messages to shoppers go out on WhatsApp through Qontak. Each ticket will open in FLIK\'s ticketing platform once it is connected.','m-tickets',`<span class="st ok sm">${ic('check',12,2.4)}Qontak connected</span>`)+
+  `<div class="tbl-wrap"><table class="mt"><thead><tr><th>Ticket</th><th>Subject</th><th>Type</th><th>AWB</th><th>Channel</th><th>Status</th><th>Created</th><th>Last update</th></tr></thead><tbody>
+  ${TK.length?TK.map(t=>`<tr data-tk="${t.id}"><td class="mono">${t.id}</td><td>${esc(tkSubj(t))}</td><td>${TKT[t.type][0]}</td><td class="mono">${t.awb||'—'}</td><td>${t.ch}</td><td><span class="st ${TKST[t.st][1]} sm">${TKST[t.st][0]}</span></td><td class="date">${fdate(t.created)}</td><td class="upd">${ago(t.log[0][1])}</td></tr>`).join('')
+    :`<tr><td colspan="8" style="height:auto;border:0;cursor:default"><div class="empty"><b>No tickets</b>Actions you take in Needs resolving create tickets here.</div></td></tr>`}</tbody></table></div>`}
 
 /* ---- Shipment drawer: details, issue, tracking history ---- */
 function timeline(s){const sv=SERVICES[s.svc],w=whByCode(s.wh),at=f=>new Date(s.created.getTime()+(s.upd-s.created)*f),from=w?w.city:'Warehouse',to=s.area.city;
@@ -147,25 +175,31 @@ function openShipment(id){const s=SH.find(x=>x.id===id);if(!s)return;const is=is
 
 /* ---- Actions → tickets ---- */
 function actionModal(id,type){const s=SH.find(x=>x.id===id),is=issueOf(s)||{t:''};let note='';
-  const body=type==='claim'?`<div class="fld"><label for="tk-r">What happened</label><select id="tk-r"><option>Lost in transit</option><option>Arrived damaged</option><option>Items missing</option></select></div><div class="fld"><label for="tk-v">Claim value</label><div class="pre"><em>Rp</em><input id="tk-v" value="${s.val.toLocaleString('id-ID')}"></div></div><div class="fld"><label>Proof</label><button class="vf-up" data-toast="Opens file picker">${ic('upload',16)}Add photos or the invoice</button></div>`
+  const def=s.st==='returned'||s.st==='returning'?'ret':slaOver(s)?'sla':'lost';
+  const body=type==='claim'?`<div class="fld"><label for="tk-c">Claim category</label><select id="tk-c">${Object.entries(CLCAT).map(([k,v])=>`<option value="${k}"${k===def?' selected':''}${k==='sla'&&s.k!=='anteraja'?' disabled':''}>${v[0]}${k==='sla'&&s.k!=='anteraja'?' (AnterAja only)':''}</option>`).join('')}</select><span class="src" id="tk-cs" style="margin-top:6px">${CLCAT[def][1]}</span></div><div class="fld"><label for="tk-v">Claim value</label><div class="pre"><em>Rp</em><input id="tk-v" value="${clAmount(s,def).toLocaleString('id-ID')}"></div></div><div class="fld"><label>Proof</label><button class="vf-up" data-toast="Opens file picker">${ic('upload',16)}Add photos or the invoice</button></div>`
     :type==='support'?`<div class="fld"><label for="tk-r">What should FLIK do</label><select id="tk-r"><option>Chase the courier for an update</option><option>Reschedule the pickup</option><option>Change the delivery address</option><option>Hold and return the parcel</option></select></div>`
     :`<div class="fld"><label>To</label><div class="tk-to">${ic('chat2',16)}<span><b>${esc(s.name)}</b> · ${fphone(s.phone)} · WhatsApp through Qontak</span></div></div><div class="fld"><label for="tk-m">Message</label><textarea id="tk-m" rows="5">Halo ${esc(s.name.split(' ')[0])}, ini Aruna Studio. Kurir ${cName(s.k)} belum berhasil mengantar paket Anda (${s.awb}). Boleh konfirmasi alamat dan waktu yang pas untuk pengantaran? Terima kasih.</textarea></div>`;
   modal.innerHTML=`<div class="mh"><h3>${TKT[type][1]}</h3><button class="ib" data-mclose aria-label="Close">${ic('x',18)}</button></div>
   <div class="mb"><div class="tk-s">${cLogo(s.k)}<span><b class="mono">${s.awb||'—'}</b> · ${esc(is.t)}</span>${monPill(monOf(s))}</div>${body}<div class="fld"><label for="tk-n">Note ${type==='customer'?'(internal)':''}</label><input id="tk-n" placeholder="Optional"></div></div>
   <div class="mf"><button class="btn btn-o" data-mclose>Cancel</button><button class="btn btn-p" id="tk-go">${type==='customer'?'Send on WhatsApp':type==='claim'?'File claim':'Send to FLIK support'}</button></div>`;
   mscrim.classList.add('open');
-  document.getElementById('tk-go').onclick=async()=>{note=document.getElementById('tk-n').value;const r=document.getElementById('tk-r');await FLIK.api.createTicket({awb:s.awb,type,reason:r?r.value:'',note});
+  const cs=document.getElementById('tk-c');if(cs)cs.onchange=()=>{document.getElementById('tk-cs').textContent=CLCAT[cs.value][1];document.getElementById('tk-v').value=clAmount(s,cs.value).toLocaleString('id-ID')};
+  document.getElementById('tk-go').onclick=async()=>{note=document.getElementById('tk-n').value;const r=document.getElementById('tk-r')||(cs&&{value:CLCAT[cs.value][0]});
+    if(cs){const c=addClaim(s,cs.value);track('claim_filed',{category:cs.value,courier:s.k})}await FLIK.api.createTicket({awb:s.awb,type,reason:r?r.value:'',note});
     const t=addTicket(s,type,'Merchant',NOW,(r?r.value+'. ':'')+note);closeModal();closeDetail();track('issue_action_taken',{action:type,monitoring:monOf(s)});
     toast(`${t.id} created. It's now in Acknowledged`);renderMon()}}
 function ticketDrawer(id){const t=TK.find(k=>k.id===id),s=SH.find(x=>x.id===t.sid);
   drawer.innerHTML=`<div class="dh"><span class="kind">${ic('ticket',15)}Ticket</span><button class="ib" data-dclose aria-label="Close">${ic('x',18)}</button></div>
   <div class="db"><div class="d-hd"><b class="mono">${t.id}</b><div class="pills"><span class="st ${TKST[t.st][1]} sm">${TKST[t.st][0]}</span></div></div>
-  <div class="dsec"><dl class="kv"><dt>Type</dt><dd>${TKT[t.type][0]}</dd><dt>Channel</dt><dd>${t.ch}</dd><dt>Shipment</dt><dd><button class="lnk mono" data-sid2="${s.id}">${s.awb||s.id}</button> ${monPill(monOf(s))}</dd><dt>Created</dt><dd>${fdateY(t.created)}</dd>${t.note?`<dt>Note</dt><dd>${esc(t.note)}</dd>`:''}</dl></div>
-  <div class="dsec"><h5>Updates</h5><div class="tl">${t.log.map((l,i)=>`<div class="tli ${i===0&&t.st==='resolved'?'ok':''}"><i>${i===0&&t.st==='resolved'?ic('check',11,3):''}</i><div><b>${esc(l[0])}</b><span>${fdateY(l[1])}</span></div></div>`).join('')}</div></div>
+  <p class="d-sub" style="margin-top:-4px">${esc(tkSubj(t))}</p>
+  ${stepper(['open','progress','resolved'],TKST,t.st)}
+  <div class="d-acts" style="margin:4px 0 14px"><button class="btn btn-o" data-toast="Opens ${t.id} in FLIK's ticketing platform. It will be connected in a later release">${ic('ext',15)}Open in FLIK ticketing</button></div>
+  <div class="dsec"><h5>Details</h5><dl class="kv"><dt>Type</dt><dd>${TKT[t.type][0]}</dd><dt>Channel</dt><dd>${t.ch}</dd><dt>Shipment</dt><dd><button class="lnk mono" data-sid2="${s.id}">${s.awb||s.id}</button> ${monPill(monOf(s))}</dd><dt>Created</dt><dd>${fdateY(t.created)}</dd>${t.note?`<dt>Note</dt><dd>${esc(t.note)}</dd>`:''}</dl></div>
+  <div class="dsec"><h5>Status log</h5>${logTl(t.log,TKST)}</div>
   ${t.st!=='resolved'?`<div class="dsec proto"><h5>Prototype</h5><p class="d-sub">Simulate the courier's next update for this shipment.</p><div class="d-acts"><button class="btn btn-o" id="tk-sim">${s.st==='returning'?'Parcel returned to you':'Courier delivers it'}</button></div></div>`:''}</div>`;
-  openDrawer();
+  openDrawer();track('ticket_opened',{type:t.type,status:t.st});
   const b=document.getElementById('tk-sim');if(b)b.onclick=()=>{s.st=s.st==='returning'?'returned':'delivered';s.upd=new Date(NOW.getTime()+5*60000);t.st='resolved';
-    t.log.unshift([s.st==='delivered'?`${cName(s.k)}: delivered. Ticket closed`:'Returned to sender. Ticket closed',s.upd]);toast(`${t.id} resolved: the shipment is safe`);ticketDrawer(id);renderMon()}}
+    t.log.unshift([s.st==='delivered'?`${cName(s.k)}: delivered. Ticket closed`:'Returned to sender. Ticket closed',s.upd,'resolved']);toast(`${t.id} resolved: the shipment is safe`);ticketDrawer(id);renderMon()}}
 
 /* ---- events ---- */
 document.getElementById('view-mon').addEventListener('click',e=>{const t=e.target.closest('button,tr,select');if(!t)return;const d=t.dataset;
@@ -181,6 +215,9 @@ document.getElementById('view-mon').addEventListener('click',e=>{const t=e.targe
     pop.innerHTML=`<div class="menu">${['claim','support','customer'].map(a=>`<button class="opt" data-pa="${a}">${ic(a==='claim'?'shield':a==='support'?'chat2':'phone2',15)}${TKT[a][1]}</button>`).join('')}<button class="opt" data-pa="open">${ic('ext',15)}Open shipment</button></div>`;
     pop.querySelectorAll('[data-pa]').forEach(o=>o.onclick=()=>{closePop();o.dataset.pa==='open'?openShipment(s.id):actionModal(s.id,o.dataset.pa)});placePop(t,true);return}
   if(d.tk){e.stopPropagation();ticketDrawer(d.tk);return}
+  if(d.cl){claimDrawer(d.cl);return}
+  if('clcat' in d){MS.cl.cat=MS.cl.cat===d.clcat?'':d.clcat;renderMon();return}
+  if('clst' in d){MS.cl.st=d.clst;renderMon();return}
   if(d.ha){MS.hArea=d.ha;renderMon();return}
   if(d.perf){MS.perf=d.perf;renderMon();return}
   if(d.lpg){MS.l.pg+=+d.lpg;renderMon();return}

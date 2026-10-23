@@ -5,14 +5,14 @@ function show(){const h=location.hash.replace(/^#/,'');let view=null;
   if(h==='shipments/create'){view='shp';if(sx.hidden)openShip()}else if(!sx.hidden)closeShip();
   if(h==='warehouses/new'){view='wh';openWh()}else if(!wx.hidden&&!whEdit)closeWh();
   if(h==='merchant-cash-advance/apply'){view='mca';openMca()}else if(!mx.hidden)closeMca();
-  if(!view)view=Object.keys(VIEWS).find(k=>VIEWS[k][0]===h)||(h==='tracking'?'mon':'home');
+  if(!view)view=Object.keys(VIEWS).find(k=>VIEWS[k][0]===h)||(h==='tracking'?'mon':h==='analytics/shipping'?'ana':'home');
   /* an active shipper goes straight to Create shipment; the list lives in Monitoring */
   if(view==='shp'&&h!=='shipments/create'&&SH.length){location.replace('#shipments/create');return}
   renderNav();
   Object.keys(VIEWS).forEach(k=>{const el=document.getElementById('view-'+k);if(el)el.hidden=k!==view});
   document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===view));
   document.title=VIEWS[view][1]+' | FLIK Dashboard';
-  if(view==='home'){renderHomeExtra();if(has('pay'))drawChart()}
+  if(view==='home'){renderHomeExtra();if(has('pay')&&PS.mode!=='new')drawChart()}
   if(view==='shp'&&sx.hidden)renderShp();
   if(view==='mon')renderMon();
   if(view==='cr')renderCr();
@@ -28,7 +28,7 @@ function show(){const h=location.hash.replace(/^#/,'');let view=null;
   track('page_viewed',{page:VIEWS[view][0]})}
 (async()=>{
   const q=new URLSearchParams(location.search);
-  if(FLAGS[q.get('products')])PS.flags=q.get('products');
+  if(FLAGS[q.get('products')])PS.qFlags=q.get('products');
   try{await FLIK.api.merchant()}catch(e){}
   setMode(q.get('merchant')==='new'?'new':'active');
 })();

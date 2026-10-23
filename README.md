@@ -41,21 +41,21 @@ The dark bar at the bottom is for the prototype only, not part of the product.
 - **Products** sets which FLIK products the merchant uses (Shipping only, Payments + Shipping, or all three), which changes the Home widgets and the menu.
 - **Guide** lists things to try. **Events** shows every tracking event the screens fired. **API** shows each data call and whether example data or FLIK's API answered it.
 
-You can also open a state directly: `?merchant=new`, `?products=ship`, `?products=payship` or `?products=all`.
+You can also open a state directly: `?merchant=new`, `?products=pay`, `?products=ship`, `?products=payship` or `?products=all`.
 
-## What's in v3
+## What's in v3 (and v3.1)
 
 | Area | What to try |
 | --- | --- |
-| Home | Up to two widgets: Payments first, then Shipping. Each has a trend line against the previous period. Quick access lives in the **+** menu. |
+| Home | Up to two compact widgets side by side: Payments first, then Shipping. Shipping shows COD and non-COD as two area lines with ±% against the previous period. A merchant counts as Payments until their first transaction tags them. Quick access lives in the **+** menu; the setup checklist lives on Shipment, not Home. |
 | Shipping › Shipment | A new merchant sees the explainer and setup checklist. An active shipper goes straight to Create shipment, with the sidebar still visible. |
 | Manual entry | Product quantity, pickup warehouse and COD or non-COD per shipment, and an address pin on a map preview. |
 | Bulk upload | Upload either example file. Your own file goes through column matching; then **Fix with AI** cleans duplicates, missing fields, swapped fields, phone formats and weights, and fills kelurahan and postcode. Each shopper gets a score (Beta). |
 | Courier | FLIK recommends the courier with the best delivery rate in the shoppers' kecamatan, falling back to the city. Picking a courier with red-zone parcels offers a split. |
 | Payment | Published rate − FLIK discount + 3% COD fee + platform fee. Non-COD is paid now from the balance; COD is deducted on delivery or return. |
-| Shipping › Monitoring | Batches, a Needs resolving queue sorted by severity (Open, Acknowledged, Resolved), health, courier performance by city or service, all shipments, and tickets (through Qontak). Every section exports. |
+| Shipping › Monitoring | Batches, a Needs resolving queue sorted by severity (Open, Acknowledged, Resolved), health, courier performance by city or service, and all shipments. **Claims** has a summary and every claim (lost or damaged, returned without confirmation, and over SLA, which is AnterAja only for now) with its status log. **Tickets** open to their details and status log; the link to FLIK's ticketing platform comes later. Every section exports. |
 | Shipping › Check rate | Any warehouse to any destination: published and discounted rate, delivery success, and red zones. |
-| Analytics › Shipping | Trends, COD against non-COD, return reasons, the courier scorecard, top destinations and COD by shopper score. |
+| Shipping › Analytics | One compact grid: trends, findings, COD against non-COD, return reasons, COD by shopper score, the courier scorecard and top destinations. Payments analytics sits under Payments. |
 | Pickup addresses | In the account menu (top left). |
 | Template | `assets/templates/Template_FLIK_Shipping.xlsx` now has **Metode Pembayaran** and **Jumlah Produk**. |
 

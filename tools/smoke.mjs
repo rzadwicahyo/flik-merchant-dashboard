@@ -24,8 +24,8 @@ await page.route(/^https?:\/\/(?!localhost)/, r => r.abort());
 const screens = [
   ['?merchant=new#home', '#view-home'], ['?merchant=new#shipments', '#view-shp'],
   ['#home', '#view-home'], ['#shipments/create', '#sx'], ['#monitoring', '#view-mon'],
-  ['#check-rate', '#view-cr'], ['#analytics/shipping', '#view-ana'], ['#warehouses', '#view-wh'],
-  ['?products=ship#home', '#view-home'], ['?products=all#home', '#view-home']
+  ['#check-rate', '#view-cr'], ['#shipping/analytics', '#view-ana'], ['#warehouses', '#view-wh'],
+  ['?products=ship#home', '#view-home'], ['?products=all#home', '#view-home'], ['?merchant=new&products=ship#home', '#view-home']
 ];
 let failed = 0;
 for (const [path, sel] of screens) {

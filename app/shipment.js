@@ -174,6 +174,8 @@ async function book(){const c=costs(),pk=pickups(),when=pickupTx3().replace(' ·
     shipments:p.ships.map(i=>{const s=X.ships[i],q=parcel(s);return{recipient:{name:s.name,phone:normPhone(s.phone),street:s.addr.street,kelurahan:q.area.kel,kecamatan:q.area.kec,city:q.area.city,province:q.area.prov,postcode:q.area.zip,pin:s.addr.pin||null},
       items:s.items,qty:+s.qty,weight_kg:q.kg,dims_cm:[+s.l||0,+s.w||0,+s.h||0],payment:s.pay==='cod'?'COD':'NON_COD',cod_amount:s.pay==='cod'?q.val:0,item_value:q.val}})}))});
   setBal(PS.bal-c.now);ckDone('created');ckDone('paid');
+  /* the first transaction tags the merchant: a new merchant becomes a Shipping merchant */
+  if(!has('ship')){PS.flags=PS.mode==='new'?'ship':'payship';syncBar();track('merchant_tagged',{products:FLAGS[PS.flags].w.join('+')})}
   track('shipment_booked',{shipments:X.ships.length,batches:batches.length,cod:c.nCod,non_cod:c.nNon,paid_now:c.now,split:Object.keys(X.map).length>0});
   X.done={n:X.ships.length,batches,when};drawSx();sxBody.scrollTop=0}
 

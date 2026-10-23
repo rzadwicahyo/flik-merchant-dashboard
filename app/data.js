@@ -70,7 +70,7 @@ const SEV3={problem:['Critical','bad',0],risk:['High','or',1],delayed:['Medium',
 const stPill3=s=>`<span class="st ${SST3[s][1]} sm">${SST3[s][0]}</span>`;
 const monPill=m=>`<span class="st ${MON3[m][1]} sm">${MON3[m][0]}</span>`;
 const sevPill3=m=>SEV3[m]?`<span class="st ${SEV3[m][1]} sm">${SEV3[m][0]}</span>`:'';
-const SH=[],BATCH=[],TK=[];
+const SH=[],BATCH=[],TK=[],CL=[];
 const FN=['Rina','Budi','Sari','Andi','Dewi','Fajar','Maya','Rizky','Putri','Agus','Nadia','Yoga','Intan','Bayu','Citra','Dimas','Eka','Gita','Hendra','Indah','Joko','Kartika','Lukman','Mega'],LN=['Putri','Santoso','Wulandari','Pratama','Lestari','Nugroho','Sari','Ramadhan','Ayu','Setiawan','Rahma','Saputra','Permata','Hidayat','Kusuma','Wijaya'];
 const PRODUCTS=[['Linen shirt · White',289000,.4],['Canvas tote bag',149000,.3],['Wide-leg trousers',219000,.5],['Basic tee · Black',99000,.2],['Voile scarf · Floral',125000,.1],['Leather sneakers',459000,1.2],['Batik dress · Indigo',375000,.5]];
 const STREETS=['Jl. Melati','Jl. Kenanga','Jl. Mawar','Jl. Anggrek','Jl. Cempaka','Jl. Flamboyan','Jl. Merdeka','Jl. Sudirman','Jl. Diponegoro','Jl. Gajah Mada'];
@@ -94,7 +94,7 @@ function issueOf(s){const m=monOf(s);if(m==='safe'||m==='ontrack')return null;
 /* Open → Acknowledged (an action was taken) → Resolved (the monitoring status is Safe again) */
 const rstate=s=>{const m=monOf(s);if(s.tk&&m!=='safe')return'ack';if((s.tk||s.had)&&m==='safe')return'resolved';return m==='delayed'||m==='risk'||m==='problem'?'open':null};
 
-function genActive(){const R=mkRng(4242),pk=a=>a[Math.floor(R()*a.length)];SH.length=0;BATCH.length=0;TK.length=0;awbSeq=0;
+function genActive(){const R=mkRng(4242),pk=a=>a[Math.floor(R()*a.length)];SH.length=0;BATCH.length=0;TK.length=0;CL.length=0;awbSeq=0;clSeq=0;
   const codes=['JKT-01','JKT-01','BDG-01','SBY-01'],mix=['spx','spx','jnt','jnt','jne','jne','ninja','ninja','sicepat','lion','anteraja'];
   const regOf=k=>SERVICES.findIndex(v=>v[0]===k&&v[2]==='reg');
   const dests=AREA.map((a,i)=>[a,i<14?3:1]).flatMap(([a,w])=>Array(w).fill(a));
@@ -122,16 +122,43 @@ function genActive(){const R=mkRng(4242),pk=a=>a[Math.floor(R()*a.length)];SH.le
   /* some issues already handled: tickets in progress, and earlier delays that ended well */
   const iss=SH.filter(s=>issueOf(s));iss.filter((s,i)=>i%4===1).forEach((s,i)=>addTicket(s,issueOf(s).act,'Merchant',new Date(NOW-(3+i*5)*HOUR)));
   SH.filter(s=>s.st==='delivered'||s.st==='returned').filter((s,i)=>i%41===3).slice(0,14).forEach((s,i)=>{s.had={t:i%3?'No update for 48 hours':'Delivery attempt failed',act:i%3?'support':'customer'};
-    const t=addTicket(s,s.had.act,'Merchant',new Date(s.upd.getTime()-2*DAY));t.st='resolved';t.log.unshift([s.st==='delivered'?'Delivered. Ticket closed':'Returned to sender. Ticket closed',s.upd])});
-  SH.sort((a,b)=>b.created-a.created)}
+    const t=addTicket(s,s.had.act,'Merchant',new Date(s.upd.getTime()-2*DAY));t.st='resolved';
+    t.log.unshift([s.st==='delivered'?'Delivered. Ticket closed':'Returned to sender. Ticket closed',s.upd,'resolved'],[t.type==='customer'?'Shopper replied on WhatsApp and confirmed the address':'FLIK support is chasing '+cName(s.k),new Date(t.created.getTime()+4*HOUR),'progress'])});
+  SH.sort((a,b)=>b.created-a.created);seedClaims()}
 
 /* ===== Tickets: claims, follow-ups with FLIK support, contacting the shopper (WhatsApp through Qontak) ===== */
 const TKT={claim:['Claim','File a claim','FLIK claims team'],support:['Follow-up','Contact support','FLIK support'],customer:['Contact shopper','Contact customer','WhatsApp via Qontak']};
 const TKST={open:['Open','warn'],progress:['In progress','pu'],resolved:['Resolved','ok']};
 let tkSeq=4180;
 function addTicket(s,type,by='Merchant',at=NOW,note=''){const t={id:'TK-'+(++tkSeq),type,sid:s.id,awb:s.awb,created:at,st:type==='customer'?'progress':'open',ch:TKT[type][2],note,
-  log:[[type==='customer'?'WhatsApp sent to the shopper through Qontak':type==='claim'?'Claim filed with '+cName(s.k):'Sent to FLIK support',at]]};
+  log:[[type==='customer'?'WhatsApp sent to the shopper through Qontak':type==='claim'?'Claim filed with '+cName(s.k):'Sent to FLIK support',at,type==='customer'?'progress':'open']]};
   TK.unshift(t);s.tk=t.id;return t}
+
+/* ===== Claims: what the merchant is owed by the courier ===== */
+const CLCAT={lost:['Lost or damaged','Courier pays the goods value'],ret:['Returned without confirmation','The courier returned it without asking you first; shipping both ways is refunded'],
+  sla:['Over SLA','Delivered later than the courier promised; shipping is refunded. AnterAja only for now']};
+const CLST={submitted:['Submitted','warn'],review:['In review','pu'],approved:['Approved','ok'],paid:['Paid out','ok'],rejected:['Rejected','bad']};
+const CL_FLOW=['submitted','review','approved','paid'];
+const slaOver=s=>s.k==='anteraja'&&s.st==='delivered'&&(s.upd-s.created)/DAY>etaMax(SERVICES[s.svc])+1;
+const clAmount=(s,cat)=>cat==='lost'?s.val:cat==='ret'?s.cost*2:s.cost;
+let clSeq=0;
+function addClaim(s,cat,at=NOW,st='submitted',by='Merchant'){
+  const c={id:'CL-'+String(24100+(++clSeq)),sid:s.id,awb:s.awb,k:s.k,cat,st,filed:at,amount:clAmount(s,cat),by,log:[['Claim filed by '+by.toLowerCase(),at,'submitted']]};
+  /* walk the claim through its steps up to its status, a day or two apart */
+  const stop=st==='rejected'?1:CL_FLOW.indexOf(st);let t=at.getTime();
+  for(let i=1;i<=stop;i++){t+=(1+hsh(c.id+i)%2)*DAY;if(t>NOW.getTime())break;c.log.unshift([({review:cName(s.k)+' is reviewing the claim',approved:'Approved by '+cName(s.k),paid:'Paid out to your FLIK balance'})[CL_FLOW[i]],new Date(t),CL_FLOW[i]])}
+  if(st==='rejected'){t+=2*DAY;c.log.unshift([cName(s.k)+' rejected it: the photo does not show the damage',new Date(Math.min(t,NOW.getTime()-HOUR)),'rejected'])}
+  c.st=c.log[0][2];CL.unshift(c);return c}
+function seedClaims(){
+  /* AnterAja is the only courier with an SLA FLIK can claim on today: make a few of its parcels late */
+  SH.filter(s=>s.k==='anteraja'&&s.st==='delivered').filter((s,i)=>i%2===0).slice(0,12).forEach(s=>{const late=new Date(s.created.getTime()+(etaMax(SERVICES[s.svc])+2.5)*DAY);if(late<NOW)s.upd=late});
+  /* a claim older than ten days has been settled one way or the other */
+  const pick=(l,f,cat)=>l.forEach((s,i)=>{let st=f(i,s);const at=new Date(s.upd.getTime()+6*HOUR);if((NOW-at)/DAY>10&&st!=='rejected')st='paid';addClaim(s,cat,at,st)});
+  pick(SH.filter(s=>s.st==='lost'),i=>['review','approved','submitted','paid'][i%4],'lost');
+  pick(SH.filter(s=>s.st==='delivered'&&hsh(s.id)%53===0).slice(0,5),i=>['paid','rejected','review','approved','paid'][i%5],'lost');
+  pick(SH.filter(s=>s.st==='returned'&&hsh(s.id)%4===0).slice(0,9),i=>['paid','approved','review','submitted','paid','rejected','approved','paid','review'][i%9],'ret');
+  pick(SH.filter(slaOver),i=>['paid','approved','review','submitted','paid','approved','paid','submitted'][i%8],'sla');
+  CL.sort((a,b)=>b.filed-a.filed)}
 
 /* ===== Example answers for FLIK.api (app/api.js) ===== */
 FLIK.mock('merchant',()=>({id:FLIK.config.merchantId,name:'Aruna Studio',products:FLAGS[PS.flags].w,verified:PS.verified}));

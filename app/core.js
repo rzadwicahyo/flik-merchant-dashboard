@@ -38,8 +38,8 @@ const hsh=s=>{let h=7;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;re
 
 /* ===== Merchant state (the prototype bar changes it) ===== */
 const PS={mode:'new',flags:'payship',verified:false,vd:{},vStep:0,vLater:false,first:{addr:false,created:false,paid:false},ckClosed:false,events:[]};
-const FLAGS={ship:{l:'Shipping only',w:['ship']},payship:{l:'Payments + Shipping',w:['pay','ship']},all:{l:'Payments, Shipping, Funding',w:['pay','ship']}};
-const has=p=>PS.flags==='all'||(p==='pay'?PS.flags==='payship':p==='ship');
+const FLAGS={pay:{l:'Payments only (default until the first transaction)',w:['pay']},ship:{l:'Shipping only',w:['ship']},payship:{l:'Payments + Shipping',w:['pay','ship']},all:{l:'Payments, Shipping, Funding',w:['pay','ship']}};
+const has=p=>FLAGS[PS.flags].w.includes(p);
 const WH_ALL=WH.map(w=>({...w}));
 
 /* ===== Event tracker: first-party, no shopper data ===== */
@@ -61,15 +61,17 @@ document.body.insertAdjacentHTML('beforeend',`<div class="pt" role="region" aria
   <button class="pb" id="pt-flags">${ic('user',14)}<span id="pt-flv"></span>${ic('chev',12)}</button>
   <button class="pb" data-pt="guide">${ic('book',14)}Guide</button><button class="pb" data-pt="events">${ic('pulse',14)}Events <span class="n" id="pt-evn">0</span></button><button class="pb" data-pt="api">${ic('api',14)}API</button></div>`);
 document.querySelector('.pt').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
-  if(b.dataset.mode){setMode(b.dataset.mode);return}
+  if(b.dataset.mode){PS.qFlags=null;setMode(b.dataset.mode);return}
   if(b.id==='pt-flags'){e.stopPropagation();if(popFor===b){closePop();return}popFor=b;
     pop.innerHTML=`<h6>Products this merchant uses</h6>${Object.entries(FLAGS).map(([k,f])=>`<button class="opt" data-fl="${k}"><span class="rdo${PS.flags===k?' on':''}"></span>${f.l}</button>`).join('')}`;
     pop.querySelectorAll('[data-fl]').forEach(o=>o.onclick=()=>{PS.flags=o.dataset.fl;closePop();syncBar();show()});placePop(b,false);return}
   if(b.dataset.pt==='guide')guideModal();if(b.dataset.pt==='events')eventsDrawer();if(b.dataset.pt==='api')apiDrawer()});
 function syncBar(){document.querySelectorAll('.pt [data-mode]').forEach(x=>x.classList.toggle('on',x.dataset.mode===PS.mode));document.getElementById('pt-flv').textContent=FLAGS[PS.flags].l}
-function setMode(m){PS.mode=m;PS.vd={};PS.vStep=0;PS.vLater=false;MS.reset&&MS.reset();
+function setMode(m){PS.mode=m;
+  /* a merchant is tagged with a product at their first transaction; until then Home treats them as Payments */
+  PS.flags=PS.qFlags||(m==='new'?'pay':PS.flags==='pay'?'payship':PS.flags);PS.vd={};PS.vStep=0;PS.vLater=false;MS.reset&&MS.reset();
   WH.length=0;
-  if(m==='new'){PS.verified=false;PS.first={addr:false,created:false,paid:false};SH.length=0;TK.length=0}
+  if(m==='new'){PS.verified=false;PS.first={addr:false,created:false,paid:false};SH.length=0;TK.length=0;CL.length=0}
   else{PS.verified=true;PS.first={addr:true,created:true,paid:true};WH_ALL.forEach(w=>WH.push({...w}));genActive()}
   whSync();syncBar();
   if(/^#shipments\/create/.test(location.hash))location.hash='home';else show()}
@@ -78,13 +80,13 @@ function guideModal(){
   modal.innerHTML=`<div class="mh"><h3>What to try</h3><button class="ib" data-mclose aria-label="Close">${ic('x',18)}</button></div>
   <div class="mb guide"><p class="vf-lead">FLIK Shipping Phase 1 on Raam's design system. Everything here is example data. Use the dark bar at the bottom to switch merchants.</p>
   <ol>
-  <li><b>Home:</b> one widget per product, Payments first, then Shipping. Quick access is in the + button.</li>
+  <li><b>Home:</b> one compact widget per product, Payments first, then Shipping. A new merchant counts as Payments until their first transaction. Quick access is in the + button.</li>
   <li><b>New to Shipping:</b> Shipping › Shipment explains FLIK Shipping and shows the setup checklist.</li>
   <li><b>Active shipper:</b> Shipping › Shipment goes straight to Create shipment. Try Bulk upload › “Your own export”: the template reader maps your columns, then Fix all with AI.</li>
   <li><b>Smart courier:</b> on the Courier step, each courier shows its delivery rate in your shoppers' areas. Pick SPX to see the red zone split.</li>
-  <li><b>Monitoring:</b> batches, what needs resolving, health, courier performance and every shipment. Each section exports to this device.</li>
+  <li><b>Monitoring:</b> batches, what needs resolving, health, courier performance, every shipment, claims and tickets. Each section exports to this device.</li>
   <li><b>Check rate:</b> any warehouse to any kecamatan, kelurahan or postcode (try 80113).</li>
-  <li><b>Analytics › Shipping:</b> trends and insights from your shipments.</li></ol>
+  <li><b>Shipping › Analytics:</b> trends and insights from your shipments, on one screen.</li></ol>
   <p class="vf-lead">Events lists what the screens track, with no shopper data. API shows each call the page made and whether example data answered it.</p></div>
   <div class="mf"><button class="btn btn-p" data-mclose>Start</button></div>`;
   mscrim.classList.add('open')}
@@ -105,17 +107,16 @@ const _closeModal=closeModal;closeModal=function(){_closeModal();modal.classList
 NAV.splice(0,NAV.length,
   {i:'home',t:'Home',v:'home'},{i:'bal',t:'Balances',v:'bal'},{i:'tx',t:'Transactions',v:'tx'},{i:'user',t:'Customer',v:'cus'},{i:'box',t:'Product Catalog',v:'prd'},
   {h:'Products'},
-  {i:'cart',t:'Payments',sub:[{t:'Invoice',v:'inv'},'Offline Shop','Payment Link','Checkout Personalization','Order Form']},
-  {i:'truck',t:'Shipping',sub:[{t:'Shipment',v:'shp'},{t:'Monitoring',v:'mon'},{t:'Check rate',v:'cr'}]},
+  {i:'cart',t:'Payments',sub:[{t:'Invoice',v:'inv'},'Offline Shop','Payment Link','Checkout Personalization','Order Form',{t:'Analytics',toast:'Opens Payments analytics (Checkout)'}]},
+  {i:'truck',t:'Shipping',sub:[{t:'Shipment',v:'shp'},{t:'Monitoring',v:'mon'},{t:'Check rate',v:'cr'},{t:'Analytics',v:'ana'}]},
   {i:'coins',t:'Merchant Cash Advance',v:'mca'},
   {i:'tag',t:'Marketing',sub:['Chat Commerce','Leads Management','Voucher','Post Purchase Offer','Cashback']},
-  {i:'chart',t:'Analytics',sub:['Checkout',{t:'Shipping',v:'ana'}]},
   {i:'more',t:'More',sub:['Developers','Settings']});
-Object.assign(VIEWS,{mon:['monitoring','Monitoring'],cr:['check-rate','Check rate'],ana:['analytics/shipping','Shipping analytics'],wh:['warehouses','Pickup addresses']});
+Object.assign(VIEWS,{mon:['monitoring','Monitoring'],cr:['check-rate','Check rate'],ana:['shipping/analytics','Shipping analytics'],wh:['warehouses','Pickup addresses']});
 delete VIEWS.cou;delete VIEWS.trk;
 function renderNav(){
   const open=[...nav.querySelectorAll('.grp.open>.ni')].map(b=>b.textContent);
-  nav.innerHTML=NAV.filter(n=>n.v!=='mca'||PS.flags==='all').map(n=>n.h?`<div class="navh">${n.h}</div>`:n.sub?`<div class="grp"><button class="ni">${ic(n.i)}${n.t}<span class="chev">${ic('chev',14)}</span></button><div class="sub">${n.sub.map(s=>s.v?`<button class="ni" data-view="${s.v}">${s.t}</button>`:`<button class="ni" data-toast="Opens ${s}">${s}</button>`).join('')}</div></div>`:n.v?`<button class="ni" data-view="${n.v}">${ic(n.i)}${n.t}</button>`:`<button class="ni" data-toast="Opens ${n.t}">${ic(n.i)}${n.t}</button>`).join('');
+  nav.innerHTML=NAV.filter(n=>n.v!=='mca'||PS.flags==='all').map(n=>n.h?`<div class="navh">${n.h}</div>`:n.sub?`<div class="grp"><button class="ni">${ic(n.i)}${n.t}<span class="chev">${ic('chev',14)}</span></button><div class="sub">${n.sub.map(s=>s.v?`<button class="ni" data-view="${s.v}">${s.t}</button>`:`<button class="ni" data-toast="${s.toast||'Opens '+s}">${s.t||s}</button>`).join('')}</div></div>`:n.v?`<button class="ni" data-view="${n.v}">${ic(n.i)}${n.t}</button>`:`<button class="ni" data-toast="Opens ${n.t}">${ic(n.i)}${n.t}</button>`).join('');
   nav.querySelectorAll('.grp>.ni').forEach(b=>{if(open.includes(b.textContent))b.parentElement.classList.add('open');b.onclick=()=>b.parentElement.classList.toggle('open')});
   nav.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{go(VIEWS[b.dataset.view][0])})}
 const go=h=>{if(location.hash==='#'+h)show();else location.hash=h};
@@ -147,7 +148,7 @@ document.getElementById('plus').onclick=e=>{e.stopPropagation();const b=e.curren
 (()=>{const h=document.querySelector('[data-toast="Opens FLIK help center"]');h.removeAttribute('data-toast');
   h.onclick=e=>{e.stopPropagation();if(popFor===h){closePop();return}popFor=h;
     pop.innerHTML=`<div class="menu"><h6>Help</h6><button class="opt" data-hsetup>${ic('check',15)}Setup guide</button><button class="opt" data-toast="Opens the FLIK help centre">${ic('book',15)}Help centre</button><button class="opt" data-toast="Opens WhatsApp support">${ic('chat2',15)}Chat with support</button></div>`;
-    pop.querySelector('[data-hsetup]').onclick=()=>{PS.ckClosed=false;closePop();track('setup_guide_reopened',{});go('home');toast('Setup guide is back on Home')};placePop(h,true)}})();
+    pop.querySelector('[data-hsetup]').onclick=()=>{PS.ckClosed=false;closePop();track('setup_guide_reopened',{});go('shipments');toast('Setup guide is back on Shipment')};placePop(h,true)}})();
 
 /* ===== Setup checklist (Shipping), closable ===== */
 const CK=[['addr','Add a pickup address','Couriers pick up from here. Add as many as you ship from.','Add address'],
