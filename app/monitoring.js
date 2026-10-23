@@ -47,37 +47,41 @@ function monSummary(base){const ids=[...new Set(base.map(s=>s.batch))],bs=ids.ma
   DL['m-batches']=()=>['flik-batches',['Batch','Courier','Service','Pickup from','Created','Shipments','Delivered','Returned','Success rate','Need resolving'],bs.map(x=>[x.b.id,cName(x.b.k),SERVICES[x.b.svc][1],x.b.wh,fdateY(x.b.created),x.n,x.del,x.ret,x.sr==null?'':x.sr+'%',x.issues])];
   return tiles(base)+waHtml()+secH('Batches','Click a batch to see its shipments.','m-batches')+
   `<div class="bt-g">${shown.map(x=>{const o=MS.open.has(x.b.id);return`<div class="bt${o?' open':''}"><button class="bt-c" data-bt="${x.b.id}" aria-expanded="${o}">
-    <div class="bt-h"><span class="mono">${x.b.id}</span>${x.b.auto?`<span class="st ok sm" title="Booked automatically when the shopper confirmed on WhatsApp">${ic('chat2',11)}Auto-booked</span>`:''}${x.issues?`<span class="st warn sm">${x.issues} to resolve</span>`:''}<span class="chev">${ic('chev',15)}</span></div>
+    <div class="bt-h"><span class="mono">${x.b.id}</span>${x.b.draft?`<span class="st ok sm" title="Sent from a draft batch after the Risky shopper verified or paid">${ic('chat2',11)}From draft</span>`:''}${x.issues?`<span class="st warn sm">${x.issues} to resolve</span>`:''}<span class="chev">${ic('chev',15)}</span></div>
     <div class="bt-k">${cLogo(x.b.k)}<span>${cName(x.b.k)} ${SERVICES[x.b.svc][1]}</span><span class="src">· ${fdate(x.b.created)}</span></div>
     <dl class="bt-n"><div><dt>Shipments</dt><dd>${x.n}</dd></div><div><dt>Delivered</dt><dd>${x.del}</dd></div><div><dt>Returned</dt><dd>${x.ret}</dd></div><div><dt>Success</dt><dd>${x.sr==null?'—':fpct(x.sr)}</dd></div></dl>
     <span class="bar"><i style="width:${x.sr||0}%"></i></span></button>
     ${o?batchList(x):''}</div>`}).join('')}</div>
   ${bs.length>9?`<div class="sx-row" style="justify-content:center"><button class="btn btn-o" data-allb>${MS.allB?'Show fewer':`Show all ${bs.length} batches`}</button></div>`:''}
   ${resolveHtml(base)}`}
-/* ---- Risky COD shoppers being checked on WhatsApp ---- */
-function waHtml(){if(!PEND.length)return'';const L=PEND.slice(0,8),open=PEND.filter(p=>p.st==='sent').length;
-  DL['m-wa']=()=>['flik-whatsapp-checks',['Check','Shopper','Phone','City','COD amount','Status','Sent','AWB'],PEND.map(p=>[p.id,p.s.name,'+'+p.s.phone,p.s.area.city,p.s.val,PENDST[p.st][0],fdateY(p.sent),p.awb||''])];
+/* ---- Draft batches: Risky shoppers asked to verify or pay on WhatsApp ---- */
+const drAct=p=>p.st==='ready'?`<button class="btn btn-p" data-drgo="${p.id}">Pick courier and send</button>`:p.st==='sent'?`<button class="btn btn-o" data-wasim="${p.id}" title="Prototype: the shopper's answer">${ic('chat2',14)}${p.kind==='pay'?'Shopper pays':'Shopper verifies'}</button><button class="dots-b" data-wam="${p.id}" aria-label="Other actions">${ic('dots',16)}</button>`:'';
+const DRORD={ready:0,sent:1,booked:2,declined:3,expired:3,cancelled:3};
+function waHtml(){if(!PEND.length)return'';const A=PEND.slice().sort((a,b)=>DRORD[a.st]-DRORD[b.st]||b.sent-a.sent),L=MS.allD?A:A.slice(0,6),ready=PEND.filter(p=>p.st==='ready').length,open=PEND.filter(p=>p.st==='sent').length;
+  DL['m-wa']=()=>['flik-draft-batches',['Draft batch','Shopper','Phone','City','Amount','Sent','Status','Created','AWB'],PEND.map(p=>[p.id,p.ship.name,'+'+normPhone(p.ship.phone),p.ship.addr.area.city,+p.ship.val,DRK[p.kind][0],drLab(p),fdateY(p.sent),p.awb||''])];
   const left=p=>{const h=Math.max(0,(p.exp-NOW)/HOUR);return h>=1?`${Math.round(h)} h left`:`${Math.max(1,Math.round(h*60))} min left`};
-  return secH('Waiting for shopper confirmation',`Risky COD shoppers get a WhatsApp through Qontak. A reply of YA books the shipment automatically; no reply in ${WA_HOURS} hours cancels it.`,'m-wa',open?`<span class="st warn sm">${open} waiting</span>`:'')+
-  `<div class="tbl-wrap"><table class="mt"><thead><tr><th>Shopper</th><th>Destination</th><th class="r">COD</th><th>Score</th><th>WhatsApp</th><th>Sent</th><th class="r">Action</th></tr></thead><tbody>
-  ${L.map(p=>{const sc=shopperScore(p.s.phone,p.s.area);return`<tr data-wa="${p.id}"><td><b>${esc(p.s.name)}</b><span class="src">${fphone(p.s.phone)}</span></td><td>${esc(p.s.area.kec)}<span class="src">${esc(p.s.area.city)}</span></td><td class="r num">${rp(p.s.val)}</td><td>${scorePill(sc)}</td>
-    <td><span class="st ${PENDST[p.st][1]} sm">${PENDST[p.st][0]}</span>${p.st==='sent'?`<span class="src">${left(p)}</span>`:p.awb?`<span class="src mono">${p.awb}</span>`:''}</td><td class="upd">${ago(p.sent)}</td>
-    <td class="r act">${p.st==='sent'?`<button class="btn btn-o" data-wasim="${p.id}" title="Prototype: the shopper's reply">${ic('chat2',14)}Shopper replies YA</button><button class="dots-b" data-wam="${p.id}" aria-label="Other actions">${ic('dots',16)}</button>`:''}</td></tr>`}).join('')}</tbody></table></div>`}
-function waAct(p,a){if(a==='ya'){const sh=confirmPend(p);track('shopper_verified',{auto_booked:true});track('shipment_auto_booked',{courier:sh.k});toast(`Confirmed on WhatsApp. ${sh.awb} booked automatically`)}
-  else if(a==='batal'){p.st='declined';p.log.unshift(['Shopper replied BATAL. Parcel cancelled, nothing charged',NOW]);track('shopper_declined',{});toast('Shopper declined. Nothing was booked or charged')}
-  else if(a==='ship'){const sh=confirmPend(p);VERIFIED.delete(normPhone(p.s.phone));p.st='shipped';p.log.splice(0,2,['You shipped it without waiting · '+sh.awb,NOW]);track('risky_shipped_anyway',{});toast(`${sh.awb} booked`)}
+  return secH('Draft batches',`Risky shoppers you asked to verify or pay on WhatsApp. Each has its own batch. When the shopper verifies or pays, pick a courier and send it. No answer in ${WA_HOURS} hours cancels it, with nothing charged.`,'m-wa',(ready?`<span class="st ok sm">${ready} ready to send</span> `:'')+(open?`<span class="st warn sm">${open} waiting</span>`:''))+
+  `<div class="tbl-wrap"><table class="mt"><thead><tr><th>Draft batch</th><th>Shopper</th><th>Destination</th><th class="r">Amount</th><th>Sent</th><th>Status</th><th>Created</th><th class="r">Action</th></tr></thead><tbody>
+  ${L.map(p=>{const s=p.ship;return`<tr data-wa="${p.id}"><td class="mono">${p.id}</td><td><b>${esc(s.name)}</b><span class="src">${fphone(s.phone)}</span></td><td>${esc(s.addr.area.kec)}<span class="src">${esc(s.addr.area.city)}</span></td><td class="r num">${rp(+s.val)}<span class="src">${s.pay==='cod'?'COD':'Paid · non-COD'}</span></td><td style="white-space:nowrap">${ic(DRK[p.kind][1],13)} ${DRK[p.kind][0]}</td>
+    <td><span class="st ${DRST[p.st][1]} sm">${drLab(p)}</span>${p.st==='sent'?`<span class="src">${left(p)}</span>`:p.awb?`<span class="src mono">${p.awb}</span>`:''}</td><td class="upd">${ago(p.sent)}</td>
+    <td class="r act">${drAct(p)}</td></tr>`}).join('')}</tbody></table></div>${A.length>6?`<div class="sx-row" style="justify-content:center"><button class="btn btn-o" data-alld>${MS.allD?'Show fewer':`Show all ${A.length} drafts`}</button></div>`:''}`}
+function waAct(p,a){if(a==='ya'){readyPend(p);track(p.kind==='pay'?'shopper_paid':'shopper_verified',{});toast(`${p.kind==='pay'?'Paid':'Verified'}. ${p.id} is ready to send`)}
+  else if(a==='batal'){p.st='declined';p.log.unshift(['Shopper replied BATAL. Draft cancelled, nothing charged',NOW]);track('shopper_declined',{});toast('Shopper declined. Nothing was booked or charged')}
+  else if(a==='ship'||a==='go'){openDraft(p.id);return}
+  else if(a==='resend'){p.sent=NOW;p.exp=new Date(NOW.getTime()+WA_HOURS*HOUR);p.log.unshift([(p.kind==='pay'?'Payment link':'Verification')+' sent again',NOW]);track('risky_resent',{kind:p.kind});toast('Sent again on WhatsApp')}
   else if(a==='cancel'){p.st='cancelled';p.log.unshift(['Cancelled by you. Nothing charged',NOW]);track('risky_cancelled',{});toast('Cancelled. Nothing was charged')}
   closeDetail();renderMon()}
-function waDrawer(id){drawer.classList.remove('chat');const p=PEND.find(x=>x.id===id),sc=shopperScore(p.s.phone,p.s.area);
-  drawer.innerHTML=`<div class="dh"><span class="kind">${ic('chat2',15)}WhatsApp check</span><button class="ib" data-dclose aria-label="Close">${ic('x',18)}</button></div>
-  <div class="db"><div class="d-hd"><b>${esc(p.s.name)}</b><div class="pills"><span class="st ${PENDST[p.st][1]} sm">${PENDST[p.st][0]}</span></div></div>
-  <div class="wa-chat"><div class="wa-m out"><span>${esc(waText(p.s))}</span><em>${fdateY(p.sent)} · Qontak</em></div>
-    ${p.st==='booked'?`<div class="wa-m in"><span>YA</span><em>Shopper</em></div>`:p.st==='declined'?`<div class="wa-m in"><span>BATAL</span><em>Shopper</em></div>`:''}</div>
-  <div class="dsec"><dl class="kv"><dt>Score now</dt><dd>${scorePill(sc)}<span class="src">${esc(sc.why)}</span></dd><dt>COD</dt><dd class="num">${rp(p.s.val)}</dd><dt>Courier</dt><dd>${cName(SERVICES[p.svc][0])} ${SERVICES[p.svc][1]} · from ${p.wh}</dd><dt>Address</dt><dd>${esc(p.s.street)}, ${esc(areaTx(p.s.area))}</dd>${p.sid?`<dt>Shipment</dt><dd><button class="lnk mono" data-sid2="${p.sid}">${p.awb}</button></dd>`:''}</dl></div>
-  <div class="dsec"><h5>Log</h5><div class="tl">${p.log.map((l,i)=>`<div class="tli ${i===0&&p.st==='booked'?'ok':''}"><i>${i===0&&p.st==='booked'?ic('check',11,3):''}</i><div><b>${esc(l[0])}</b><span>${fdateY(l[1])}</span></div></div>`).join('')}</div></div>
-  ${p.st==='sent'?`<div class="d-acts"><button class="btn btn-o" data-waa="ship">Ship now without waiting</button><button class="btn btn-o" data-waa="cancel">Cancel</button></div>
-  <div class="dsec proto"><h5>Prototype</h5><p class="d-sub">Simulate the shopper's reply.</p><div class="d-acts"><button class="btn btn-o" data-waa="ya">Shopper replies YA</button><button class="btn btn-o" data-waa="batal">Shopper replies BATAL</button></div></div>`:''}</div>`;
-  openDrawer();drawer.onclick=e=>{const b=e.target.closest('[data-waa]');if(b)waAct(p,b.dataset.waa)};track('whatsapp_check_opened',{status:p.st})}
+function waDrawer(id){drawer.classList.remove('chat');const p=PEND.find(x=>x.id===id),s=p.ship,sc=shopperScore(s.phone,s.addr.area),ok=p.st==='ready'||p.st==='booked'||(p.st!=='declined'&&VERIFIED.has(normPhone(s.phone)));
+  drawer.innerHTML=`<div class="dh"><span class="kind">${ic('chat2',15)}Draft batch</span><button class="ib" data-dclose aria-label="Close">${ic('x',18)}</button></div>
+  <div class="db"><div class="d-hd"><b>${p.id} · ${esc(s.name)}</b><div class="pills"><span class="st ${DRST[p.st][1]} sm">${drLab(p)}</span></div></div>
+  <div class="wa-chat"><div class="wa-m out"><span>${esc(waText(p))}</span><em>${fdateY(p.sent)} · Qontak</em></div>
+    ${ok?`<div class="wa-m in"><span>${p.kind==='pay'?'Pembayaran berhasil ✓':'YA'}</span><em>${p.kind==='pay'?'Payment':'Shopper'}</em></div>`:p.st==='declined'?`<div class="wa-m in"><span>BATAL</span><em>Shopper</em></div>`:''}</div>
+  <div class="dsec"><dl class="kv"><dt>Score now</dt><dd>${scorePill(sc)}<span class="src">${esc(sc.why)}</span></dd><dt>${s.pay==='cod'?'COD':'Paid by shopper'}</dt><dd class="num">${rp(+s.val)}</dd><dt>Ships from</dt><dd>${esc(whByCode(s.wh).n)} (${s.wh})</dd><dt>Address</dt><dd>${esc(s.addr.street)}, ${esc(areaTx(s.addr.area))}</dd>${p.sid?`<dt>Shipment</dt><dd><button class="lnk mono" data-sid2="${p.sid}">${p.awb}</button></dd>`:''}</dl></div>
+  <div class="dsec"><h5>Log</h5><div class="tl">${p.log.map((l,i)=>`<div class="tli ${i===0&&(p.st==='ready'||p.st==='booked')?'ok':''}"><i>${i===0&&(p.st==='ready'||p.st==='booked')?ic('check',11,3):''}</i><div><b>${esc(l[0])}</b><span>${fdateY(l[1])}</span></div></div>`).join('')}</div></div>
+  ${p.st==='ready'?`<div class="d-acts"><button class="btn btn-p" data-waa="go">Pick courier and send</button><button class="btn btn-o" data-waa="cancel">Cancel</button></div>`
+  :p.st==='sent'?`<div class="d-acts"><button class="btn btn-o" data-waa="ship">Send anyway</button><button class="btn btn-o" data-waa="resend">Send again</button><button class="btn btn-o" data-waa="cancel">Cancel</button></div>
+  <div class="dsec proto"><h5>Prototype</h5><p class="d-sub">Simulate the shopper's answer.</p><div class="d-acts"><button class="btn btn-o" data-waa="ya">${p.kind==='pay'?'Shopper pays':'Shopper replies YA'}</button><button class="btn btn-o" data-waa="batal">Shopper replies BATAL</button></div></div>`:''}</div>`;
+  openDrawer();drawer.onclick=e=>{const b=e.target.closest('[data-waa]');if(b)waAct(p,b.dataset.waa)};track('draft_opened',{status:p.st,kind:p.kind})}
 function batchList(x){const id='m-b-'+x.b.id;DL[id]=()=>['flik-'+x.b.id,SHIP_HEAD,x.s.map(shipRow)];
   return`<div class="bt-l"><div class="sec-h"><b>${plural(x.n,'shipment')} in ${x.b.id}</b><div class="sec-a">${dlBtn(id)}</div></div><div class="tbl-wrap"><table class="mt"><thead><tr><th>AWB</th><th>Created</th><th>Shipment status</th><th>Monitoring</th><th>Courier</th><th>Updated</th><th>Shopper</th><th>Phone</th></tr></thead><tbody>
   ${x.s.map(s=>`<tr data-sid="${s.id}">${awbTd(s)}<td class="date">${fdate(s.created)}</td><td>${stPill3(s.st)}</td><td>${monPill(monOf(s))}</td>${cTd(s)}<td class="upd">${ago(s.upd)}</td><td>${esc(s.name)}</td><td class="mono">${fphone(s.phone)}</td></tr>`).join('')}</tbody></table></div></div>`}
@@ -303,15 +307,17 @@ document.getElementById('view-mon').addEventListener('click',e=>{const t=e.targe
   if('fclear' in d){MS.f={wh:'',k:'',pay:''};renderMon();return}
   if(d.bt){MS.open.has(d.bt)?MS.open.delete(d.bt):MS.open.add(d.bt);track('batch_expanded',{});renderMon();return}
   if('allb' in d){MS.allB=!MS.allB;renderMon();return}
+  if('alld' in d){MS.allD=!MS.allD;renderMon();return}
   if(d.rt){MS.rt=d.rt;renderMon();return}
   if(d.act){e.stopPropagation();actionModal(d.act,d.a);return}
   if(d.actm){e.stopPropagation();if(popFor===t){closePop();return}popFor=t;const s=SH.find(x=>x.id===d.actm);
     pop.innerHTML=`<div class="menu">${['claim','support','customer'].map(a=>`<button class="opt" data-pa="${a}">${ic(a==='claim'?'shield':a==='support'?'chat2':'phone2',15)}${TKT[a][1]}</button>`).join('')}<button class="opt" data-pa="open">${ic('ext',15)}Open shipment</button></div>`;
     pop.querySelectorAll('[data-pa]').forEach(o=>o.onclick=()=>{closePop();o.dataset.pa==='open'?openShipment(s.id):actionModal(s.id,o.dataset.pa)});placePop(t,true);return}
   if(d.tk){e.stopPropagation();ticketDrawer(d.tk);return}
+  if(d.drgo){e.stopPropagation();openDraft(d.drgo);return}
   if(d.wasim){e.stopPropagation();waAct(PEND.find(p=>p.id===d.wasim),'ya');return}
   if(d.wam){e.stopPropagation();if(popFor===t){closePop();return}popFor=t;const p=PEND.find(x=>x.id===d.wam);
-    pop.innerHTML=`<div class="menu"><button class="opt" data-pw="ship">${ic('truck',15)}Ship now without waiting</button><button class="opt" data-pw="cancel">${ic('x',15)}Cancel parcel</button><button class="opt" data-pw="batal">${ic('chat2',15)}Shopper replies BATAL (prototype)</button><button class="opt" data-pw="open">${ic('ext',15)}Open</button></div>`;
+    pop.innerHTML=`<div class="menu"><button class="opt" data-pw="ship">${ic('truck',15)}Send anyway</button><button class="opt" data-pw="resend">${ic('chat2',15)}Send again</button><button class="opt" data-pw="cancel">${ic('x',15)}Cancel draft</button><button class="opt" data-pw="batal">${ic('chat2',15)}Shopper replies BATAL (prototype)</button><button class="opt" data-pw="open">${ic('ext',15)}Open</button></div>`;
     pop.querySelectorAll('[data-pw]').forEach(o=>o.onclick=()=>{closePop();o.dataset.pw==='open'?waDrawer(p.id):waAct(p,o.dataset.pw)});placePop(t,true);return}
   if(d.wa){waDrawer(d.wa);return}
   if(d.cl){claimDrawer(d.cl);return}

@@ -45,7 +45,7 @@ Paths are relative to `FLIK_API_BASE`. Field names follow the example answers in
 | `shipments` | `GET /v1/shipping/shipments?from=&to=&status=` | Monitoring (local data today) | query string | `[shipment]` |
 | `tracking` | `GET /v1/shipping/tracking?awb=A,B` | Monitoring drawer (local data today) | AWB list | `[{awb, status, events}]` |
 | `createTicket` | `POST /v1/support/tickets` | Monitoring, Take action | `{awb, type: claim\|support\|customer, reason, note}` | `{id, status}` |
-| `verifyShopper` | `POST /v1/shipping/shopper-verifications` | Create shipment, held Risky parcels | `{batch, shipment, phone, channel: "whatsapp", expires_h: 24}` | `{id, status: sent}` |
+| `verifyShopper` | `POST /v1/shipping/shopper-verifications` | Risky shopper pop-up, per draft | `{draft, kind: verification\|payment_link, phone, amount, warehouse, expires_h: 24}` | `{id, status: sent, payment_url}` |
 | `ticketMessages` (proposed) | `GET/POST /v1/support/tickets/{id}/messages` | Ticket chat | `{text, files}` | `[{from: merchant\|flik\|courier\|system, name, text, at}]` |
 | `geocode` | `POST /v1/maps/geocode` | Address search, Check rate | `{query}` | `[{kel, kec, city, prov, zip, lat, lng}]` |
 
@@ -81,12 +81,13 @@ One batch per pickup, meaning one warehouse with one courier service.
 - Non-COD: shipping and platform fee are paid from the FLIK balance when booking.
 - COD: shipping, COD fee and platform fee are deducted from the COD when the parcel is delivered, or from the balance if it is returned.
 
-### WhatsApp check for Risky shoppers
+### Draft batches for Risky shoppers
 
-1. The merchant books; parcels held for a check are sent to `verifyShopper`, not to `createShipments`.
-2. FLIK sends the WhatsApp message (through Qontak) and waits up to 24 hours.
-3. On **YA**, FLIK's server marks the phone verified (shopper score +28) and creates the shipment itself in the next pickup, then sends a `shipment.created` webhook. The screen does not need to be open.
-4. On **BATAL** or no reply, the parcel is cancelled and nothing is charged.
+1. When the merchant submits the details, Risky COD parcels are shown in a pop-up before the courier step. Each gets one action: send a verification, send a payment link, remove, or send anyway.
+2. Verification and payment-link parcels each become a draft batch (one shopper, one batch) and `verifyShopper` sends the WhatsApp through Qontak. The rest of the booking continues as normal.
+3. Verified (YA): the phone is marked verified (shopper score +28). Paid: the parcel becomes non-COD. FLIK sends a `draft.ready` webhook and the draft shows as ready in Monitoring.
+4. The merchant picks a courier and sends the draft; `createShipments` is called with the draft ID as the batch `ref`.
+5. BATAL or no answer in 24 hours cancels the draft, with nothing charged. The merchant can also send anyway, send again, or cancel while it waits.
 
 ### Claim rules the screens apply
 

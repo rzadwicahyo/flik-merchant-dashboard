@@ -43,7 +43,7 @@ The dark bar at the bottom is for the prototype only, not part of the product.
 
 You can also open a state directly: `?merchant=new`, `?products=pay`, `?products=ship`, `?products=payship` or `?products=all`.
 
-## What's in v3 (v3.1 and v3.2)
+## What's in v3 (v3.1 to v3.3)
 
 | Area | What to try |
 | --- | --- |
@@ -54,7 +54,8 @@ You can also open a state directly: `?merchant=new`, `?products=pay`, `?products
 | Courier | FLIK recommends the courier with the best delivery rate in the shoppers' kecamatan, falling back to the city. Picking a courier with red-zone parcels offers a split. |
 | Payment | Published rate − FLIK discount + 3% COD fee + platform fee. Non-COD is paid now from the balance; COD is deducted on delivery or return. |
 | Shipping › Monitoring | Batches, a Needs resolving queue sorted by severity (Open, Acknowledged, Resolved), health, courier performance by city or service, and all shipments. **Claims** has a summary and every claim (lost or damaged, returned without confirmation, and over SLA, which is AnterAja only for now) with its status log. **Tickets** open to their details and status log; the link to FLIK's ticketing platform comes later. Every section exports. |
-| Risky shoppers (v3.2) | On the Review step, COD parcels for Risky shoppers are held, not deleted, and the shopper gets a WhatsApp check. When they reply **YA**, the score rises and the shipment is booked into the next pickup automatically. No reply in 24 hours cancels it, with nothing charged. The merchant can still pick **Ship now** or **Remove** per parcel. Held parcels show on Monitoring › Summary. |
+| Risky shoppers (v3.3) | When the merchant submits the shipment details, Risky COD shoppers are caught before the courier step. A pop-up offers, per row or for all: **Send verification** (WhatsApp, YA raises the score), **Send payment link** (the shopper pays now, so the parcel becomes non-COD), **Remove**, or **Send anyway**. Verification and payment-link parcels each move into their own draft batch (one shopper, one batch) in Monitoring › Summary. When the shopper verifies or pays, **Pick courier and send** continues from the courier step. No answer in 24 hours cancels the draft, with nothing charged. |
+| Red zone (v3.3) | When the chosen courier can't deliver to some areas, each area defaults to FLIK's recommended courier, and the merchant can pick any other courier that delivers there. |
 | Tickets as chat (v3.2) | Opening a ticket opens a chat with FLIK support and the courier team, with the status log underneath. FLIK and 3PL teams answer from the ticketing platform. |
 | Claim cases (v3.2) | **File a claim** checks what the parcel qualifies for: lost or damaged, returned without confirmation, or over SLA (AnterAja only), with the reason when it doesn't. |
 | Date filter (v3.2) | Monitoring can show Today, Yesterday, 7, 30 or 90 days, or all time. |
