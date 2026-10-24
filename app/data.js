@@ -43,11 +43,19 @@ const RZ_TX={cod:'Red zone for COD',all:'Not delivered'};
 /* --- Shopper score: phone delivery history across FLIK plus the area's success rate. Higher is safer.
    Example data only; Legal still has to confirm how phone history may be used. --- */
 function phist(p){const h=hsh(normPhone(p));if(h%13===0)return{fails:0,deliveries:0,isNew:true};return{fails:h%23===0?3:h%11===0?2:h%6===0?1:0,deliveries:1+h%9,isNew:false}}
-function shopperScore(p,a){const h=phist(p),asr=sum(COURIERS,c=>srOf(c.k,a).sr)/COURIERS.length,ok=VERIFIED.has(normPhone(p));
-  const ph=h.isNew?80:Math.max(10,100-h.fails*26);const s=Math.min(99,Math.round(.6*ph+.4*asr)+(ok?28:0));
+/* inputs: the phone's COD history across FLIK, the area's COD delivery rate, order value and how complete the address is */
+function shopperScore(p,a,o={}){const h=phist(p),asr=sum(COURIERS,c=>srOf(c.k,a).sr)/COURIERS.length,ok=VERIFIED.has(normPhone(p));
+  const ph=h.isNew?80:Math.max(10,100-h.fails*26),val=+String(o.val||0).replace(/\D/g,''),st=String(o.street||'');
+  const vPen=val>3000000?10:val>1500000?5:0,aPen=o.street!=null&&!/\d/.test(st)?8:0;
+  const s=Math.max(1,Math.min(99,Math.round(.6*ph+.4*asr)-vPen-aPen+(ok?28:0)));
   const band=s>=80?['Safe','ok']:s>=60?['Watch','warn']:['Risky','bad'];
-  const why=`${ok?'Confirmed this order on WhatsApp. ':''}${h.isNew?'New to FLIK: no delivery history for this phone yet':h.fails?`${h.fails} of ${h.deliveries+h.fails} COD deliveries to this phone failed`:`${h.deliveries} of ${h.deliveries} deliveries to this phone succeeded`}. ${fpct(asr)} of parcels to ${a.kec} arrive.`;
-  return{score:s,band:band[0],cls:band[1],why,fails:h.fails,verified:ok}}
+  const f=[['Phone history',h.isNew?'New to FLIK: no history yet':h.fails?`${h.fails} of ${h.deliveries+h.fails} COD parcels to this number came back`:`${h.deliveries} of ${h.deliveries} delivered`,h.fails>=2?'bad':h.fails?'warn':'ok'],
+    ['Area',`${Math.round(asr)} in 100 COD parcels to ${a.kec} arrive`,asr<85?'warn':'ok']];
+  if(o.val!=null)f.push(['Order value',vPen?`${rp(val)} is high for COD`:'Usual for COD',vPen?'warn':'ok']);
+  if(o.street!=null)f.push(['Address',aPen?'No house number':'Complete',aPen?'warn':'ok']);
+  if(ok)f.unshift(['WhatsApp','Shopper confirmed this order','ok']);
+  const why=f.filter(x=>x[2]!=='ok'||x[0]==='WhatsApp').map(x=>x[1]).join('. ')||f[0][1];
+  return{score:s,band:band[0],cls:band[1],why,f,fails:h.fails,verified:ok}}
 const scorePill=sc=>`<span class="st ${sc.cls} sm" title="${esc(sc.why)}">${sc.score} · ${sc.band}</span>`;
 
 /* --- Courier recommendation for a set of parcels: best delivery rate where they go, no red zones --- */
@@ -111,7 +119,7 @@ function genActive(){const R=mkRng(4242),pk=a=>a[Math.floor(R()*a.length)];SH.le
       if(age<.35){s.st='pickup';s.upd=s.created}
       else if(age<1){s.st='picked';s.upd=new Date(s.created.getTime()+.3*DAY)}
       else if(age<eta+.5){s.st=x<.75?'transit':'ofd';s.upd=new Date(NOW-R()*20*HOUR)}
-      else if(age<eta+5&&x>sr/100){s.st=x>.995?'lost':R()<.55?'failed':'returning';s.tries=s.st==='failed'?1+Math.floor(R()*2):2;s.upd=new Date(NOW-(2+R()*30)*HOUR)}
+      else if(age<eta+5&&x>sr/100){s.st=x>.995?'lost':R()<.75?'failed':'returning';s.tries=s.st==='failed'?(R()<.6?1:2):2;s.upd=new Date(NOW-(2+R()*30)*HOUR)}
       else if(x>sr/100){s.st=x>.997?'lost':'returned';s.tries=2;s.upd=new Date(s.created.getTime()+(eta+3+R()*3)*DAY)}
       else{s.st='delivered';s.upd=new Date(s.created.getTime()+(Math.max(1,eta-1)+R()*1.6)*DAY)}
       if(s.upd>NOW)s.upd=new Date(NOW-HOUR*(1+R()*3));
@@ -129,6 +137,8 @@ function genActive(){const R=mkRng(4242),pk=a=>a[Math.floor(R()*a.length)];SH.le
     agentSay(t,'flik',t.type==='customer'?'Hi! The shopper replied on WhatsApp and confirmed the address. I have passed it to the courier.':`Hi, Dewi here from FLIK support. I have asked ${cName(s.k)} to check this parcel and will update you here.`,t1);
     agentSay(t,'3pl',s.st==='delivered'?'Our hub found the parcel. It is out for delivery today.':'The shopper refused the parcel at the door, so we are sending it back to the warehouse.',t2);
     agentSay(t,'sys',s.st==='delivered'?'Delivered. Ticket closed':'Returned to sender. Ticket closed',s.upd)});
+  /* a few fresh failed deliveries, so the failed-delivery queue has both kinds */
+  SH.filter(s=>s.st==='delivered'&&!s.tk&&!s.had&&ageOf(s)>2&&ageOf(s)<8).slice(0,5).forEach((s,j)=>{s.st='failed';s.tries=j<3?1:2;s.upd=new Date(NOW-(3+j*4)*HOUR)});
   SH.sort((a,b)=>b.created-a.created);seedClaims();seedPend(R,pk)}
 
 /* ===== Tickets: claims, follow-ups with FLIK support, contacting the shopper (WhatsApp through Qontak) ===== */
@@ -144,41 +154,50 @@ function addTicket(s,type,by='Merchant',at=NOW,note=''){const t={id:'TK-'+(++tkS
 const AGENT={flik:['Dewi','FLIK support'],k:k=>[({jne:'Rudi',jnt:'Hendra',spx:'Wulan',ninja:'Sinta',lion:'Arif',sicepat:'Yudi',anteraja:'Lina'})[k]||'Agent',cName(k)+' team']};
 function agentSay(t,who,text,at=NOW){t.chat.push({from:who,text,at});return t}
 
-/* ===== Draft batches for Risky COD shoppers (WhatsApp through Qontak) =====
- * When a Risky shopper is found, the merchant picks per parcel: send a verification, send a payment link (the parcel becomes non-COD),
- * remove it, or send it anyway. A verification or payment link splits the parcel into its own draft batch (one shopper, one batch).
- * When the shopper verifies or pays, the draft is ready and the merchant picks a courier and sends it.
- * Declined or no answer in 24 hours: the draft is cancelled and nothing is charged.
+/* ===== Orders waiting for a Risky COD shopper (WhatsApp from FLIK's Qontak number) =====
+ * When a Risky shopper is found, the merchant picks per order: confirm on WhatsApp, send a payment link (the order becomes
+ * non-COD), remove it, or ship it anyway. Shoppers without WhatsApp skip the check: the merchant ships or removes them.
+ * An order sent a check waits as its own batch (one warehouse, one courier service, one order). When the shopper confirms
+ * or pays, FLIK books it automatically with the courier the merchant chose. BATAL or no answer in 24 hours cancels it, free.
  */
-const DRK={wa:['Verification','chat2'],pay:['Payment link','wallet']};
-const DRST={sent:[p=>p.kind==='pay'?'Waiting for payment':'Waiting for verification','warn'],ready:[p=>p.kind==='pay'?'Paid · ready to send':'Verified · ready to send','ok'],booked:[()=>'Sent','pu'],declined:[()=>'Shopper declined','bad'],expired:[()=>'No answer · cancelled','gr'],cancelled:[()=>'Cancelled by you','gr']};
+const DRK={wa:['Confirm on WhatsApp','chat2'],pay:['Payment link','wallet']};
+const DRST={sent:[p=>p.kind==='pay'?'Waiting for payment':'Waiting for confirmation','warn'],booked:[p=>p.kind==='pay'?'Paid · shipped':'Confirmed · shipped','ok'],shipped:[()=>'Shipped without waiting','pu'],declined:[()=>'Shopper declined','bad'],expired:[()=>'No answer · cancelled','gr'],cancelled:[()=>'Cancelled by you','gr']};
 const drLab=p=>DRST[p.st][0](p);
 const WA_HOURS=24;let pendSeq=0;
-const payLink=p=>'flik.id/p/'+(hsh(p.id)%0xfffff).toString(36);
-const waText=p=>{const s=p.ship,f=s.name.split(' ')[0],v=rp(+s.val);return p.kind==='pay'
-  ?`Halo ${f}, pesanan Anda dari Aruna Studio (${s.items}, ${v}) siap dikirim ke ${s.addr.area.kec}. Bayar sekarang di ${payLink(p)} agar tidak perlu bayar di tempat. Link berlaku ${WA_HOURS} jam.`
-  :`Halo ${f}, pesanan COD Anda dari Aruna Studio (${s.items}, ${v}) siap dikirim ke ${s.addr.area.kec}. Balas YA untuk konfirmasi, atau BATAL jika tidak jadi. Terima kasih.`};
-const draftId=at=>`D-${String(at.getFullYear()).slice(2)}${String(at.getMonth()+1).padStart(2,'0')}${String(at.getDate()).padStart(2,'0')}-${String(5100+(++pendSeq)).slice(1)}`;
-function addPend(ship,kind,at=NOW){const p={id:draftId(at),ship:{...ship,addr:{...ship.addr},open:false},kind,sent:at,exp:new Date(at.getTime()+WA_HOURS*HOUR),st:'sent',
-  log:[[kind==='pay'?'Payment link sent on WhatsApp through Qontak':'Verification sent on WhatsApp through Qontak',at],['Draft batch created: one shopper, one batch',at]]};PEND.unshift(p);return p}
-/* the shopper verified (score goes up) or paid (the parcel becomes non-COD): the draft is ready for the merchant to send */
-function readyPend(p,at=NOW){VERIFIED.add(normPhone(p.ship.phone));p.st='ready';p.done=at;
-  if(p.kind==='pay'){p.ship.pay='non';p.ship.paid=true;p.log.unshift([`Shopper paid ${rp(+p.ship.val)}. The parcel is now non-COD`,at])}
-  else p.log.unshift(['Shopper replied YA. Phone verified, score raised',at]);return p}
-/* the merchant picked a courier and sent it: the draft becomes a booked batch with the same ID */
-function sendPend(p,svc,at=NOW,anyway=false){const s=p.ship,k=SERVICES[svc][0],b={id:p.id,created:at,k,svc,wh:s.wh,draft:true};BATCH.unshift(b);
-  const q={area:s.addr.area,kg:Math.max(1,Math.ceil(+s.kg||1)),val:+s.val},r=rateOf(svc,whArea(whByCode(s.wh)),q.area,q.kg);
+const MERCHANT='Aruna Studio';
+/* the merchant edits the wording; {{…}} are filled per order. WhatsApp (Meta) approves each wording before its first use */
+const TPL_VARS=[['merchant_name','Store name'],['customer_name','Shopper name'],['product_name','Product'],['amount','Amount'],['full_address','Full address'],['payment_link','Payment link']];
+const TPL_DEF={wa:'Halo {{customer_name}}, {{merchant_name}} sedang mengirim {{product_name}} ({{amount}}, bayar di tempat) ke {{full_address}}. Apakah Anda akan menerimanya? Balas YA untuk konfirmasi atau BATAL jika tidak jadi.',
+  pay:'Halo {{customer_name}}, {{merchant_name}} sedang mengirim {{product_name}} ke {{full_address}}. Bayar {{amount}} sekarang di {{payment_link}} agar tidak perlu bayar di tempat. Link berlaku 24 jam.'};
+const TPL={wa:TPL_DEF.wa,pay:TPL_DEF.pay};
+const TPL_NEED={wa:['merchant_name','product_name','full_address'],pay:['merchant_name','amount','payment_link']};
+const fullAddr=s=>`${s.addr.street}, ${s.addr.area.kel}, ${s.addr.area.kec}, ${s.addr.area.city}`;
+const payLink=id=>'flik.id/p/'+(hsh(id||'x')%0xfffff).toString(36);
+function fillTpl(t,s,id){const v={merchant_name:MERCHANT,customer_name:s.name.split(' ')[0],product_name:s.items,amount:rp(+String(s.val).replace(/\D/g,'')||0),full_address:fullAddr(s),payment_link:payLink(id)};
+  return t.replace(/\{\{(\w+)\}\}/g,(m,k)=>k in v?v[k]:m)}
+const waText=p=>fillTpl(p.tpl||TPL[p.kind],p.ship,p.id);
+/* shoppers whose number isn't on WhatsApp skip the check (example data) */
+const hasWa=p=>hsh(normPhone(p))%5!==0;
+const draftId=at=>`W-${String(at.getFullYear()).slice(2)}${String(at.getMonth()+1).padStart(2,'0')}${String(at.getDate()).padStart(2,'0')}-${String(5100+(++pendSeq)).slice(1)}`;
+function addPend(ship,kind,svc,at=NOW){const p={id:draftId(at),ship:{...ship,addr:{...ship.addr},open:false},kind,svc,tpl:TPL[kind],sent:at,exp:new Date(at.getTime()+WA_HOURS*HOUR),st:'sent',
+  log:[[kind==='pay'?'Payment link sent on WhatsApp from FLIK':'Confirmation sent on WhatsApp from FLIK',at],[`Waiting as its own batch: ${cName(SERVICES[svc][0])} ${SERVICES[svc][1]} from ${ship.wh}`,at]]};PEND.unshift(p);return p}
+/* book the waiting order with the courier the merchant chose; the batch keeps the waiting ID */
+function sendPend(p,at=NOW,anyway=false){const s=p.ship,svc=p.svc,k=SERVICES[svc][0],b={id:p.id,created:at,k,svc,wh:s.wh,auto:!anyway};BATCH.unshift(b);
+  const q={area:s.addr.area,kg:Math.max(1,Math.ceil(+s.kg||1)),val:+String(s.val).replace(/\D/g,'')},r=rateOf(svc,whArea(whByCode(s.wh)),q.area,q.kg);
   const sh={id:'S'+(SH.length+1),batch:p.id,created:at,svc,k,wh:s.wh,area:q.area,street:s.addr.street,name:s.name,phone:normPhone(s.phone),items:s.items,qty:+s.qty,kg:q.kg,pay:s.pay,val:q.val,pub:r.pub,cost:r.net,codFee:s.pay==='cod'?Math.round(q.val*CODFEE):0,tries:0,st:'pickup',upd:at,awb:mkAwb(k),tk:null,had:null};
-  SH.unshift(sh);p.st='booked';p.sid=sh.id;p.awb=sh.awb;p.log.unshift([(anyway?'Sent without waiting for the shopper':'Sent')+` with ${cName(k)} ${SERVICES[svc][1]} · ${sh.awb}`,at]);return sh}
-function riskyPhone(seed){for(let i=0;i<5000;i++){const ph='628'+(1+(seed+i)%8)+String(100000000+((seed*7919+i*104729)%899999999));const h=hsh(normPhone(ph));if(h%13!==0&&h%23===0)return ph}return'6281200000000'}
+  SH.unshift(sh);p.st=anyway?'shipped':'booked';p.sid=sh.id;p.awb=sh.awb;p.log.unshift([(anyway?'You shipped it without waiting':'Booked automatically into the next pickup')+` · ${cName(k)} ${SERVICES[svc][1]} · ${sh.awb}`,at]);return sh}
+/* the shopper confirmed (score goes up) or paid (the order becomes non-COD): FLIK books it straight away */
+function confirmPend(p,at=NOW){VERIFIED.add(normPhone(p.ship.phone));
+  if(p.kind==='pay'){p.ship.pay='non';p.log.unshift([`Shopper paid ${rp(+String(p.ship.val).replace(/\D/g,''))}. The order is now non-COD; shipping is charged from your balance`,at])}
+  else p.log.unshift(['Shopper replied YA. Phone confirmed, score raised',at]);return sendPend(p,at)}
+function riskyPhone(seed){for(let i=0;i<5000;i++){const ph='628'+(1+(seed+i)%8)+String(100000000+((seed*7919+i*104729)%899999999));const h=hsh(normPhone(ph));if(h%13!==0&&h%23===0&&h%5!==0)return ph}return'6281200000000'}
 function seedPend(R,pk){pendSeq=0;
   const mk=(i)=>{const p=pk(PRODUCTS),a=AREA[(i*5+3)%AREA.length];return{phone:riskyPhone(i*31+7),name:pk(FN)+' '+pk(LN),addr:{street:`${pk(STREETS)} No. ${1+Math.floor(R()*120)}`,area:a},wh:i%2?'BDG-01':'JKT-01',pay:'cod',items:p[0],qty:1,kg:String(Math.max(.1,p[2])),l:'',w:'',h:'',val:String(p[1])}};
   const svc=SERVICES.findIndex(v=>v[0]==='jnt'&&v[2]==='reg');
-  [[30,'wa','expired'],[20,'wa','booked'],[9,'wa','declined'],[6,'pay','ready'],[4,'wa','ready'],[3.2,'pay','sent'],[1.4,'wa','sent'],[.6,'wa','sent']].forEach(([h,kind,st],i)=>{const p=addPend(mk(i),kind,new Date(NOW-h*HOUR));
-    if(st==='ready'||st==='booked')readyPend(p,new Date(p.sent.getTime()+1.5*HOUR));
-    if(st==='booked')sendPend(p,svc,new Date(p.sent.getTime()+2*HOUR));
-    else if(st==='declined'){p.st='declined';p.log.unshift(['Shopper replied BATAL. Draft cancelled, nothing charged',new Date(p.sent.getTime()+40*60000)])}
-    else if(st==='expired'){p.st='expired';p.log.unshift([`No answer in ${WA_HOURS} hours. Draft cancelled, nothing charged`,p.exp])}})}
+  [[30,'wa','expired'],[20,'wa','booked'],[9,'wa','declined'],[6,'pay','booked'],[3.2,'pay','sent'],[1.4,'wa','sent'],[.6,'wa','sent']].forEach(([h,kind,st],i)=>{const p=addPend(mk(i),kind,svc,new Date(NOW-h*HOUR));
+    if(st==='booked')confirmPend(p,new Date(p.sent.getTime()+1.5*HOUR));
+    else if(st==='declined'){p.st='declined';p.log.unshift(['Shopper replied BATAL. Order cancelled, nothing charged',new Date(p.sent.getTime()+40*60000)])}
+    else if(st==='expired'){p.st='expired';p.log.unshift([`No answer in ${WA_HOURS} hours. Order cancelled, nothing charged`,p.exp])}})}
 
 /* ===== Claims: what the merchant is owed by the courier ===== */
 const CLCAT={lost:['Lost or damaged','Courier pays the goods value'],ret:['Returned without confirmation','The courier returned it without asking you first; shipping both ways is refunded'],

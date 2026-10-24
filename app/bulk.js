@@ -56,7 +56,7 @@ function bkOk(r,k){const v=String(r[k]??'').trim();
 const bkSt=r=>r.removed?'rm':r.fix?'sug':r.need&&r.need.some(k=>!bkOk(r,k))?'err':'ok';
 function bkCounts(){const B=X.bk;let ok=0,sug=0,err=0,flag=0,rm=0,risky=0;for(const r of B.rows){if(r.flag)flag++;const s=bkSt(r);s==='ok'?ok++:s==='sug'?sug++:s==='err'?err++:rm++;if(s!=='rm'&&r.pay==='COD'&&bkScore(r).cls==='bad')risky++}return{ok,sug,err,flag,rm,risky,left:sug+err}}
 const bkArea=r=>({kel:r.kel,kec:r.kec,city:r.city,prov:r.prov,zip:r.zip});
-function bkScore(r){const key=r.phone+'|'+r.kec;if(r._sk!==key){r._sk=key;r._sc=shopperScore(r.phone,bkArea(r))}return r._sc}
+function bkScore(r){const key=r.phone+'|'+r.kec+'|'+r.val+'|'+r.street;if(r._sk!==key){r._sk=key;r._sc=shopperScore(r.phone,bkArea(r),{val:r.val,street:r.street})}return r._sc}
 const bkCls=(r,k)=>r.fix&&k in r.fix?'sug':r.need&&r.need.includes(k)&&!bkOk(r,k)?'err':r.ai&&r.ai.includes(k)?'auto':'';
 function bkApply(r){r.ai=(r.ai||[]).filter(k=>!(k in r.fix)).concat(Object.keys(r.fix).filter(k=>k!=='_rm'));
   if(r.fix._rm){r.removed=true;r.aiTx='duplicate removed by AI'}else{r.aiTx=Object.keys(r.fix).map(k=>`${BK_LBL[k]} ${r.bad[k]||'(empty)'} → ${r.fix[k]}`).join(', ');Object.assign(r,r.fix)}r.fix=null}
