@@ -70,7 +70,7 @@ You can also open a state directly: `?merchant=new`, `?products=pay`, `?products
 
 ## How the code is laid out
 
-- `index.html` is Raam's dashboard, copied unchanged by `tools/vendor.mjs` apart from the title, logo paths and the script tags below.
+- `index.html` is Raam's dashboard, copied unchanged by `tools/vendor.mjs` apart from the title, logo paths, the script tags below, and a few patches to the create flow for the 24 Oct decisions (batches per warehouse and courier service, and the wording for "delivered").
 - `app/*.js` load after it, in order: `api.js` (data adapter), `core.js` (navigation, prototype bar, shared helpers), `data.js` (example data and rules), then one file per area, and `boot.js` (router and start-up). `app/app.css` holds the added styles.
 - `config.js` is public settings. Never put a secret in it.
 - `scripts/serve.mjs` is the local server and API proxy, with no dependencies.
