@@ -4,7 +4,7 @@
  */
 document.querySelector('.main').insertAdjacentHTML('beforeend','<main class="content" id="view-mon" hidden></main>');
 const MS={cl:{st:'',cat:''},tab:'summary',days:30,f:{wh:'',k:'',pay:''},rt:'open',open:new Set(),allB:false,perf:'city',hArea:'city',
-  l:{q:'',st:'',mon:'',pg:0},reset(){this.cl={st:'',cat:''};this.tab='summary';this.f={wh:'',k:'',pay:''};this.rt='open';this.open=new Set();this.allB=false;this.l={q:'',st:'',mon:'',pg:0}}};
+  l:{q:'',st:'',mon:'',pg:0,sel:new Set()},reset(){this.cl={st:'',cat:''};this.tab='summary';this.f={wh:'',k:'',pay:''};this.rt='open';this.open=new Set();this.allB=false;this.l={q:'',st:'',mon:'',pg:0,sel:new Set()}}};
 const MTABS=[['summary','Summary'],['health','Health'],['perf','Courier performance'],['list','All shipments'],['claims','Claims'],['tickets','Tickets']];
 /* period: 'today', 'yday', a number of days, or 0 for all time */
 const dayStart=(o=0)=>{const d=new Date(NOW);d.setHours(0,0,0,0);return new Date(d-o*DAY)};
@@ -82,7 +82,7 @@ function waDrawer(id){drawer.classList.remove('chat');const p=PEND.find(x=>x.id=
   <div class="dsec proto"><h5>Prototype</h5><p class="d-sub">Simulate the shopper's answer.</p><div class="d-acts"><button class="btn btn-o" data-waa="ya">${p.kind==='pay'?'Shopper pays':'Shopper replies YA'}</button><button class="btn btn-o" data-waa="batal">Shopper replies BATAL</button></div></div>`:''}</div>`;
   openDrawer();drawer.onclick=e=>{const b=e.target.closest('[data-waa]');if(b)waAct(p,b.dataset.waa)};track('draft_opened',{status:p.st,kind:p.kind})}
 function batchList(x){const id='m-b-'+x.b.id;DL[id]=()=>['flik-'+x.b.id,SHIP_HEAD,x.s.map(shipRow)];
-  return`<div class="bt-l"><div class="sec-h"><b>${plural(x.n,'shipment')} in ${x.b.id}</b><div class="sec-a">${dlBtn(id)}</div></div><div class="tbl-wrap"><table class="mt"><thead><tr><th>AWB</th><th>Created</th><th>Shipment status</th><th>Monitoring</th><th>Courier</th><th>Updated</th><th>Shopper</th><th>Phone</th></tr></thead><tbody>
+  return`<div class="bt-l"><div class="sec-h"><b>${plural(x.n,'shipment')} in ${x.b.id}</b><div class="sec-a"><button class="btn btn-o" data-prbt="${x.b.id}">${ic('print',15)}Print ${plural(x.s.filter(s=>s.awb).length,'label')}</button>${dlBtn(id)}</div></div><div class="tbl-wrap"><table class="mt"><thead><tr><th>AWB</th><th>Created</th><th>Shipment status</th><th>Monitoring</th><th>Courier</th><th>Updated</th><th>Shopper</th><th>Phone</th></tr></thead><tbody>
   ${x.s.map(s=>`<tr data-sid="${s.id}">${awbTd(s)}<td class="date">${fdate(s.created)}</td><td>${stPill3(s.st)}</td><td>${monPill(monOf(s))}</td>${cTd(s)}<td class="upd">${ago(s.upd)}</td><td>${esc(s.name)}</td><td class="mono">${fphone(s.phone)}</td></tr>`).join('')}</tbody></table></div></div>`}
 const RT=[['open','Open'],['ack','Acknowledged'],['resolved','Resolved'],['all','All']];
 /* failed deliveries (NDR): the courier tried and couldn't deliver. Act before the next attempt; after 3 attempts the parcel comes back */
@@ -145,11 +145,13 @@ function monList(base){const rows=listRows(base),L=MS.l,pages=Math.max(1,Math.ce
   return`<div class="filters ms-lf"><label class="search bl-search"><span>${ic('search',16)}</span><input id="ms-q" value="${esc(L.q)}" placeholder="AWB (several at once), shopper, phone or batch" autocomplete="off" aria-label="Search shipments"></label>
     <select class="chip-sel" data-lf="st" aria-label="Shipment status"><option value="">Any shipment status</option>${Object.entries(SST3).map(([k,v])=>`<option value="${k}" ${L.st===k?'selected':''}>${v[0]}</option>`).join('')}</select>
     <select class="chip-sel" data-lf="mon" aria-label="Monitoring status"><option value="">Any monitoring status</option>${Object.entries(MON3).map(([k,v])=>`<option value="${k}" ${L.mon===k?'selected':''}>${v[0]}</option>`).join('')}</select>
-    <div class="fright">${dlBtn('m-list','Export '+rows.length.toLocaleString('id-ID'))}</div></div>
-  <div class="tbl-wrap"><table class="mt"><thead><tr><th>AWB</th><th>Created</th><th>Shopper</th><th>Destination</th><th>Courier</th><th>Payment</th><th>Shipment status</th><th>Monitoring</th><th>Updated</th></tr></thead><tbody>
-  ${rows.length?rows.slice(L.pg*PERL,L.pg*PERL+PERL).map(s=>`<tr data-sid="${s.id}">${awbTd(s)}<td class="date">${fdate(s.created)}</td><td class="cust"><b>${esc(s.name)}</b><span>${fphone(s.phone)}</span></td><td>${esc(s.area.kec)}<span class="src">${esc(s.area.city)}</span></td>${cTd(s)}<td>${s.pay==='cod'?`<span class="st pu sm">COD</span> <span class="num">${rp(s.val)}</span>`:'<span class="st gr sm">Non-COD</span>'}</td><td>${stPill3(s.st)}</td><td>${monPill(monOf(s))}</td><td class="upd">${ago(s.upd)}</td></tr>`).join('')
-    :`<tr><td colspan="9" style="height:auto;border:0;cursor:default"><div class="empty"><b>No shipments match</b>Try another AWB, or clear the filters.</div></td></tr>`}</tbody></table></div>
+    <div class="fright">${L.sel.size?`<button class="btn btn-p" data-prsel>${ic('print',15)}Print ${plural(L.sel.size,'label')}</button><button class="lnk" data-prclr>Clear</button>`:''}<button class="btn btn-o" data-prb>${ic('print',15)}Print by batch</button>${dlBtn('m-list','Export '+rows.length.toLocaleString('id-ID'))}</div></div>
+  <div class="tbl-wrap"><table class="mt ms-pt"><thead><tr><th class="selc">${(()=>{const pg=rows.slice(L.pg*PERL,L.pg*PERL+PERL).filter(s=>s.awb),on=pg.length&&pg.every(s=>L.sel.has(s.id));return`<button class="ie-chk" data-lselall aria-pressed="${on}" aria-label="Select this page"><span class="cb${on?' on':''}">${on?ic('check',12,3):''}</span></button>`})()}</th><th>AWB</th><th>Created</th><th>Shopper</th><th>Destination</th><th>Courier</th><th>Payment</th><th>Shipment status</th><th>Monitoring</th><th>Updated</th><th></th></tr></thead><tbody>
+  ${rows.length?rows.slice(L.pg*PERL,L.pg*PERL+PERL).map(s=>`<tr data-sid="${s.id}"><td class="selc">${s.awb?`<button class="ie-chk" data-lsel="${s.id}" aria-pressed="${L.sel.has(s.id)}" aria-label="Select ${s.awb}"><span class="cb${L.sel.has(s.id)?' on':''}">${L.sel.has(s.id)?ic('check',12,3):''}</span></button>`:''}</td>${awbTd(s)}<td class="date">${fdate(s.created)}</td><td class="cust"><b>${esc(s.name)}</b><span>${fphone(s.phone)}</span></td><td>${esc(s.area.kec)}<span class="src">${esc(s.area.city)}</span></td>${cTd(s)}<td>${s.pay==='cod'?`<span class="st pu sm">COD</span> <span class="num">${rp(s.val)}</span>`:'<span class="st gr sm">Non-COD</span>'}</td><td>${stPill3(s.st)}</td><td>${monPill(monOf(s))}</td><td class="upd">${ago(s.upd)}</td><td class="r">${s.awb?`<button class="ib tt" data-prs="${s.id}" data-tt="Print label" aria-label="Print the label for ${s.awb}">${ic('print',16)}</button>`:''}</td></tr>`).join('')
+    :`<tr><td colspan="11" style="height:auto;border:0;cursor:default"><div class="empty"><b>No shipments match</b>Try another AWB, or clear the filters.</div></td></tr>`}</tbody></table></div>
   <div class="foot"><span><b>${rows.length.toLocaleString('id-ID')}</b> ${rows.length===1?'shipment':'shipments'}</span><div class="pager"><button class="btn btn-o" data-lpg="-1" ${L.pg?'':'disabled'}>Previous</button><button class="btn btn-o" data-lpg="1" ${L.pg<pages-1?'':'disabled'}>Next</button></div></div>`}
+
+function printLabels(L,scope){if(!L.length)return;track('labels_printed',{scope,labels:L.length});toast(`Printing ${plural(L.length,'label')} (PDF, 10×10 cm, one per parcel)`)}
 
 /* ---- Claims: what couriers owe the merchant ---- */
 const clOpen=c=>c.st==='submitted'||c.st==='review';
@@ -349,6 +351,16 @@ document.getElementById('view-mon').addEventListener('click',e=>{const t=e.targe
   if(d.ha){MS.hArea=d.ha;renderMon();return}
   if(d.perf){MS.perf=d.perf;renderMon();return}
   if(d.lpg){MS.l.pg+=+d.lpg;renderMon();return}
+  /* labels: per row, the selected rows, or a whole batch (one 10×10 cm label per parcel) */
+  if(d.lsel){e.stopPropagation();const S=MS.l.sel;S.has(d.lsel)?S.delete(d.lsel):S.add(d.lsel);renderMon();return}
+  if('lselall' in d){const L=MS.l,pg=listRows(msBase()).slice(L.pg*PERL,L.pg*PERL+PERL).filter(s=>s.awb),on=pg.every(s=>L.sel.has(s.id));pg.forEach(s=>on?L.sel.delete(s.id):L.sel.add(s.id));renderMon();return}
+  if('prclr' in d){MS.l.sel.clear();renderMon();return}
+  if(d.prs){e.stopPropagation();printLabels([SH.find(s=>s.id===d.prs)],'row');return}
+  if('prsel' in d){printLabels(SH.filter(s=>MS.l.sel.has(s.id)),'selected');MS.l.sel.clear();renderMon();return}
+  if(d.prbt){e.stopPropagation();printLabels(SH.filter(s=>s.batch===d.prbt&&s.awb),'batch');return}
+  if('prb' in d){e.stopPropagation();if(popFor===t){closePop();return}popFor=t;const B=BATCH.filter(b=>SH.some(s=>s.batch===b.id&&s.awb&&s.st==='pickup')).slice(0,12);
+    pop.innerHTML=`<div class="menu" style="width:300px"><h6>Batches waiting for pickup</h6>${B.length?B.map(b=>{const n=SH.filter(s=>s.batch===b.id&&s.awb).length;return`<button class="opt" data-pbt="${b.id}">${cLogo(b.k)}<span style="flex:1"><b class="mono">${b.id}</b><span class="src" style="display:block">${esc((whByCode(b.wh)||{n:b.wh}).n)} · ${fdate(b.created)}</span></span><span class="num">${plural(n,'label')}</span></button>`}).join(''):'<p class="src" style="padding:4px 10px 8px">No batch is waiting for pickup</p>'}</div>`;
+    pop.querySelectorAll('[data-pbt]').forEach(o=>o.onclick=()=>{closePop();printLabels(SH.filter(s=>s.batch===o.dataset.pbt&&s.awb),'batch')});placePop(t,true);return}
   if(d.sid){openShipment(d.sid)}});
 document.getElementById('view-mon').addEventListener('change',e=>{const k=e.target.dataset.lf;if(k){MS.l[k]=e.target.value;MS.l.pg=0;renderMon()}});
 let msT;document.getElementById('view-mon').addEventListener('input',e=>{if(e.target.id!=='ms-q')return;MS.l.q=e.target.value;MS.l.pg=0;clearTimeout(msT);msT=setTimeout(()=>{renderMon();const q=document.getElementById('ms-q');q.focus();q.setSelectionRange(q.value.length,q.value.length)},250)});

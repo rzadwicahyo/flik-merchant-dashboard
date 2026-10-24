@@ -56,17 +56,17 @@ const DL={};  // section id → () => [file, head, rows]
 document.addEventListener('click',e=>{const b=e.target.closest('[data-dl]');if(!b)return;e.stopPropagation();const f=DL[b.dataset.dl];if(f){const [file,head,rows]=f();dlCsv(file,head,rows,b.dataset.dl)}});
 
 /* ===== Prototype bar (not part of the product) ===== */
-document.body.insertAdjacentHTML('beforeend',`<div class="pt" role="region" aria-label="Prototype controls"><b>Prototype</b>
+document.body.insertAdjacentHTML('beforeend',`<div class="pbar" role="region" aria-label="Prototype controls"><b>Prototype</b>
   <div class="seg" role="tablist" aria-label="Merchant"><button data-mode="new">New to Shipping</button><button data-mode="active">Active shipper</button></div>
   <button class="pb" id="pt-flags">${ic('user',14)}<span id="pt-flv"></span>${ic('chev',12)}</button>
   <button class="pb" data-pt="guide">${ic('book',14)}Guide</button><button class="pb" data-pt="events">${ic('pulse',14)}Events <span class="n" id="pt-evn">0</span></button><button class="pb" data-pt="api">${ic('api',14)}API</button></div>`);
-document.querySelector('.pt').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+document.querySelector('.pbar').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   if(b.dataset.mode){PS.qFlags=null;setMode(b.dataset.mode);return}
   if(b.id==='pt-flags'){e.stopPropagation();if(popFor===b){closePop();return}popFor=b;
     pop.innerHTML=`<h6>Products this merchant uses</h6>${Object.entries(FLAGS).map(([k,f])=>`<button class="opt" data-fl="${k}"><span class="rdo${PS.flags===k?' on':''}"></span>${f.l}</button>`).join('')}`;
     pop.querySelectorAll('[data-fl]').forEach(o=>o.onclick=()=>{PS.flags=o.dataset.fl;closePop();syncBar();show()});placePop(b,false);return}
   if(b.dataset.pt==='guide')guideModal();if(b.dataset.pt==='events')eventsDrawer();if(b.dataset.pt==='api')apiDrawer()});
-function syncBar(){document.querySelectorAll('.pt [data-mode]').forEach(x=>x.classList.toggle('on',x.dataset.mode===PS.mode));document.getElementById('pt-flv').textContent=FLAGS[PS.flags].l}
+function syncBar(){document.querySelectorAll('.pbar [data-mode]').forEach(x=>x.classList.toggle('on',x.dataset.mode===PS.mode));document.getElementById('pt-flv').textContent=FLAGS[PS.flags].l}
 function setMode(m){PS.mode=m;
   /* a merchant is tagged with a product at their first transaction; until then Home treats them as Payments */
   PS.flags=PS.qFlags||(m==='new'?'pay':PS.flags==='pay'?'payship':PS.flags);PS.vd={};PS.vStep=0;PS.vLater=false;MS.reset&&MS.reset();

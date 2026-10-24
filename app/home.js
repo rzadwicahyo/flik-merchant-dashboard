@@ -34,7 +34,6 @@ function bucketsOf(days,offset=0){const step=days<=31?1:7,n=Math.ceil(days/step)
 /* shipping widget: COD and non-COD as two overlapping area lines (no stacking) */
 const SER=[['cod','COD','#6A4BFF',s=>s.pay==='cod'],['non','Non-COD','#14A38B',s=>s.pay==='non']];
 const HSM={ships:['Shipments',l=>l.length,v=>Math.round(v).toLocaleString('id-ID'),v=>Math.round(v)],val:['Value',l=>sum(l,s=>s.val),v=>rp(Math.round(v)),v=>compact(v)]};
-const HS={days:30,m:'ships'};
 function multiArea(el,rows,fmt){const W=el.clientWidth,Hh=el.clientHeight;if(!W)return;
   const L=48,R=10,T=10,B=24,iw=W-L-R,ih=Hh-T-B,n=rows.length;
   const nice=v=>{if(v<=0)return 4;const p=Math.pow(10,Math.floor(Math.log10(v)));for(const m of[1,1.2,1.5,2,2.5,3,4,5,6,8,10])if(m*p>=v)return m*p;return 10*p};
@@ -44,7 +43,7 @@ function multiArea(el,rows,fmt){const W=el.clientWidth,Hh=el.clientHeight;if(!W)
   const smooth=pts=>pts.map((p,i)=>{if(!i)return`M${p[0].toFixed(1)},${p[1].toFixed(1)}`;const p0=pts[i-2]||pts[i-1],p1=pts[i-1],p3=pts[i+1]||p;const c1=[p1[0]+(p[0]-p0[0])/6,Math.min(T+ih,p1[1]+(p[1]-p0[1])/6)],c2=[p[0]-(p3[0]-p1[0])/6,Math.min(T+ih,p[1]-(p3[1]-p1[1])/6)];return`C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p[0].toFixed(1)},${p[1].toFixed(1)}`}).join(' ');
   const gid='m'+Math.random().toString(36).slice(2,7);
   const areas=SER.map((o,k)=>{const d=smooth(rows.map((r,i)=>[X(i),Y(r[o[0]])]));return{fill:`<path d="${d} L${X(n-1)},${T+ih} L${X(0)},${T+ih} Z" fill="url(#${gid}${k})"/>`,line:`<path d="${d}" fill="none" stroke="${o[2]}" stroke-width="2"/>`}});
-  el.innerHTML=`<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="COD and non-COD ${HSM[HS.m][0].toLowerCase()}, last ${HS.days} days"><defs>${SER.map((o,k)=>`<linearGradient id="${gid}${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${o[2]}" stop-opacity=".16"/><stop offset="1" stop-color="${o[2]}" stop-opacity="0"/></linearGradient>`).join('')}</defs>${g}
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="COD and non-COD ${HSM[HS.m][0].toLowerCase()}, ${perTx(HS.per).toLowerCase()}"><defs>${SER.map((o,k)=>`<linearGradient id="${gid}${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${o[2]}" stop-opacity=".16"/><stop offset="1" stop-color="${o[2]}" stop-opacity="0"/></linearGradient>`).join('')}</defs>${g}
     ${areas.map(a=>a.fill).join('')}${areas.map(a=>a.line).join('')}<line class="cur-line" y1="${T}" y2="${T+ih}" style="display:none"/>${SER.map(o=>`<circle r="4" fill="#fff" stroke="${o[2]}" stroke-width="2" style="display:none"/>`).join('')}
     <rect x="${L}" y="${T}" width="${iw}" height="${ih}" fill="transparent"/></svg><div class="tip"></div>`;
   const svg=el.querySelector('svg'),hit=svg.querySelector('rect:last-of-type'),hl=svg.querySelector('.cur-line'),dots=[...svg.querySelectorAll('circle')],tp=el.querySelector('.tip');
@@ -53,36 +52,87 @@ function multiArea(el,rows,fmt){const W=el.clientWidth,Hh=el.clientHeight;if(!W)
     tp.innerHTML=`<b>${row.tl}</b>${SER.map(o=>`<span class="tr"><i style="background:${o[2]}"></i>${o[1]}<em class="num">${HSM[HS.m][2](row[o[0]])}</em></span>`).join('')}`;
     tp.style.display='block';tp.style.left=Math.max(80,Math.min(W-80,px))+'px';tp.style.top=Math.min(...SER.map(o=>Y(row[o[0]])))+'px'};
   hit.addEventListener('mousemove',mv);hit.addEventListener('touchstart',mv,{passive:true});hit.addEventListener('mouseleave',()=>{hl.style.display='none';dots.forEach(d=>d.style.display='none');tp.style.display='none'})}
-/* buckets wide enough to smooth out pickup days: daily for 7 days, 3 days for 30, weekly for 90 */
-function shipRows(days){const step=days<=7?1:days<=30?3:7,n=Math.ceil(days/step),end=new Date(NOW);end.setHours(24,0,0,0);const out=[];
-  for(let i=n-1;i>=0;i--){const d1=new Date(end-i*step*DAY),d0=new Date(d1-step*DAY),l=SH.filter(s=>s.created>=d0&&s.created<d1),r={l:`${d0.getDate()} ${MON[d0.getMonth()]}`,tl:step===1?fday(d0):`${fday(d0)} – ${fday(new Date(d1-DAY))}`};
-    SER.forEach(o=>r[o[0]]=HSM[HS.m][1](l.filter(o[3])));out.push(r)}return out}
+/* ===== Period and filters, shared by both Home widgets (Reza, 24 Oct: This month by default, no filter) ===== */
+const HPER=[['today','Today'],['7','Last 7 days'],['month','This month'],['lmonth','Last month'],['30','Last 30 days'],['90','Last 90 days']];
+const perTx=k=>HPER.find(p=>p[0]===k)[1];
+const HS={per:'month',m:'ships',f:{c:'',wh:''}};
+const HP={per:'month',m:'count',f:{mk:'',ch:'',ol:''}};
+/* the period, the period before it of the same length, and the buckets the chart draws */
+function perRange(k){const t0=new Date(NOW);t0.setHours(0,0,0,0);const t1=new Date(t0.getTime()+DAY);
+  let d0,d1,p0;
+  if(k==='today'){d0=t0;d1=t1;p0=new Date(t0-DAY)}
+  else if(k==='month'){d0=new Date(t0.getFullYear(),t0.getMonth(),1);d1=t1;p0=new Date(t0.getFullYear(),t0.getMonth()-1,1)}
+  else if(k==='lmonth'){d0=new Date(t0.getFullYear(),t0.getMonth()-1,1);d1=new Date(t0.getFullYear(),t0.getMonth(),1);p0=new Date(t0.getFullYear(),t0.getMonth()-2,1)}
+  else{d0=new Date(t1-(+k)*DAY);d1=t1;p0=new Date(d0-(+k)*DAY)}
+  const span=(d1-d0)/DAY,step=k==='today'?2*3600000:span<=31?DAY:7*DAY,n=Math.ceil((d1-d0)/step),pn=Math.min(n,Math.ceil((d0-p0)/step));
+  const B=Array.from({length:n},(_,i)=>{const a=new Date(d0.getTime()+i*step),b=new Date(Math.min(d1,a.getTime()+step));
+    return{a,b,pa:new Date(p0.getTime()+i*step),pb:new Date(p0.getTime()+(i+1)*step),l:k==='today'?`${String(a.getHours()).padStart(2,'0')}:00`:`${a.getDate()} ${MON[a.getMonth()]}`,
+      tl:k==='today'?`${String(a.getHours()).padStart(2,'0')}:00–${String(b.getHours()||24).padStart(2,'0')}:00`:step===DAY?fday(a):`${fday(a)} – ${fday(new Date(b-DAY))}`}});
+  return{d0,d1,p0,p1:new Date(p0.getTime()+(d1-d0)),B,pn,prevTx:k==='today'?'yesterday':k==='month'?'the same days last month':k==='lmonth'?'the month before':`the ${k} days before`}}
+const inR=(d,a,b)=>d>=a&&d<b;
+/* filter chips: one menu each, "All" first */
+const fChip=(id,lab,val,all)=>`<button class="chip${val?' set':''}" data-hf="${id}">${ic(val?'check':'pluscirc',14)}<span>${val?esc(val):lab}</span>${val?'':ic('chev',14,2)}</button>`;
+const perChip=(id,k)=>`<button class="chip set" data-hper="${id}"><span>Period</span> <span class="val">${perTx(k)}</span>${ic('chev',14,2)}</button>`;
+
+/* --- Payments: transactions or GMV, by payment method, channel and outlet --- */
+const OUTLETS=['Online store','Kemang outlet','Dago outlet'];  // prototype: outlets aren't in Raam's payment data
+const outletOf=p=>p.source==='FLIK Checkout'?OUTLETS[0]:OUTLETS[1+hsh(p.id)%2];
+const PF={mk:['Payment method',()=>[...new Set(PAY.map(p=>METHODS[p.mk].cat))],p=>METHODS[p.mk].cat],ch:['Channel',()=>[...new Set(PAY.map(p=>p.source))],p=>p.source],ol:['Outlet',()=>OUTLETS,outletOf]};
+const SF={c:['Courier',()=>[...new Set(SH.map(s=>s.k))].map(cName),s=>cName(s.k)],wh:['Warehouse',()=>[...new Set(SH.map(s=>s.wh))].map(w=>(whByCode(w)||{n:w}).n),s=>(whByCode(s.wh)||{n:s.wh}).n]};
+const payRows=()=>PAY.filter(p=>Object.entries(HP.f).every(([k,v])=>!v||PF[k][2](p)===v));
+const shipF=()=>SH.filter(s=>Object.entries(HS.f).every(([k,v])=>!v||SF[k][2](s)===v));
+const PM={count:['Transactions',l=>l.length,v=>Math.round(v).toLocaleString('id-ID'),v=>`${Math.round(v).toLocaleString('id-ID')} transactions`],gmv:['Total GMV',l=>sum(l,p=>p.amount),v=>compact(Math.round(v)),v=>rp(Math.round(v))]};
+function payWidget(){const R=perRange(HP.per),ok=payRows().filter(p=>p.status==='succeeded'),M=PM[HP.m];
+  const cur=ok.filter(p=>inR(p.created,R.d0,R.d1)),prev=ok.filter(p=>inR(p.created,R.p0,R.p1)),v=M[1](cur),pv=M[1](prev);
+  const d=pv?(v-pv)/pv*100:null,all=payRows().filter(p=>inR(p.created,R.d0,R.d1)),pend=all.filter(p=>p.status==='pending').length;
+  return`<div class="sec-h"><h2 class="sec">Payments summary</h2><button class="lnk" data-goto="transactions">Open Transactions ${ic('chev',13)}</button></div>
+  <section class="card w-card">
+    <div class="w-top"><div class="w-k"><div><span>${M[0]}</span><b class="num">${HP.m==='count'?M[2](v):rp(v)}</b>${d==null?'':`<span class="delta ${d>=0?'up':'down'}" title="Compared with ${R.prevTx}">${d>=0?'+':''}${(Math.round(d*10)/10).toLocaleString('id-ID')}%</span>`}</div><div><span>Success rate</span><b class="num">${all.length?fpct(pct(cur.length,all.length)):'—'}</b></div></div>
+      <div class="seg sm">${Object.entries(PM).map(([k,m])=>`<button class="${HP.m===k?'on':''}" data-hpm="${k}">${m[0]}</button>`).join('')}</div></div>
+    <div class="w-ctl w-f">${perChip('pay',HP.per)}${Object.entries(PF).map(([k,f])=>fChip('pay.'+k,f[0],HP.f[k])).join('')}${Object.values(HP.f).some(Boolean)?'<button class="lnk" data-hclr="pay">Clear</button>':''}</div>
+    <div class="chart sm" id="paychart"></div>
+    <div class="w-stats">${[...new Set(PAY.map(p=>METHODS[p.mk].cat))].slice(0,4).map(c=>`<span>${c} <b class="num">${M[2](M[1](cur.filter(p=>METHODS[p.mk].cat===c)))}</b></span>`).join('')}<span class="sp"></span></div>
+    <button class="w-flag${pend?'':' zero'}" data-goto="transactions">${ic(pend?'warn':'check',16)}<span><b>${plural(pend,'payment is','payments are')} pending</b></span><span class="sp"></span>View ${ic('chev',13)}</button>
+  </section>`}
+drawChart=function(){const el=document.getElementById('paychart');if(!el)return;const R=perRange(HP.per),ok=payRows().filter(p=>p.status==='succeeded'),M=PM[HP.m];
+  const data=R.B.map(b=>({v:M[1](ok.filter(p=>inR(p.created,b.a,b.b))),l:b.l,tl:b.tl})),prev=R.B.map((b,i)=>({v:i<R.pn?M[1](ok.filter(p=>inR(p.created,b.pa,b.pb))):0}));
+  const mx=Math.max(...data.map(x=>x.v),...prev.map(x=>x.v));
+  areaChart(el,data,prev,{max:HP.m==='count'?Math.max(4,Math.ceil(mx/4)*4):0,ax:v=>HP.m==='count'?Math.round(v):compact(v),aria:`${M[0]}, ${perTx(HP.per).toLowerCase()}`},M[3])};
+
+/* --- Shipping: COD and non-COD as two lines, by courier and warehouse --- */
+function shipRows(){const R=perRange(HS.per),l=shipF();return R.B.map(b=>{const x=l.filter(s=>inR(s.created,b.a,b.b)),r={l:b.l,tl:b.tl};SER.forEach(o=>r[o[0]]=HSM[HS.m][1](x.filter(o[3])));return r})}
+function shipWidget(){const R=perRange(HS.per),l=shipF(),all=l.filter(s=>inR(s.created,R.d0,R.d1)),prev=l.filter(s=>inR(s.created,R.p0,R.p1));
+  const sr=l=>{const f=l.filter(s=>['delivered','returned','lost'].includes(s.st));return f.length?pct(f.filter(s=>s.st==='delivered').length,f.length):0};
+  const codv=l=>sum(l.filter(s=>s.pay==='cod'&&s.st==='delivered'),s=>s.val);
+  const dl=(v,p,pts)=>{if(!prev.length)return'';const d=pts?v-p:p?(v-p)/p*100:0;return`<span class="delta ${d>=0?'up':'down'}" title="Compared with ${R.prevTx}">${d>=0?'+':''}${(Math.round(d*10)/10).toLocaleString('id-ID')}${pts?' pts':'%'}</span>`};
+  const K=[['Shipments',all.length.toLocaleString('id-ID'),dl(all.length,prev.length)],['Delivery success',all.length?fpct(sr(all)):'—',dl(sr(all),sr(prev),1)],['COD collected',compact(codv(all)),dl(codv(all),codv(prev))]];
+  const need=SH.filter(s=>rstate(s)==='open'),crit=need.filter(s=>monOf(s)==='problem').length;
+  return`<div class="sec-h"><h2 class="sec">Shipping summary</h2><button class="lnk" data-goto="monitoring">Open Monitoring ${ic('chev',13)}</button></div>
+  <section class="card w-card">
+    <div class="w-top"><div class="w-k">${K.map(k=>`<div><span>${k[0]}</span><b class="num">${k[1]}</b>${k[2]}</div>`).join('')}</div>
+      <div class="seg sm">${Object.entries(HSM).map(([k,m])=>`<button class="${HS.m===k?'on':''}" data-hsm="${k}">${m[0]}</button>`).join('')}</div></div>
+    <div class="w-ctl w-f">${perChip('ship',HS.per)}${Object.entries(SF).map(([k,f])=>fChip('ship.'+k,f[0],HS.f[k])).join('')}${Object.values(HS.f).some(Boolean)?'<button class="lnk" data-hclr="ship">Clear</button>':''}</div>
+    <div class="chart sm" id="shipchart"></div>
+    <div class="w-stats">${SER.map(o=>`<span><i class="ln2" style="border-color:${o[2]}"></i>${o[1]} <b class="num">${HSM[HS.m][2](HSM[HS.m][1](all.filter(o[3])))}</b></span>`).join('')}<span class="sp"></span><span>Returned <b class="num">${all.filter(s=>s.st==='returned'||s.st==='returning').length.toLocaleString('id-ID')}</b></span></div>
+    <button class="w-flag${need.length?'':' zero'}" data-goto="monitoring">${ic(need.length?'warn':'check',16)}<span><b>${plural(need.length,'shipment needs','shipments need')} resolving</b>${crit?` · ${crit} critical`:''}</span><span class="sp"></span>Review ${ic('chev',13)}</button>
+  </section>`}
 function renderHomeExtra(){
   const wp=document.getElementById('w-pay'),el=document.getElementById('w-ship');
   wp.hidden=!has('pay');el.hidden=!has('ship');document.querySelector('.home-g').classList.toggle('two',has('pay')&&has('ship'));
-  const newPay=PS.mode==='new';wp.querySelector('section.card:not(#w-pay-empty)').hidden=newPay;document.getElementById('w-pay-empty').hidden=!newPay;
-  if(!has('ship'))return;
-  if(!SH.length){el.innerHTML=`<h2 class="sec">Shipping summary</h2><section class="card w-empty"><span class="qic">${ic('truck',22,1.6)}</span><div><b>Your shipping summary shows up after your first shipment</b><span>COD and non-COD shipments, delivery success and COD value, compared with the period before.</span></div><button class="btn btn-p" data-newshp>Create shipment</button></section>`;return}
-  const cut=new Date(NOW-HS.days*DAY),pcut=new Date(NOW-2*HS.days*DAY),all=SH.filter(s=>s.created>=cut),prev=SH.filter(s=>s.created<cut&&s.created>=pcut);
-  const sr=l=>{const f=l.filter(s=>['delivered','returned','lost'].includes(s.st));return f.length?pct(f.filter(s=>s.st==='delivered').length,f.length):0};
-  const codv=l=>sum(l.filter(s=>s.pay==='cod'&&s.st==='delivered'),s=>s.val);
-  const dl=(v,p,pts)=>{if(!prev.length)return'';const d=pts?v-p:p?(v-p)/p*100:0;return`<span class="delta ${d>=0?'up':'down'}" title="Compared with the previous ${HS.days} days">${d>=0?'+':''}${(Math.round(d*10)/10).toLocaleString('id-ID')}${pts?' pts':'%'}</span>`};
-  const K=[['Shipments',all.length.toLocaleString('id-ID'),dl(all.length,prev.length)],['Delivery success',fpct(sr(all)),dl(sr(all),sr(prev),1)],['COD collected',compact(codv(all)),dl(codv(all),codv(prev))]];
-  const need=SH.filter(s=>rstate(s)==='open'),crit=need.filter(s=>monOf(s)==='problem').length;
-  el.innerHTML=`<div class="sec-h"><h2 class="sec">Shipping summary</h2><button class="lnk" data-goto="monitoring">Open Monitoring ${ic('chev',13)}</button></div>
-  <section class="card w-card">
-    <div class="w-top"><div class="w-k">${K.map(k=>`<div><span>${k[0]}</span><b class="num">${k[1]}</b>${k[2]}</div>`).join('')}</div>
-      <div class="w-ctl"><div class="seg sm">${Object.entries(HSM).map(([k,m])=>`<button class="${HS.m===k?'on':''}" data-hsm="${k}">${m[0]}</button>`).join('')}</div><button class="chip set" id="hs-range"><span>Period</span> <span class="val">Last ${HS.days} days</span>${ic('chev',14,2)}</button></div></div>
-    <div class="chart sm" id="shipchart"></div>
-    <div class="w-stats">${SER.map(o=>`<span><i class="ln2" style="border-color:${o[2]}"></i>${o[1]} <b class="num">${HSM[HS.m][2](HSM[HS.m][1](all.filter(o[3])))}</b></span>`).join('')}<span class="sp"></span><span>Returned <b class="num">${all.filter(s=>s.st==='returned'||s.st==='returning').length.toLocaleString('id-ID')}</b></span></div>
-    ${need.length?`<button class="w-flag" data-goto="monitoring">${ic('warn',16)}<span><b>${plural(need.length,'shipment needs','shipments need')} resolving</b>${crit?` · ${crit} critical`:''}</span><span class="sp"></span>Review ${ic('chev',13)}</button>`:''}
-  </section>`;
-  requestAnimationFrame(drawShipChart)}
-function drawShipChart(){const el=document.getElementById('shipchart');if(el)multiArea(el,shipRows(HS.days),HSM[HS.m][3])}
+  const newPay=PS.mode==='new';
+  wp.innerHTML=newPay?`<h2 class="sec">Payments summary</h2><section class="card w-empty"><span class="qic">${ic('cart',22,1.6)}</span><div><b>Your sales summary shows up after your first transaction</b><span>Transactions and GMV, compared with the period before.</span></div><button class="btn btn-p" data-goto="invoices/create">Create invoice</button></section>`:payWidget();
+  if(has('ship'))el.innerHTML=!SH.length?`<h2 class="sec">Shipping summary</h2><section class="card w-empty"><span class="qic">${ic('truck',22,1.6)}</span><div><b>Your shipping summary shows up after your first shipment</b><span>COD and non-COD shipments, delivery success and COD value, compared with the period before.</span></div><button class="btn btn-p" data-newshp>Create shipment</button></section>`:shipWidget();
+  requestAnimationFrame(()=>{if(has('pay')&&!newPay)drawChart();drawShipChart()})}
+function drawShipChart(){const el=document.getElementById('shipchart');if(el)multiArea(el,shipRows(),HSM[HS.m][3])}
 document.addEventListener('click',e=>{
   const m=e.target.closest('[data-hsm]');if(m){HS.m=m.dataset.hsm;renderHomeExtra();return}
+  const pm=e.target.closest('[data-hpm]');if(pm){HP.m=pm.dataset.hpm;renderHomeExtra();return}
   const g=e.target.closest('[data-goto]');if(g){go(g.dataset.goto);return}
-  const r=e.target.closest('#hs-range');if(r){e.stopPropagation();if(popFor===r){closePop();return}popFor=r;
-    pop.innerHTML=`<h6>Period</h6>${[7,30,90].map(n=>`<button class="opt" data-n="${n}"><span class="rdo${HS.days===n?' on':''}"></span>Last ${n} days</button>`).join('')}`;
-    pop.querySelectorAll('[data-n]').forEach(o=>o.onclick=()=>{HS.days=+o.dataset.n;closePop();renderHomeExtra()});placePop(r,true)}});
-addEventListener('resize',()=>{if(!document.getElementById('view-home').hidden)drawShipChart()});
+  const c=e.target.closest('[data-hclr]');if(c){(c.dataset.hclr==='pay'?HP:HS).f=c.dataset.hclr==='pay'?{mk:'',ch:'',ol:''}:{c:'',wh:''};renderHomeExtra();return}
+  const r=e.target.closest('[data-hper]');if(r){e.stopPropagation();if(popFor===r){closePop();return}popFor=r;const S=r.dataset.hper==='pay'?HP:HS;
+    pop.innerHTML=`<div class="menu" style="width:200px"><h6>Period</h6>${HPER.map(([k,t])=>`<button class="opt" data-n="${k}"><span class="rdo${S.per===k?' on':''}"></span>${t}</button>`).join('')}</div>`;
+    pop.querySelectorAll('[data-n]').forEach(o=>o.onclick=()=>{S.per=o.dataset.n;closePop();track('home_period_changed',{widget:r.dataset.hper,period:S.per});renderHomeExtra()});placePop(r,true);return}
+  const f=e.target.closest('[data-hf]');if(f){e.stopPropagation();if(popFor===f){closePop();return}popFor=f;const [w,k]=f.dataset.hf.split('.'),S=w==='pay'?HP:HS,D=(w==='pay'?PF:SF)[k];
+    pop.innerHTML=`<div class="menu" style="width:220px"><h6>${D[0]}</h6>${['',...D[1]()].map(v=>`<button class="opt" data-v="${esc(v)}"><span class="rdo${S.f[k]===v?' on':''}"></span>${v?esc(v):`All ${D[0].toLowerCase()}s`}</button>`).join('')}</div>`;
+    pop.querySelectorAll('[data-v]').forEach(o=>o.onclick=()=>{S.f[k]=o.dataset.v;closePop();track('home_filter_changed',{widget:w,filter:k});renderHomeExtra()});placePop(f,true)}});
+addEventListener('resize',()=>{if(!document.getElementById('view-home').hidden){drawShipChart();if(document.getElementById('paychart'))drawChart()}});

@@ -3,16 +3,16 @@
 .mono{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;letter-spacing:-.1px}
 .st.sm{height:20px;font-size:12px;padding:0 6px}
 .ph-acts{display:flex;gap:8px;flex-wrap:wrap}
-.pt{position:fixed;left:16px;bottom:16px;z-index:95;display:flex;align-items:center;gap:6px;background:var(--ink);color:#fff;border-radius:999px;padding:5px 6px 5px 14px;box-shadow:var(--pop);font-size:12.5px;max-width:calc(100% - 32px);flex-wrap:wrap}
-.pt>b{font-weight:600;margin-right:4px;white-space:nowrap}
-.pt .seg{background:rgba(255,255,255,.12)}
-.pt .seg button{height:26px;color:rgba(255,255,255,.75);font-size:12.5px;padding:0 10px}
-.pt .seg button.on{background:#fff;color:var(--ink)}
-.pt .pb{height:28px;padding:0 10px;border-radius:999px;color:#fff;font-weight:500;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-.pt .pb:hover{background:rgba(255,255,255,.12)}
-.pt .pb .n{background:var(--primary);border-radius:999px;padding:0 6px;font-size:11.5px;line-height:18px}
-body.inflow .pt{display:none}
-@media (max-width:700px){.pt>b{display:none}.pt{padding-left:6px}}
+.pbar{position:fixed;left:16px;bottom:16px;z-index:95;display:flex;align-items:center;gap:6px;background:var(--ink);color:#fff;border-radius:999px;padding:5px 6px 5px 14px;box-shadow:var(--pop);font-size:12.5px;max-width:calc(100% - 32px);flex-wrap:wrap}
+.pbar>b{font-weight:600;margin-right:4px;white-space:nowrap}
+.pbar .seg{background:rgba(255,255,255,.12)}
+.pbar .seg button{height:26px;color:rgba(255,255,255,.75);font-size:12.5px;padding:0 10px}
+.pbar .seg button.on{background:#fff;color:var(--ink)}
+.pbar .pb{height:28px;padding:0 10px;border-radius:999px;color:#fff;font-weight:500;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.pbar .pb:hover{background:rgba(255,255,255,.12)}
+.pbar .pb .n{background:var(--primary);border-radius:999px;padding:0 6px;font-size:11.5px;line-height:18px}
+body.inflow .pbar{display:none}
+@media (max-width:700px){.pbar>b{display:none}.pbar{padding-left:6px}}
 .ck{box-shadow:var(--sh);border-radius:8px;background:#fff;padding:20px;margin-top:16px}
 .ck-h{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .ck-h h3{font-size:16px;font-weight:600;color:var(--ink)}
@@ -98,7 +98,7 @@ table.mt td.hot{color:var(--bad-tx);font-weight:600}
 .dt{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
 .dt.ok{background:#1EA672}.dt.gr{background:#A3ACB9}.dt.warn{background:#E5A800}
 .es-ctas{display:flex;gap:10px;flex-wrap:wrap}
-.pt .pb svg{opacity:.85}
+.pbar .pb svg{opacity:.85}
 
 /* --- create page keeps the sidebar --- */
 @media (min-width:961px){#sx{left:240px;border-left:1px solid var(--line)}#sx .sx-foot{left:240px}}
@@ -378,3 +378,15 @@ label.ck{display:flex;gap:8px;align-items:center;font-size:13px}
 .rk-pv .rk-tpl-f{gap:8px;margin:0}
 .rk-pv .rk-edit{display:inline-flex;align-items:center;gap:6px;justify-self:start}
 .mf .rk-open{font-size:13px;color:var(--muted);margin-right:8px}
+/* Home: both widgets the same size, period and filters on each (Reza, 24 Oct) */
+.home-g.two>div:not([hidden]){display:flex;flex-direction:column}
+.home-g.two>div>.w-card{flex:1;display:flex;flex-direction:column}
+.w-card .chart.sm{flex:1;min-height:200px}
+.w-card .w-f{margin-top:12px}
+.w-card .w-flag.zero{background:var(--hover);border-color:var(--line);color:var(--muted)}
+.w-card .w-flag.zero b{color:var(--text)}
+.ms-pt td.selc,.ms-pt th.selc{width:36px;padding-right:0}
+.ms-pt .ie-chk{display:inline-flex}
+.ms-lf .fright{display:flex;gap:8px;align-items:center}
+.whc .whc-h td{background:var(--hover);border-top:1px solid var(--line)}
+.whc .whc-c{padding-left:14px}

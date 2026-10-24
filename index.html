@@ -2499,7 +2499,7 @@ function drawSx(){
     <div class="sx-pay"><div class="sx-bal"><span>FLIK balance</span><b class="num">${rp(BAL)}</b></div><div class="sx-due"><span>You pay now</span><b class="num">${rp(c.now)}</b></div></div>
     <section class="sx-card"><div class="sx-h">Cost breakdown</div>${payTable(c)}</section>
     ${c.nCod?`<p class="pt-note">When all ${c.nCod.toLocaleString('id-ID')} COD ${c.nCod===1?'parcel is':'parcels are'} delivered, ${rp(c.codTot-c.later)} goes to your balance (${rp(c.codTot)} collected, minus ${rp(c.later)}).</p>`:''}`}
-  sxBody.innerHTML=st===1?`<div class="sx-in cr2">${main}<aside class="cr-side" aria-label="Batches">${side}</aside></div>`:`<div class="sx-in solo${X.how==='bulk'&&(X.uploaded||X.uploading)&&(st===0||st===3)?' wide':''}"><div class="sx-main">${main}</div></div>`;
+  sxBody.innerHTML=st===1?`<div class="sx-in cr2">${main}<aside class="cr-side" aria-label="Batches">${side}</aside></div>`:`<div class="sx-in solo${st===0||X.how==='bulk'&&(X.uploaded||X.uploading)&&st===3?' wide':''}"><div class="sx-main">${main}</div></div>`;
   sxFoot.innerHTML=`${st?`<button class="btn btn-o" data-back>Back</button>`:''}<span class="sp"></span>${st===4&&costs().now>BAL?`<button class="btn btn-p" data-topup>Top up ${rp(topupAmt())}</button>`:`<button class="btn btn-p" id="sx-next" ${stepOk()?'':'disabled'}>${st===4?'Confirm and pay':'Continue'}</button>`}`;
 }
 /* top up from the payment step: suggest the shortfall rounded up to Rp10.000 */

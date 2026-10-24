@@ -40,6 +40,8 @@ rep("rows:G.map(g=>({id:bOf.get(g.v),", "rows:G.map(g=>({id:bOf.get(g.v+'|'+g.w.
 rep("batches:[...byV].map(([v,gs])=>({id:bOf.get(v),v,", "batches:[...byV].map(([kk,gs])=>({id:bOf.get(kk),v:gs[0].v,");
 rep("${nb===1?`One batch: ${svName(G[0].v)} picks up ${parcels(n)}${nW===1?` from ${G[0].w.n}`:` from your ${nW} warehouses`}.`:`${nb} batches, one per courier. Each courier picks up its batch from every warehouse in it.`}",
   "${G.length===1?`One batch: ${svName(G[0].v)} picks up ${parcels(n)} from ${G[0].w.n}.`:`${G.length} batches, one for each warehouse and courier service.`}");
+rep("solo${X.how==='bulk'&&(X.uploaded||X.uploading)&&(st===0||st===3)?' wide':''}",
+  "solo${st===0||X.how==='bulk'&&(X.uploaded||X.uploading)&&st===3?' wide':''}");  // Details is full width from the start (Reza, 24 Oct)
 rep("Delivery rates come from FLIK shipments to the same kecamatan in the last 90 days.",
   "Delivered means: of all the parcels a courier carried to the same kecamatans as your orders in the last 90 days, for every FLIK merchant, how many arrived.");
 rep("${pct(ST[rec].rate)} delivered in your shoppers' areas, with none of your parcels in its red zone.",
