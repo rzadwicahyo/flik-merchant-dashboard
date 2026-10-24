@@ -195,7 +195,7 @@ function claimCases(s){const dup=cat=>CL.find(c=>c.sid===s.id&&c.cat===cat&&c.st
   out.forEach(c=>{const d=dup(c.cat);if(d&&c.ok){c.ok=false;c.why=`Already claimed in ${d.id} (${CLST[d.st][0].toLowerCase()}).`}});return out}
 function claimExamples(){const f=(fn)=>SH.find(fn);return[['Lost parcel',f(s=>s.st==='lost'&&!CL.some(c=>c.sid===s.id))],['Returned, not asked',f(s=>s.st==='returned'&&!s.tk&&!CL.some(c=>c.sid===s.id))],['AnterAja, late',f(s=>slaOver(s)&&!CL.some(c=>c.sid===s.id))],
   ['Just delivered',f(s=>s.st==='delivered'&&(NOW-s.upd)/DAY<=2)],['Delivered on time, J&T',f(s=>s.st==='delivered'&&s.k==='jnt'&&(NOW-s.upd)/DAY>3)],['Still on the way',f(s=>['transit','picked','ofd'].includes(s.st))]].filter(x=>x[1])}
-function claimModal(sid){const C={sid:sid||null,cat:null,proof:false,q:''};modal.classList.add('wide');
+function claimModal(sid){const C={sid:sid||null,cat:null,proof:false,q:''};modal.classList.add('nw');
   const draw=()=>{const s=C.sid&&SH.find(x=>x.id===C.sid),cases=s?claimCases(s):[];if(s&&(!C.cat||!cases.find(c=>c.cat===C.cat&&c.ok)))C.cat=(cases.find(c=>c.ok)||{}).cat||null;
     const cur=cases.find(c=>c.cat===C.cat),amt=s&&C.cat?clAmount(s,C.cat):0,can=s&&cur&&cur.ok&&(!cur.need||C.proof);
     modal.innerHTML=`<div class="mh"><h3>File a claim</h3><button class="ib" data-mclose aria-label="Close">${ic('x',18)}</button></div>

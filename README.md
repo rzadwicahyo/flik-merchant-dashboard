@@ -43,20 +43,15 @@ The dark bar at the bottom is for the prototype only, not part of the product.
 
 You can also open a state directly: `?merchant=new`, `?products=pay`, `?products=ship`, `?products=payship` or `?products=all`.
 
-## What's in v3 (v3.1 to v3.4)
+## What's in v3 (v3.1 to v3.5)
 
 | Area | What to try |
 | --- | --- |
 | Home | Up to two compact widgets side by side: Payments first, then Shipping. Shipping shows COD and non-COD as two area lines with ±% against the previous period. A merchant counts as Payments until their first transaction tags them. Quick access lives in the **+** menu; the setup checklist lives on Shipment, not Home. |
 | Shipping › Shipment | A new merchant sees the explainer and setup checklist. An active shipper goes straight to Create shipment, with the sidebar still visible. |
-| Manual entry | Product quantity, pickup warehouse and COD or non-COD per shipment, and an address pin on a map preview. |
-| Bulk upload | Upload either example file. Your own file goes through column matching; then **Fix with AI** cleans duplicates, missing fields, swapped fields, phone formats and weights, and fills kelurahan and postcode. Each shopper gets a score (Beta). |
-| Courier | FLIK recommends the courier with the best delivery rate in the shoppers' kecamatan, falling back to the city. Picking a courier with red-zone parcels offers a split. |
+| Create shipment (v3.5) | Raam's v4 flow from the design system (Details, Courier, Pickup, Summary, Payment), unchanged except for the 24 Oct decisions in `app/flow.js`: **one batch = one warehouse + one courier service**; Risky COD orders open Raam's check (Confirm on WhatsApp, Payment link, Ship anyway, Remove), where a number without WhatsApp has to be shipped or removed; the WhatsApp preview comes from FLIK on behalf of the store, and the wording can be edited with {{variables}}; the score also counts the order value and an address without a house number; orders the chosen courier can't take start on the courier that delivers best there. Booked orders go to Monitoring, and waiting orders to **Waiting for the shopper**, where they are booked automatically when the shopper confirms or pays. |
 | Payment | Published rate − FLIK discount + 3% COD fee + platform fee. Non-COD is paid now from the balance; COD is deducted on delivery or return. |
 | Shipping › Monitoring | Batches, a Needs resolving queue sorted by severity (Open, Acknowledged, Resolved), health, courier performance by city or service, and all shipments. **Claims** has a summary and every claim (lost or damaged, returned without confirmation, and over SLA, which is AnterAja only for now) with its status log. **Tickets** open to their details and status log; the link to FLIK's ticketing platform comes later. Every section exports. |
-| Risky shoppers (v3.4) | When the details are submitted, Risky COD orders open one check: per order or for all, **Confirm on WhatsApp**, **Send payment link** (becomes non-COD), **Ship anyway** or **Remove**. Shoppers without WhatsApp skip the check and the merchant picks ship or remove. The score shows why: phone history, the area's COD success, order value and address. The right side previews the WhatsApp from FLIK's number with the store's name, and the merchant can edit the wording with {{variables}}. An order sent a check waits as its own batch and is **booked automatically** with the chosen courier when the shopper confirms or pays. |
-| Courier and batches (v3.4) | The courier step explains "delivered" in plain words and shows a side panel: one batch per warehouse and courier service, orders waiting for the shopper, and the orders the chosen courier can't deliver, each set to the recommended courier with a dropdown for any other that delivers there. |
-| Review (v3.4) | **Changes from your file**: every AI fix, edit, WhatsApp hold, courier change and removal, with before and now. |
 | Failed deliveries (v3.4) | Needs resolving has a failed-delivery queue split into **Needs your input** and **Critical**, with a **Reattempt** action (house number, other phone, ask the shopper on WhatsApp) or return. |
 | Tickets as chat (v3.2) | Opening a ticket opens a chat with FLIK support and the courier team, with the status log underneath. FLIK and 3PL teams answer from the ticketing platform. |
 | Claim cases (v3.2) | **File a claim** checks what the parcel qualifies for: lost or damaged, returned without confirmation, or over SLA (AnterAja only), with the reason when it doesn't. |
@@ -69,7 +64,7 @@ You can also open a state directly: `?merchant=new`, `?products=pay`, `?products
 ## Defaults chosen for the prototype
 
 - Platform fee: Rp1.000 per shipment.
-- The bulk upload uses two built-in example files instead of reading a real spreadsheet.
+- The bulk upload uses Raam's built-in example file instead of reading a real spreadsheet, so the column matching from v3 is not in this version.
 - The map is a built-in preview. A Google Maps key slot is reserved in `config.js`.
 - Shopper score and area success rates are example data. Legal still has to confirm the use of phone history.
 

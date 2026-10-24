@@ -76,7 +76,7 @@ function setMode(m){PS.mode=m;
   whSync();syncBar();
   if(/^#shipments\/create/.test(location.hash))location.hash='home';else show()}
 function guideModal(){
-  modal.classList.add('wide');
+  modal.classList.add('nw');
   modal.innerHTML=`<div class="mh"><h3>What to try</h3><button class="ib" data-mclose aria-label="Close">${ic('x',18)}</button></div>
   <div class="mb guide"><p class="vf-lead">FLIK Shipping Phase 1 on Raam's design system. Everything here is example data. Use the dark bar at the bottom to switch merchants.</p>
   <ol>
@@ -101,7 +101,7 @@ function apiDrawer(){const c=FLIK.config;
   <div class="ev">${FLIK.apiLog.length?FLIK.apiLog.slice(0,60).map(l=>`<div class="ev-i"><div class="hd"><b>${l.method} ${esc(l.path.split('?')[0])}</b><time>${esc(l.source)}</time></div></div>`).join(''):'<p class="d-sub">No calls yet.</p>'}</div></div>`;
   openDrawer()}
 function openDrawer(){drawer.classList.add('open');dscrim.classList.add('open');drawer.setAttribute('aria-hidden','false');drawer.querySelector('[data-dclose]').onclick=closeDetail}
-const _closeModal=closeModal;closeModal=function(){_closeModal();modal.classList.remove('wide','lg','xl');modal.onclick=modal.oninput=modal.onchange=null};
+const _closeModal=closeModal;closeModal=function(){_closeModal();modal.classList.remove('wide','md','nw','lg','xl');modal.onclick=modal.oninput=modal.onchange=null};
 
 /* ===== Sidebar: Shipping has Shipment, Monitoring and Check rate ===== */
 NAV.splice(0,NAV.length,
@@ -179,7 +179,7 @@ const vDone=i=>VSEC[i][1].every(f=>String(PS.vd[f[0]]||'').trim());
 function verifyGate(action,cont){
   track('verification_prompted',{action});PS.vStep=Math.min(PS.vStep,2);
   const draw=()=>{const i=PS.vStep,sec=VSEC[i];
-    modal.classList.add('wide');
+    modal.classList.add('nw');
     modal.innerHTML=`<div class="mh"><h3>Verify your business</h3><button class="ib" data-vlater aria-label="Close">${ic('x',18)}</button></div>
     <div class="mb"><p class="vf-lead">FLIK verifies every business before money moves. You need it once to ${VACT[action]}.${cont?' Your shipments are saved, and you come straight back to them.':''}</p>
     <div><div class="vf-steps">${VSEC.map((_,k)=>`<i class="${k<=i?'on':''}"></i>`).join('')}</div><p class="vf-lead" style="margin-top:8px">${i+1} of 3 · <b style="color:var(--ink)">${sec[0]}</b></p></div>

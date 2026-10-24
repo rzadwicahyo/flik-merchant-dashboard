@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FLIK Shipping prototype</title>
 <meta name="robots" content="noindex">
-<!-- Vendored from raam-flik/flik-design-system dashboard/index.html @ 89acfdf by tools/vendor.mjs. Don't edit by hand: the prototype lives in app/. -->
+<!-- Vendored from raam-flik/flik-design-system dashboard/index.html @ 839a933 by tools/vendor.mjs. Don't edit by hand: the prototype lives in app/. -->
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -36,7 +36,6 @@ svg{display:block;flex:none}
 .app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
 .side{border-right:1px solid var(--line);position:sticky;top:0;height:100vh;overflow-y:auto;background:#fff;display:flex;flex-direction:column}
 .acct{display:flex;align-items:center;gap:10px;padding:18px 18px 16px;border-bottom:1px solid var(--line);width:100%;text-align:left}
-.acct:hover{background:var(--hover)}
 .acct .lg{width:28px;height:28px;border-radius:7px;border:1px solid var(--line-2);display:flex;align-items:center;justify-content:center;background:#fff;box-shadow:0 1px 1px rgba(0,0,0,.04)}
 .acct b{font-weight:600;font-size:14.5px;color:var(--ink);flex:1}
 .nav{padding:16px 10px;display:grid;gap:2px}
@@ -417,7 +416,7 @@ h2.sec{font-size:18px;font-weight:600;color:var(--ink);margin-top:28px;letter-sp
 .sx-whc span{color:var(--muted);font-size:13.5px;line-height:1.5}
 .sx-whc .btn{margin-left:auto}
 .sx-opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.sx-opt{display:flex;gap:12px;align-items:flex-start;text-align:left;padding:16px;border-radius:10px;box-shadow:var(--sh);background:#fff;width:100%}
+.sx-opt{display:flex;gap:12px;align-items:center;text-align:left;padding:16px;border-radius:10px;box-shadow:var(--sh);background:#fff;width:100%}
 .sx-opt:hover{box-shadow:0 0 0 1px rgba(64,68,82,.18),0 2px 5px rgba(64,68,82,.1)}
 .sx-opt.on{box-shadow:0 0 0 2px var(--primary)}
 .sx-opt .ic{width:36px;height:36px;border-radius:8px;background:var(--hover);color:var(--ink);display:flex;align-items:center;justify-content:center;flex:none}
@@ -436,7 +435,7 @@ h2.sec{font-size:18px;font-weight:600;color:var(--ink);margin-top:28px;letter-sp
 .sx-sb{display:none;padding:4px 18px 18px;border-top:1px solid var(--line)}
 .sx-ship.open .sx-sb{display:block}
 .sx-g{display:grid;gap:14px;margin-top:14px}
-.sx-g2{grid-template-columns:1fr 1fr}.sx-g4{grid-template-columns:repeat(4,1fr)}
+.sx-g2{grid-template-columns:1fr 1fr}.sx-g4{grid-template-columns:repeat(4,minmax(0,1fr))}
 .sx-f label{display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:var(--ink)}
 .sx-f input{width:100%;height:36px;border-radius:6px;border:0;box-shadow:var(--sh);padding:0 10px;outline:none;font:inherit;background:#fff}
 .sx-f input:focus{box-shadow:0 0 0 2px rgba(106,75,255,.4)}
@@ -448,6 +447,20 @@ h2.sec{font-size:18px;font-weight:600;color:var(--ink);margin-top:28px;letter-sp
 .sx-row{display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:4px}
 /* AI fixing: progress strip, queued cells pulse, the working row gets a scan line, fixed cells flash */
 .bk-mp{color:var(--muted);font-size:13.5px;line-height:1.5}
+/* medium dialog: a short review list that needs table columns */
+.modal.md{max-width:480px}
+.fx-wrap{margin:4px 0 14px;max-height:440px}
+.sp-tbl.fx-tbl{min-width:0;table-layout:auto}
+/* the first three columns hug their content; the AI fix takes what is left */
+.sp-tbl.fx-tbl th:nth-child(-n+3),.sp-tbl.fx-tbl td:nth-child(-n+3){width:1%;padding-right:24px}.sp-tbl.fx-tbl th:nth-child(4),.sp-tbl.fx-tbl td:nth-child(4){width:auto;min-width:0;padding-right:14px}
+.sp-tbl.fx-tbl th:first-child,.sp-tbl.fx-tbl td:first-child{min-width:0;max-width:none}
+.fx-tbl th,.fx-tbl td{text-align:left;padding:10px 14px;height:auto;white-space:nowrap;cursor:default}
+.fx-tbl tbody tr:hover td{background:none}
+.fx-tbl td:first-child{color:var(--muted)}
+.fx-tbl .fx-old{color:var(--muted);text-decoration:line-through}
+.fx-tbl .fx-new{color:var(--ink);font-weight:600;white-space:nowrap}
+.fx-tbl .fx-new svg{display:inline-block;color:var(--primary);vertical-align:-2px;margin-right:6px}
+@media (max-width:700px){.modal.md{max-width:100%}.fx-wrap{overflow-x:auto}}
 .bk-mlist{max-height:240px;overflow-y:auto;padding:12px 14px;border-radius:8px;background:var(--hover)}
 .bk-mlist dt{color:var(--muted)}
 .bk-mlist dd{color:var(--text)}
@@ -478,6 +491,377 @@ h2.sec{font-size:18px;font-weight:600;color:var(--ink);margin-top:28px;letter-sp
 @keyframes aiDone{0%{background:var(--pu-bg);box-shadow:0 0 0 2px var(--primary)}100%{background:#fff}}
 @keyframes aiPop{from{transform:scale(.5);opacity:0}}
 @media (prefers-reduced-motion:reduce){.bk-ai-ic,.ai-dots i,.bk.busy td.sug input,.bk.busy td.sug select,.bk .ai-trace rect,.bk tr.aidone td.auto input,.bk tr.aidone td.auto select,.bk tr.aidone .is-sm.ok{animation:none}}
+/* batch and order pages */
+.crumbs{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);margin-bottom:8px;flex-wrap:wrap}
+.crumbs .lnk{color:var(--primary);font-weight:500;text-decoration:none}
+.crumbs .lnk:hover{text-decoration:underline}
+.crumbs .sep{display:flex;transform:rotate(-90deg);color:var(--faint)}
+.bt-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:13.5px;margin-top:8px}
+.bt-meta .clg{width:22px;height:22px;border-radius:5px}
+.bt-meta>span:not(.st){color:var(--text)}
+.bt-meta .dot{color:var(--faint)}
+.bt-meta .st{margin-left:4px}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;color:var(--ink)}
+.ib.cp{width:26px;height:26px;display:inline-flex;vertical-align:middle;margin-left:2px;color:var(--muted)}
+.bt-tbl td{height:auto;padding-top:10px;padding-bottom:10px}
+.bt-tbl td b{display:block;color:var(--ink);font-weight:500}
+.bt-tbl td .src{display:block;font-size:12.5px;color:var(--muted)}
+.bt-ad{max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bt-tbl tbody tr{cursor:pointer}
+.bt-tbl tbody tr:focus-visible td{background:var(--hover);outline:none}
+.od-title{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.od-title{margin-top:6px}
+.od-title h1{margin:0;line-height:1.25}
+.od-title .st{height:26px;padding:0 10px;font-size:13px}
+.od-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.od-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:0 12px;align-items:start;margin-top:4px}
+.od-main{display:grid;gap:0}
+.od-card{padding:18px 20px}
+.od-card h3{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:14px}
+.od-kv{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 20px}
+.od-kv dt{font-size:12.5px;color:var(--muted)}
+.od-kv dd{font-size:13.5px;color:var(--ink);font-weight:500;margin-top:3px;word-break:break-word}
+.od-kv .w2{grid-column:1/-1}
+.od-c{display:block}
+.od-c .clg{display:inline-block;vertical-align:-4px;margin-right:5px}
+/* tooltip: same look as the chart tooltip */
+.tt{position:relative;display:inline-block;outline:none;cursor:default}
+.tt::after{content:attr(data-tt);position:absolute;left:0;bottom:calc(100% + 8px);background:#fff;border-radius:8px;box-shadow:var(--pop);padding:6px 10px;font-size:12.5px;font-weight:500;color:var(--ink);white-space:nowrap;opacity:0;pointer-events:none;transform:translateY(2px);transition:opacity .12s,transform .12s;z-index:5}
+.tt:hover::after,.tt:focus-visible::after{opacity:1;transform:none}
+.tt:focus-visible .clg{box-shadow:0 0 0 2px rgba(106,75,255,.4)}
+.od-c .nw{white-space:nowrap}
+.od-c .clg{width:18px;height:18px;border-radius:4px}
+.od-save{color:var(--ok-tx)}
+/* cards sit 12px apart both ways. Phone lines up with the 2nd and 4th columns of the cards above (20px padding, 20px column gap) */
+.od-two{display:grid;grid-template-columns:1fr 1fr;column-gap:12px}
+.od-rcp .od-kv{grid-template-columns:calc(50% - 2px) minmax(0,1fr)}
+.od-snd .od-kv{grid-template-columns:calc(50% - 18px) minmax(0,1fr)}
+.od-two .od-kv dd{white-space:normal}
+.od-two .od-kv>div:nth-child(2) dd{white-space:nowrap}
+.od-trk{position:sticky;top:76px}
+.od-trk .hint{margin-top:4px;line-height:1.5}
+@media (max-width:1100px){.od-grid{grid-template-columns:minmax(0,1fr)}.od-trk{position:static;order:-1}.od-kv{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:700px){.od-two{grid-template-columns:1fr}.od-rcp .od-kv,.od-snd .od-kv{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* courier step: selection summary */
+.cr-sum{position:sticky;bottom:0;z-index:2;margin-top:20px;padding:16px 18px;border:1px solid var(--line);border-radius:10px;background:#fff;box-shadow:var(--pop)}
+.cr-sum-empty{margin:0;color:var(--muted);font-size:14px}
+.cr-sum-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:6px}
+.cr-sum-h b{color:var(--ink);font-weight:600;font-size:15px}
+.cr-sum-h span{color:var(--ink);font-weight:600;font-size:15px}
+.cr-sum-r{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.cr-sum-r>div{flex:1;min-width:0}
+.cr-sum-r>div b{display:block;color:var(--ink);font-weight:500;font-size:14px}
+.cr-sum-r>div span{display:block;color:var(--muted);font-size:13px;margin-top:1px}
+.cr-sum-r>b{color:var(--text);font-weight:500;font-size:14px}
+.cr-sum-r .btn{flex:none}
+.cr-sum .sx-note{margin:12px 0 0}
+.cr-sum-m{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px 20px;color:var(--muted);font-size:13px}
+.cr-sum-m li{display:flex;align-items:center;gap:6px}
+.cr-sum-m svg{flex:none}
+.sp-wait{display:block;margin-top:4px;font-size:12px}
+.cr-sum-tip{display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:13.5px;color:var(--text)}
+.cr-sum-tip>svg{color:var(--primary);flex:none}
+.cr-sum-tip span{flex:1;min-width:0}
+.cr-sum-tip b{color:var(--ink);font-weight:500}
+.cr-sum-tip .lnk{flex:none;font-weight:500}
+@media (max-width:700px){.cr-sum{position:static;padding:14px}.cr-sum-r{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px}.cr-sum-r .btn{grid-column:2/-1;justify-self:start;margin-top:6px}.cr-sum-tip{flex-wrap:wrap}.cr-sum-tip span{flex-basis:calc(100% - 30px)}.cr-sum-tip .lnk{margin-left:23px}}
+/* courier step: courier list on the left, batches and moved orders on the right */
+/* full width: the courier list keeps what it needs, the batches panel takes the rest */
+.sx-in.cr2{max-width:none;padding-left:32px;padding-right:32px;grid-template-columns:minmax(560px,1.2fr) minmax(420px,1fr);column-gap:28px;row-gap:0}
+.cr2 .cr-head{grid-column:1/-1}
+.cr2 .cr-tabrow{grid-column:1}
+.cr2 .cr-l{grid-column:1;grid-row:3}
+.cr2 .cr-side{grid-column:2;grid-row:3}
+.cr-side .cr-side-c>.cr-sum-r:last-child{border-bottom:0;padding-bottom:0}
+.cr-side{position:sticky;top:0;display:grid;gap:16px;padding:0 2px 2px;max-height:calc(100vh - 150px);overflow-y:auto;overscroll-behavior:contain}
+.cr-side-c{padding:16px 18px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.cr-side-sub{margin:0 0 6px;color:var(--muted);font-size:13px;line-height:1.5}
+.cr-side .cr-sum-r .cr-b{flex:none;color:var(--muted);font-size:13px}
+.cr-side .cr-ic{width:28px;height:28px;border-radius:8px;background:var(--hover);color:var(--muted);display:grid;place-items:center;flex:none}
+.cr-side .cr-sum-r:last-of-type{border-bottom:0}
+.cr-side .sp-cover{margin:4px 0 10px}
+.cr-ro-list{display:grid;gap:10px}
+.cr-ro{padding:12px;border:1px solid var(--line);border-radius:8px;display:grid;gap:8px}
+.cr-ro-h{display:flex;align-items:flex-start;gap:8px}
+.cr-ro-h>div{flex:1;min-width:0}
+.cr-ro-h b{display:block;color:var(--ink);font-weight:500;font-size:14px}
+.cr-ro-h span{display:block;color:var(--muted);font-size:12.5px;line-height:1.4;margin-top:2px}
+.cr-ro-tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.cr-wait{display:inline-flex;align-items:center;gap:4px;color:var(--muted);font-size:12.5px}
+.cr-ro .sp-sw{display:block;width:100%}
+.cr-none{margin:0;color:var(--bad-tx);font-size:13px}
+.cr-side-f{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;color:var(--muted);font-size:13px}
+@media (max-width:700px){.sx-in.cr2{padding-left:16px;padding-right:16px}}
+@media (max-width:1100px){.sx-in.cr2{grid-template-columns:minmax(0,1fr)}.cr2 .cr-side{grid-column:1;grid-row:auto;position:static;max-height:none;overflow:visible;margin-top:24px}}
+.dn-wait{align-items:flex-start;padding:12px 14px}
+.dn-wait>svg{margin-top:2px;flex:none}
+.dn-wait b{display:block;font-weight:600;margin-bottom:2px}
+.dn-wait .btn{align-self:center}
+@media (max-width:700px){.dn-wait{flex-wrap:wrap}.dn-wait .btn{margin-left:24px}}
+.dn .sx-note{margin:0}
+.dn-bt{max-height:440px;overflow-y:auto}
+.dn-bt table{min-width:0}
+.dn-bt td{white-space:normal}
+.dn-bt .st,.dn-bt .dn-c,.dn-bt .dn-id{white-space:nowrap}
+.dn-bt td:last-child{width:1%;white-space:nowrap}
+@media (max-width:700px){.dn-bt table{min-width:640px}}
+/* review: changes from the uploaded file */
+.cmp-lead{margin:-4px 0 14px}
+.cmp-seg{margin-bottom:12px;max-width:100%;overflow-x:auto;scrollbar-width:none}
+.cmp-seg button{white-space:nowrap;flex:none}
+.cmp-wrap{max-height:360px;overflow-y:auto}
+.cmp-tbl{min-width:720px}
+.cmp-tbl td{cursor:default;height:auto;padding-top:11px;padding-bottom:11px}
+.cmp-tbl tbody tr:hover td{background:none}
+.cmp-tbl td.rn{color:var(--muted);width:64px}
+.cmp-tbl .cmp-a{color:var(--muted);text-decoration:line-through}
+.cmp-tbl .cmp-b{color:var(--ink);font-weight:500}
+.cmp-tbl tr.cmp-rm .cmp-b{color:var(--bad-tx)}
+.cmp-tbl tr.cmp-rm .cmp-a,.cmp-tbl tr.cmp-wait .cmp-a,.cmp-tbl tr.cmp-cour .cmp-a{text-decoration:none}
+/* payment cost breakdown */
+.pt-wrap{margin-top:4px}
+.pt{min-width:0}
+.pt th{font-size:13px;font-weight:500;color:var(--muted);text-align:right;padding:8px 14px}
+.pt th:first-child{text-align:left}
+.pt td{height:auto;padding:12px 14px;vertical-align:top;cursor:default;text-align:right;white-space:nowrap}
+.pt tbody tr:hover td{background:none}
+.pt td:first-child{text-align:left;white-space:normal;min-width:180px}
+.pt td b{display:block;font-weight:500;color:var(--text)}
+.pt td span{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+.pt td.num{color:var(--text)}
+.pt-disc td.num{color:var(--ok-tx)}
+.pt-tot td{font-weight:600}
+.pt-tot td b,.pt-tot td.num{color:var(--ink);font-weight:600}
+.pt-when td{border-bottom:0;color:var(--muted);font-size:13px;padding-top:14px}
+.pt-note{color:var(--muted);font-size:13.5px;line-height:1.5;margin-top:14px}
+@media (max-width:700px){.pt{min-width:560px}}
+/* payment breakdown */
+.sx-kv dd.pb-disc{color:var(--ok-tx)}
+.pb-split{display:grid;gap:12px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+.pb-row{display:flex;align-items:center;gap:12px}
+.pb-row .ic{width:34px;height:34px;border-radius:8px;background:var(--primary-soft);color:var(--primary);display:flex;align-items:center;justify-content:center;flex:none}
+.pb-row>div{flex:1;min-width:0}
+.pb-row>div b{display:block;color:var(--ink);font-weight:600;font-size:14px}
+.pb-row>div span{color:var(--muted);font-size:13px;line-height:1.45}
+.pb-row>b.num{flex:none;color:var(--ink);font-weight:600;font-size:15px}
+.dn-pay{margin:0}
+/* shipment created */
+.sx-done.dn{max-width:880px;padding:48px 24px 80px;display:grid;grid-template-columns:minmax(0,1fr);gap:20px}
+.dn section{margin:0}
+.dn .sx-h{margin-bottom:10px}
+.dn-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:0;margin:0}
+.dn-k{display:grid;gap:4px;padding:16px 20px;border-right:1px solid var(--line)}
+.dn-k:last-child{border-right:0}
+.dn-k b{font-size:20px;font-weight:600;color:var(--ink);letter-spacing:-.3px}
+.dn-steps{list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;counter-reset:dn}
+.dn-steps li{border-radius:12px;box-shadow:var(--sh);padding:18px;display:grid;gap:12px;align-content:start;counter-increment:dn;position:relative}
+.dn-steps li::after{content:counter(dn);position:absolute;top:18px;right:18px;font-size:12.5px;font-weight:600;color:var(--faint)}
+.dn-steps .ic{width:36px;height:36px;border-radius:9px;background:var(--primary-soft);color:var(--primary);display:flex;align-items:center;justify-content:center}
+.dn-steps b{display:block;color:var(--ink);font-weight:600;font-size:14.5px;margin-bottom:4px}
+.dn-steps span{color:var(--muted);font-size:13px;line-height:1.5}
+.dn-tbl{margin-top:0}
+.dn-tbl table{min-width:640px}
+.dn-tbl td{cursor:default}
+.dn-tbl tbody tr:hover td{background:none}
+.dn-tbl td:last-child{text-align:right;width:1%}
+.dn-tbl .btn{height:30px;padding:0 10px;font-size:13px}
+.dn-id{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;color:var(--ink)}
+.dn-c{display:flex;align-items:center;gap:8px;color:var(--ink);white-space:nowrap}
+.dn-c .clg{width:24px;height:24px;border-radius:6px}
+.dn-acts{justify-content:flex-end;margin:4px 0 0}
+@media (max-width:760px){.dn-kpis{grid-template-columns:1fr 1fr}.dn-k:nth-child(2){border-right:0}.dn-k:nth-child(-n+2){border-bottom:1px solid var(--line)}.dn-steps{grid-template-columns:1fr}.sx-done.dn{padding:24px 16px 80px}.sx-ok{flex-wrap:wrap}.sx-ok .btn{width:100%;justify-content:center}}
+/* upload loading state */
+.bk-file{scroll-margin-top:16px}
+.bk-ld{padding:12px 14px;border-radius:8px;background:var(--hover);margin-bottom:12px;display:grid;gap:10px}
+.bk-ld-t{display:flex;justify-content:space-between;gap:12px;font-size:13.5px}
+.bk-ld-t b{color:var(--ink);font-weight:500}
+.bk-ld-t span{color:var(--muted);font-variant-numeric:tabular-nums}
+.bk-ld .bk-ai-bar{grid-column:auto}
+.bk-sk td{padding:14px 8px;vertical-align:middle}
+.sk{display:block;height:12px;border-radius:4px;background:var(--line);animation:skp 1.2s ease-in-out infinite}
+@keyframes skp{50%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){.sk{animation:none}}
+/* pickup warehouse picker (same list as the invoice customer field) */
+.whp-btn{width:100%;height:36px;border-radius:6px;box-shadow:var(--sh);background:#fff;display:flex;align-items:center;gap:8px;padding:0 12px 0 10px;text-align:left;color:var(--ink);font-size:14px}
+.whp-btn>svg{color:var(--faint);flex:none}
+.whp-btn>span:first-of-type{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.whp-btn .chev{display:flex;color:var(--muted);transition:transform .15s}
+.whp-btn.on{box-shadow:0 0 0 2px rgba(106,75,255,.4)}
+.whp-btn.on .chev{transform:rotate(180deg)}
+.whp .ie-dd .opt.on b{color:var(--primary)}
+.whp .ie-dd{z-index:20}
+/* risky shoppers dialog and WhatsApp preview */
+.rk2 .rk-allrow td{background:var(--hover);border-bottom:0;padding-top:12px;padding-bottom:12px;vertical-align:middle;cursor:default;text-align:left}
+.rk2 .rk-allrow+tr th{padding-top:14px}
+.rk2 .rk-allrow b{display:block;color:var(--ink);font-weight:600}
+.rk2 .rk-allrow td{border-bottom:1px solid var(--line)}
+
+.rk2 .rk-allrow .src{display:block;font-size:12.5px;color:var(--muted);font-weight:400}
+.rk2 tbody tr:first-child td{padding-top:14px}
+.rk2 td .src.num{display:block;margin-top:4px}
+.sp-tbl.rk2{table-layout:auto;min-width:0}
+.sp-tbl.rk2 td:first-child{min-width:140px;max-width:none}
+.sp-tbl.rk2 th:last-child,.sp-tbl.rk2 td:last-child{width:auto;min-width:200px}
+.sp-tbl.rk2 th,.sp-tbl.rk2 td{padding-right:8px}
+/* the table column takes its height from the preview box, so both end on the same line; the list scrolls inside */
+.rk-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:stretch}
+.rk-main{display:flex;flex-direction:column;gap:14px;min-width:0;contain:size}
+/* one bordered table: the all-orders band, the titles and the orders */
+.rk-main>.sp-wrap{flex:1;min-height:0;max-height:none;box-shadow:var(--sh);border-radius:10px;background:#fff}
+.sp-tbl.rk2 th:first-child,.sp-tbl.rk2 td:first-child{padding-left:16px}
+.sp-tbl.rk2 th:last-child,.sp-tbl.rk2 td:last-child{padding-right:14px}
+.sp-tbl.rk2 tbody tr:last-child td{border-bottom:0}
+.sp-tbl.rk2 th{border-bottom:1px solid var(--line)}
+.rk-pv{background:var(--hover);border-radius:10px;padding:14px;display:grid;gap:12px;align-content:start}
+.rk-pv .wa-b{max-width:none}
+.rk-pv-h{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.rk-pv-h b{color:var(--ink);font-weight:600;font-size:14px}
+.rk-pv .hint{margin:0}
+.wa-b{background:#fff;border-radius:12px;box-shadow:var(--sh);max-width:380px;overflow:hidden}
+.wa-h{display:flex;align-items:center;gap:8px;padding:10px 12px 0;font-size:13px}
+.wa-h b{color:var(--ink);font-weight:600}
+.wa-v{width:14px;height:14px;border-radius:50%;background:var(--primary);color:#fff;display:inline-flex;align-items:center;justify-content:center}
+.wa-av{width:26px;height:26px;border-radius:50%;background:var(--ink);color:#fff;font-size:10.5px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.wa-b p{padding:8px 12px 0;font-size:13.5px;color:var(--text);line-height:1.5}
+.wa-t{display:block;text-align:right;font-size:11px;color:var(--faint);padding:2px 12px 8px}
+.wa-btns{display:grid;border-top:1px solid var(--line)}
+.wa-btns span{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;color:var(--primary);font-weight:500;font-size:13.5px}
+.wa-btns span+span{border-top:1px solid var(--line)}
+.sx-note.info{background:var(--pu-bg);color:var(--pu-tx);border-color:var(--pu-bd)}
+@media (max-width:860px){.rk-grid{grid-template-columns:minmax(0,1fr)}.rk-main{contain:none}.rk-main>.sp-wrap{max-height:none}}
+@media (max-width:820px){.sp-tbl.rk2 thead{display:block}.sp-tbl.rk2 thead tr:not(.rk-allrow){display:none}.sp-tbl.rk2 .rk-allrow{display:grid;gap:8px;padding:12px;border-radius:8px;background:var(--hover)}.sp-tbl.rk2 .rk-allrow td{display:block;padding:0;border-radius:0}}
+/* add-warehouse pop-up */
+.whq-g{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+.whq-g .w2{grid-column:1/-1}
+.whq-g .sx-f input{width:100%}
+@media (max-width:700px){.whq-g{grid-template-columns:1fr}}
+/* manual shipment card: pickup, payment and quantity per shipment */
+.sx-seg{display:flex;width:100%;height:36px;padding:3px}
+.sx-seg button{flex:1;height:30px}
+.sx-gpq{grid-template-columns:repeat(4,minmax(0,1fr))}
+.sx-gpq>.sx-f:first-child{grid-column:span 3}
+.sx-qty{display:flex;height:36px;width:100%;justify-content:space-between;background:#fff}
+.sx-qty button{width:40px;height:36px}
+.sx-qty button:disabled{opacity:.35;cursor:default}
+.sx-cod{align-items:end}
+.sx-cod .hint{margin:0;line-height:1.45;font-size:12px;min-height:36px;display:flex;align-items:center}
+.sx-addr>svg{flex:none;color:var(--muted)}
+.sx-addr>span:first-of-type{flex:1;min-width:0}
+@media (max-width:700px){.sx-gpq{grid-template-columns:repeat(2,minmax(0,1fr))}.sx-gpq>.sx-f:first-child{grid-column:auto}}
+/* pickup warehouse per manual shipment */
+.sx-f .sx-sel.sx-whsel{margin-top:0;max-width:none;appearance:none;-webkit-appearance:none;padding-right:34px;cursor:pointer}
+.selw{position:relative;display:block}
+.selw>select{appearance:none;-webkit-appearance:none;padding-right:34px;cursor:pointer;margin-top:0;max-width:none}
+.selw::after{content:'';position:absolute;right:15px;top:50%;margin-top:-5px;width:6px;height:6px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(45deg);pointer-events:none}
+/* delivery health check */
+.rk-ph{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.rk-tag{height:20px;padding:0 6px;font-size:12px;font-weight:600;cursor:help;outline:none}
+.rk-tag:focus-visible{box-shadow:0 0 0 2px rgba(106,75,255,.4)}
+.rk-in{display:flex;align-items:center;gap:6px}
+.rk-in input{flex:1}
+.bk td.rk-bad input{color:var(--bad-tx)}
+.bk td.rk-warn input{color:var(--warn-tx)}
+.bk table td[data-c="phone"]{min-width:180px}
+.bk td[data-c="svc"]{white-space:nowrap}
+.gtip{position:fixed;z-index:200;max-width:280px;background:#fff;border-radius:8px;box-shadow:var(--pop);padding:8px 10px;font-size:12.5px;line-height:1.45;color:var(--ink);pointer-events:none}
+.bk td.rk-bad .rk-ph{color:var(--bad-tx)}
+.bk td.rk-warn .rk-ph{color:var(--warn-tx)}
+.bk .is-sm.rk.warn,.bk .is.rk.warn{color:var(--warn-tx)}
+.bk .is-sm.rk.bad,.bk .is.rk.bad{color:var(--bad-tx)}
+.bk .is.rk .msg b{font-weight:600}
+.rk-lead{margin:-2px 0 10px}
+.hc{display:grid;gap:14px;margin-bottom:22px}
+.hc-t b{display:block;color:var(--ink);font-weight:600;font-size:15px}
+.hc-t span{color:var(--muted);font-size:13px;line-height:1.5}
+.hc-r{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding-top:14px;border-top:1px solid var(--line)}
+.hc-avg{display:flex;align-items:baseline;gap:8px}
+.hc-avg b{font-size:22px;font-weight:600;color:var(--ink);letter-spacing:-.3px}
+.hc-b{display:flex;gap:6px;flex-wrap:wrap}
+.hc-r .btn{margin-left:auto}
+.hc-ok{margin-left:auto;display:inline-flex;align-items:center;gap:6px;color:var(--ok-tx);font-size:13px;font-weight:500}
+.rk-sc{display:inline-flex;align-items:baseline;gap:6px;font-size:12.5px;font-weight:500;white-space:nowrap}
+.rk-sc b{font-size:18px;font-weight:600}
+.rk-sc.warn,.rk-sc.warn b{color:var(--warn-tx)}
+.rk-sc.bad,.rk-sc.bad b{color:var(--bad-tx)}
+.rk-why{list-style:none;display:grid;gap:2px;font-size:13px;color:var(--text)}
+.rk-why li::before{content:'·';color:var(--faint);margin-right:6px}
+.sp-tbl.rk-tbl th:last-child,.sp-tbl.rk-tbl td:last-child{width:72px;min-width:0;text-align:center;padding-right:0}
+.sp-tbl.rk-tbl td:first-child{min-width:170px;max-width:220px}
+.rk-tbl td:nth-child(2){white-space:nowrap}
+.rk-rm{justify-content:center;padding:6px}
+/* courier step: recommendation, service tabs, delivery rate */
+.cr-rec{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:10px;background:var(--pu-bg);border:1px solid var(--pu-bd);margin:4px 0 22px}
+.cr-rec-ic{width:40px;height:40px;border-radius:10px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 0 0 5px var(--pu-bd)}
+.cr-rec>div{flex:1;min-width:0}
+.cr-rec b{display:block;color:var(--ink);font-weight:600;font-size:15px}
+.cr-rec>div>span{color:var(--muted);font-size:13.5px;line-height:1.5}
+.cr-rec .btn{flex:none}
+.cr-rec .cr-rec-on{flex:none;display:inline-flex;align-items:center;gap:6px;color:var(--ok-tx);font-weight:500;font-size:13.5px}
+.cr-tabs{margin-bottom:8px}
+.cr-list .sx-cr:first-child{border-top:1px solid var(--line)}
+.cr-bar{display:block;height:4px;border-radius:4px;background:var(--line);margin-top:10px;overflow:hidden}
+.cr-bar i{display:block;height:100%;background:var(--primary);border-radius:4px}
+.sx-svc .cr-rate{font-size:12.5px;color:var(--muted);margin-top:4px}
+.sx-svc .cr-rz{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--bad-tx);margin-top:4px}
+.sx-svc.rz{box-shadow:0 0 0 1px var(--bad-bd)}
+.sx-svc.rz.on{box-shadow:0 0 0 2px var(--primary)}
+@media (max-width:700px){.cr-rec{flex-wrap:wrap}.cr-rec .btn{width:100%;justify-content:center}}
+/* courier split dialog and pickup list */
+.mf .sp{flex:1}
+.sp-wrap{margin-top:0;max-height:400px;overflow-y:auto}
+.modal.wide>.mb{overflow-y:auto;min-height:0;flex:1;grid-template-columns:minmax(0,1fr)}
+.modal.wide>.mh,.modal.wide>.mf{flex:none}
+.sp-tbl{width:100%}
+.sp-tbl th{font-size:12.5px;padding:8px 10px 8px 0;white-space:normal;vertical-align:bottom}
+.sp-tbl td:first-child{min-width:170px;max-width:260px}.sp-tbl th:last-child,.sp-tbl td:last-child{width:44%;min-width:240px;padding-right:4px}
+.sp-tbl td.sel::after{right:18px}
+.sp-tbl td.sel{position:relative}
+.sp-tbl td.sel::after{display:none}
+.sp-cc{display:flex;align-items:center;gap:4px}
+.sp-cover{display:flex;align-items:center;gap:6px;color:var(--ok-tx);font-size:13px;margin-top:-4px}
+.sp-sw{position:relative;flex:1;min-width:0}
+.sp-sw::after{content:'';position:absolute;right:14px;top:50%;margin-top:-5px;width:6px;height:6px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(45deg);pointer-events:none}
+.sp-x{flex:none;width:34px;height:34px;color:var(--muted)}
+.sp-x:hover{color:var(--bad-tx);background:var(--bad-bg)}
+/* tooltip sits to the left so the table's scroll area never clips it */
+.sp-x.tt{position:relative;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.sp-x.tt::after{left:auto;right:calc(100% + 6px);bottom:auto;top:50%;transform:translate(2px,-50%)}
+.sp-x.tt:hover::after,.sp-x.tt:focus-visible::after{transform:translate(0,-50%)}
+.sp-tbl td.sel::after{content:'';position:absolute;right:14px;top:50%;margin-top:-5px;width:6px;height:6px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(45deg);pointer-events:none}
+.sp-tbl select,.cr-ro select{appearance:none;-webkit-appearance:none;width:100%;height:36px;border:0;border-radius:6px;box-shadow:var(--sh);padding:0 30px 0 10px;font:inherit;font-size:13.5px;background:#fff;color:var(--ink);outline:none;cursor:pointer;text-overflow:ellipsis}
+.sp-tbl select:focus,.cr-ro select:focus{box-shadow:0 0 0 2px rgba(106,75,255,.4)}
+#sp-sum{margin:0}
+@media (max-width:820px){.sp-wrap{max-height:none;overflow:visible}.sp-tbl,.sp-tbl tbody{display:block;min-width:0;width:100%}.sp-tbl thead{display:none}.sp-tbl tr{display:grid;grid-template-columns:auto auto minmax(0,1fr);justify-content:start;align-items:center;gap:8px;padding:12px 0;border-bottom:1px solid var(--line)}.sp-tbl select{min-width:0;max-width:100%}.sp-tbl tbody td,.sp-tbl tbody td:last-child{display:block;padding:0;border:0;height:auto;min-width:0!important;max-width:none!important;width:auto!important}.sp-tbl td:first-child,.sp-tbl td.sel{grid-column:1/-1;min-width:0}.sp-tbl tbody td.sel{padding:4px 2px 0}.sp-tbl td.sel::after{right:16px;margin-top:-3px}}
+#sp-sum b{color:var(--ink);font-weight:600}
+.sp-tbl td{height:auto;padding:12px 10px 12px 0;vertical-align:middle;white-space:normal;cursor:default}
+.sp-tbl tbody tr:hover td{background:none}
+.sp-tbl .st{white-space:nowrap}
+.sp-tbl td b{display:block;color:var(--ink);font-weight:600}
+.sp-tbl td .src{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+.sp-c{display:flex;align-items:center;gap:8px;color:var(--ink)}
+.sp-h{font-size:14px;font-weight:600;color:var(--ink);margin:4px 0 10px}
+.mb .sx-svc .n .clg{width:22px;height:22px;border-radius:5px}
+.mb .sx-svcs{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.sp-c .clg{width:24px;height:24px;border-radius:6px}
+.sx-pks{display:grid;gap:10px}
+.sx-pks>.sx-card,.sx-pks>.sx-card+.sx-card{margin:0}
+.pk-g,.sx-pks>.pk-g{margin:0}
+.pk-g .sx-sh{flex-wrap:nowrap;gap:12px;padding:12px 16px}
+.pk-g .sx-sh>.clg{width:34px;height:34px;border-radius:8px}
+.pk-t{display:grid;flex:1;min-width:0}
+.pk-t span{color:var(--muted);font-size:13px}
+.pk-p{flex:none;color:var(--ink)}
+.pk-g .sx-sh .chev{margin-left:4px}
+.pk-g .sx-sb{padding:0 16px 2px 62px}
+.pk-w{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:4px 16px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.pk-w:last-child{border-bottom:0}
+.pk-w b{display:block;color:var(--ink);font-weight:500;font-size:13.5px}
+.pk-w span{color:var(--muted);font-size:13px}
+.pk-w>b.num{font-weight:600;text-align:right}
+@media (max-width:700px){.pk-g .sx-sb{padding-left:16px}.pk-w{grid-template-columns:minmax(0,1fr) auto}.pk-w>div{grid-column:1/-1}}
+.sx-pk{align-items:center}
+.sx-pk>.clg{width:34px;height:34px;border-radius:8px}
+.sx-pk-p{margin-left:auto;flex:none;color:var(--ink);font-weight:600}
 /* ===== Bulk upload check table ===== */
 .sx-in.solo.wide{max-width:none}
 .bk-file{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13.5px;color:var(--muted);margin-bottom:8px}
@@ -485,8 +869,10 @@ h2.sec{font-size:18px;font-weight:600;color:var(--ink);margin-top:28px;letter-sp
 .bk-file .lnk{color:var(--primary);font-weight:500;margin-left:4px}
 .bk-sum{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .bk-sum .sp{flex:1}
+.sx-note.bad{background:var(--bad-bg);color:var(--bad-tx);border-color:var(--bad-bd)}
+.sx-note .btn{margin-left:auto;flex:none}
 .sx-note.ok{background:var(--ok-bg);color:var(--ok-tx);border-color:var(--ok-bd)}
-.bk table{min-width:1580px}
+.bk table{min-width:1740px}
 .bk th{font-size:12.5px;padding:8px 4px;white-space:nowrap}
 .bk td{height:auto;padding:6px 4px;vertical-align:top;white-space:normal;font-size:13px}
 .bk td.tx{padding:12px 12px 10px;color:var(--text)}
@@ -520,7 +906,8 @@ h2.sec{font-size:18px;font-weight:600;color:var(--ink);margin-top:28px;letter-sp
 .bk .okk{color:var(--ok-tx);display:inline-flex;align-items:center;gap:4px;font-size:12.5px;padding-top:6px}
 .bk td[data-c="name"]{min-width:150px}.bk td[data-c="phone"]{min-width:130px}.bk td[data-c="street"]{min-width:200px}
 .bk td[data-c="kel"],.bk td[data-c="kec"]{min-width:190px}.bk td[data-c="city"]{min-width:180px}.bk td[data-c="prov"]{min-width:170px}
-.bk td[data-c="zip"]{min-width:100px}.bk td[data-c="items"]{min-width:190px}.bk td[data-c="wh"]{min-width:120px}
+.bk td[data-c="zip"]{min-width:100px}.bk td[data-c="items"]{min-width:190px}.bk td[data-c="wh"]{min-width:120px}.bk td[data-c="pay"]{min-width:150px;white-space:nowrap}
+.sx-sub-l{display:block;font-size:13px;font-weight:500;color:var(--ink);margin:14px 0 6px}
 .sx-drop{border:1.5px dashed var(--line-2);border-radius:10px;padding:32px;text-align:center;color:var(--muted)}
 .sx-drop b{display:block;color:var(--ink);font-weight:600;margin:10px 0 4px}
 .sx-drop .ic{width:40px;height:40px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:inline-flex;align-items:center;justify-content:center}
@@ -538,7 +925,7 @@ h2.sec{font-size:18px;font-weight:600;color:var(--ink);margin-top:28px;letter-sp
 .sx-svc .n .rdo{margin-left:auto}
 .sx-svc .d{font-size:12.5px;color:var(--muted)}
 .sx-svc .p{font-weight:600;color:var(--ink);margin-top:6px}
-.sx-svc .p s{font-weight:400;color:var(--faint);font-size:12.5px;margin-left:6px}
+.sx-svc .p s{display:block;font-weight:400;color:var(--faint);font-size:12.5px;margin-top:1px}
 .sx-tag{position:absolute;top:-9px;left:10px;height:18px;padding:0 7px;border-radius:999px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;background:var(--ok-bg);color:var(--ok-tx);border:1px solid var(--ok-bd)}
 .sx-tag.ch{background:var(--pu-bg);color:var(--pu-tx);border-color:var(--pu-bd)}
 .sx-slots{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
@@ -786,11 +1173,10 @@ h2.sec{font-size:18px;font-weight:600;color:var(--ink);margin-top:28px;letter-sp
 <div class="app">
   <!-- ===== Sidebar ===== -->
   <aside class="side" id="side">
-    <button class="acct" data-toast="Switch business account">
+    <div class="acct">
       <span class="lg"><svg width="16" height="16" viewBox="0 0 30 30" fill="none" aria-hidden="true"><path d="M23.2088 17.4254C23.2088 13.1436 20.7668 11.9717 17.755 11.9717H12.1924V20.7969C12.1924 23.8087 13.5039 26.2507 17.6461 26.2507V17.4254H23.2088Z" fill="#F26324"/><path d="M26.442 9.00748C26.442 3.71863 24 3 20.9882 3H2.94434V20.7678C2.94434 23.7796 3.6806 26.2215 9.22868 26.2215V9.00748H26.4427H26.442Z" fill="#F26324"/></svg></span>
       <b>Aruna Studio</b>
-      <span data-ic="sel"></span>
-    </button>
+    </div>
     <nav class="nav" id="nav"></nav>
     <div class="side-foot">FLIK Dashboard · Prototype</div>
   </aside>
@@ -806,7 +1192,7 @@ h2.sec{font-size:18px;font-weight:600;color:var(--ink);margin-top:28px;letter-sp
         <button class="lang" id="lang" aria-label="Language: English" aria-haspopup="menu"><span data-ic="globe"></span><span id="langv">EN</span><span data-ic="chev"></span></button>
         <button class="ib hide-s" data-toast="Opens FLIK help center" aria-label="Help"><span data-ic="help"></span></button>
         <button class="ib" id="bell" aria-label="Notifications"><span data-ic="bell"></span><span class="dot"></span></button>
-        <button class="ib hide-s" data-toast="Opens Settings" aria-label="Settings"><span data-ic="gear"></span></button>
+        <button class="ib hide-s" id="gear" aria-label="Settings" aria-haspopup="menu"><span data-ic="gear"></span></button>
         <button class="plus" id="plus" aria-label="Create"><span data-ic="plus"></span></button>
       </div>
     </header>
@@ -875,6 +1261,7 @@ h2.sec{font-size:18px;font-weight:600;color:var(--ink);margin-top:28px;letter-sp
       <div class="foot"><span id="inv-count"></span></div>
     </main>
     <main class="content" id="view-shp" hidden>
+      <div id="shp-home">
       <div class="ph"><h1>Shipments</h1><button class="btn btn-p" data-newshp id="shp-new" hidden><span data-ic="plus"></span>Create shipment</button></div>
       <div id="shp-empty">
       <section class="es-hero">
@@ -911,6 +1298,9 @@ h2.sec{font-size:18px;font-weight:600;color:var(--ink);margin-top:28px;letter-sp
       <div class="tbl-wrap"><table><thead><tr><th>Shipping cost</th><th></th><th>Batch</th><th>Courier</th><th>Shipments</th><th>COD value</th><th>Pickup from</th><th>Created</th><th></th></tr></thead><tbody id="shp-body"></tbody></table></div>
       <div class="foot"><span id="shp-count"></span></div>
       </div>
+      </div>
+      <div id="shp-batch" hidden></div>
+      <div id="shp-order" hidden></div>
     </main>
     <main class="content" id="view-trk" hidden>
       <div class="ph"><h1>Tracking</h1></div>
@@ -1102,7 +1492,7 @@ const NAV=[
   {i:'home',t:'Home',v:'home'},{i:'bal',t:'Balances',v:'bal'},{i:'tx',t:'Transactions',v:'tx'},{i:'user',t:'Customer',v:'cus'},{i:'box',t:'Product Catalog',v:'prd'},
   {h:'Products'},
   {i:'cart',t:'Payments',sub:[{t:'Invoice',v:'inv'},'Offline Shop','Payment Link','Checkout Personalization','Order Form']},
-  {i:'truck',t:'Shipping',sub:[{t:'Shipments',v:'shp'},{t:'Tracking',v:'trk'},{t:'Warehouses',v:'wh'},{t:'Couriers',v:'cou'},'Red Zone']},
+  {i:'truck',t:'Shipping',sub:[{t:'Shipments',v:'shp'},{t:'Tracking',v:'trk'},'Monitoring','Check Rate','Analytics']},
   {i:'coins',t:'Merchant Cash Advance',v:'mca'},
   {i:'tag',t:'Marketing',sub:['Chat Commerce','Leads Management','Voucher','Post Purchase Offer','Cashback']},
   {i:'chart',t:'Analytics',sub:['Checkout','Shipping']},
@@ -1325,7 +1715,7 @@ dscrim.onclick=closeDetail;
 
 /* ===== Refund modal ===== */
 const mscrim=document.getElementById('mscrim'),modal=document.getElementById('modal');
-function closeModal(){mscrim.classList.remove('open');modal.classList.remove('wide')}
+function closeModal(){mscrim.classList.remove('open');modal.classList.remove('wide','md')}
 mscrim.onclick=e=>{if(e.target===mscrim||e.target.closest('[data-mclose]'))closeModal()};
 function refundModal(ids){
   const list=ids.map(id=>PAY.find(p=>p.id===id)).filter(p=>p&&p.status==='succeeded'&&p.mk!=='cod');
@@ -1474,19 +1864,19 @@ document.getElementById('range').onclick=e=>{e.stopPropagation();const b=e.curre
 addEventListener('resize',()=>{if(!document.getElementById('view-home').hidden)drawChart()});
 
 /* Top up balance */
-function topupModal(title){if(typeof title!=='string')title='Top up balance';
-  let amt=1000000,via='bca';
+function topupModal(title,o={}){if(typeof title!=='string')title='Top up balance';
+  let amt=o.amt||1000000,via='bca';const min=o.min||10000;
   const draw=()=>{modal.innerHTML=`<div class="mh"><h3>${title}</h3><button class="ib" data-mclose aria-label="Close">${ic('x',18)}</button></div>
   <div class="mb"><div class="fld"><label for="tamt">Amount</label><input id="tamt" class="num" value="${amt.toLocaleString('id-ID')}"></div>
-  <div class="amtopts">${[100000,500000,1000000,5000000].map(v=>`<button class="${v===amt?'on':''}" data-a="${v}">${rp(v)}</button>`).join('')}</div>
+  ${o.min?`<p class="kpi-l">At least ${rp(o.min)} to cover this payment.</p>`:''}<div class="amtopts">${[...new Set([o.amt,100000,500000,1000000,5000000].filter(v=>v&&v>=min))].sort((a,b)=>a-b).slice(0,4).map(v=>`<button class="${v===amt?'on':''}" data-a="${v}">${rp(v)}</button>`).join('')}</div>
   <div class="fld"><label>Pay with</label><div class="paylist">${[['bca','BCA virtual account'],['mandiri','Mandiri virtual account'],['qris','QRIS']].map(m=>`<button class="payopt${via===m[0]?' on':''}" data-v="${m[0]}">${pmBadge(m[0])}<span style="flex:1">${m[1]}</span><span class="rdo${via===m[0]?' on':''}"></span></button>`).join('')}</div></div></div>
   <div class="mf"><button class="btn btn-o" data-mclose>Cancel</button><button class="btn btn-p" id="tgo">Continue</button></div>`;
   const inp=document.getElementById('tamt'),go=document.getElementById('tgo');
-  inp.oninput=()=>{amt=+inp.value.replace(/\D/g,'');go.disabled=!(amt>=10000)};
+  inp.oninput=()=>{amt=+inp.value.replace(/\D/g,'');go.disabled=!(amt>=min)};go.disabled=!(amt>=min);
   modal.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{amt=+b.dataset.a;draw()});
   modal.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{via=b.dataset.v;draw()});
   go.onclick=()=>{modal.innerHTML=`<div class="mh"><h3>Complete your top up</h3><button class="ib" data-mclose aria-label="Close">${ic('x',18)}</button></div><div class="mb"><div class="vabox">${via==='qris'?`<span class="kpi-l">Scan with any banking or e-wallet app</span><b>QRIS · ${rp(amt)}</b>`:`<span class="kpi-l">${via==='bca'?'BCA':'Mandiri'} virtual account number</span><b class="num">8808 0812 3456 7890</b><span class="kpi-l">Transfer exactly ${rp(amt)}</span>`}</div><p class="kpi-l">Your balance updates automatically after payment.</p></div><div class="mf"><button class="btn btn-o" data-mclose>Close</button><button class="btn btn-p" id="tdone">I've paid</button></div>`;
-    document.getElementById('tdone').onclick=()=>{closeModal();toast(`Top up of ${rp(amt)} is being confirmed`)}};
+    document.getElementById('tdone').onclick=()=>{closeModal();if(o.onPaid){o.onPaid(amt);return}toast(`Top up of ${rp(amt)} is being confirmed`)}};
   };
   draw();mscrim.classList.add('open');
 }
@@ -1926,15 +2316,15 @@ function whSave(){if(!whOk())return;const ed=!!whEdit;
   if(location.hash==='#warehouses/new')location.hash='warehouses';else closeWh();
   closeWh();whTab='all';renderWh();toast(ed?'Changes saved':`${name} added`)}
 
-const SST={pay:['Awaiting payment','warn',null],ready:['Ready for pickup','pu',null],transit:['In transit','gr',null],done:['Delivered','ok','check'],bad:['Invalid data','bad',null]};
+const SST={hold:['Waiting for shopper','warn',null],pay:['Awaiting payment','warn',null],ready:['Ready for pickup','pu',null],transit:['In transit','gr',null],done:['Delivered','ok','check'],bad:['Invalid data','bad',null]};
 const sPill=s=>{const x=SST[s];return`<span class="st ${x[1]}">${x[0]}${x[2]?ic(x[2],13,2.2):''}</span>`};
 const bid=()=>Math.floor(rnd()*0xFFFFFFFF).toString(16).toUpperCase().padStart(8,'0');
 /* Example batches are generated (keeps the seeded data stable) but the page starts empty, like a new merchant. */
 const SHP_EXAMPLE=Array.from({length:14},(_,i)=>{const sv=pick(SERVICES.filter(x=>x[2]==='reg'));const n=1+Math.floor(rnd()*(i%4===0?12:3));const cod=Math.floor(rnd()*(n+1));
   const st=i===0?'pay':i<3?'ready':i<6?'transit':i===7?'bad':'done';
   return{id:bid(),st,svc:sv,n,cod,codv:cod*Math.round((90000+rnd()*400000)/1000)*1000,cost:n*sv[4],wh:WAREHOUSES[i%3===2?1:0],created:new Date(NOW.getTime()-i*0.9*86400000-Math.floor(rnd()*36e5*5))}});
-const SHP=[];  // the page starts empty; created shipments are added here
-const STABS=[['all','All'],['pay','Awaiting payment'],['ready','Ready for pickup'],['transit','In transit'],['done','Delivered'],['bad','Invalid data']];
+const SHP=SHP_EXAMPLE.slice();  // prototype: starts with sample batches so the list shows straight away (the empty state shows when SHP is empty)
+const STABS=[['all','All'],['hold','Waiting for shopper'],['pay','Awaiting payment'],['ready','Ready for pickup'],['transit','In transit'],['done','Delivered'],['bad','Invalid data']];
 let stab='all';
 function renderShp(){
   const empty=!SHP.length;document.getElementById('shp-empty').hidden=!empty;document.getElementById('shp-list').hidden=empty;document.getElementById('shp-new').hidden=empty;
@@ -1946,102 +2336,228 @@ function renderShp(){
   document.getElementById('shp-count').innerHTML=`<b>${rows.length}</b> ${rows.length===1?'batch':'batches'}`;
   document.querySelectorAll('[data-stb]').forEach(b=>b.onclick=()=>{stab=b.dataset.stb;renderShp()});
 }
-document.getElementById('shp-body').addEventListener('click',e=>{if(e.target.closest('.dots-b'))return;const tr=e.target.closest('tr[data-shp]');if(tr)toast(`Opens batch ${tr.dataset.shp}`)});
+document.getElementById('shp-body').addEventListener('click',e=>{if(e.target.closest('.dots-b'))return;const tr=e.target.closest('tr[data-shp]');if(tr)location.hash=`shipments/${tr.dataset.shp}`});
 document.addEventListener('click',e=>{if(e.target.closest('[data-newshp]')){closePop();location.hash='shipments/create'}});
+/* ===== Batch page (#shipments/<batch>) and order page (#shipments/<batch>/<order>) ===== */
+const OST={confirm:['Waiting for confirmation','warn'],payment:['Waiting for payment','warn'],pickup:['Waiting for pickup','warn'],transit:['In transit','pu'],done:['Delivered','ok'],returned:['Returned','bad']};
+const oPill=s=>`<span class="st ${OST[s][1]}">${OST[s][0]}</span>`;
+const awbNo=()=>String(1e12+Math.floor(rnd()*9e12)).slice(0,13);
+const svcLabel=sv=>`${COURIERS.find(c=>c.k===sv[0]).n} ${sv[1]}`;
+let BQ={id:null,q:'',pay:'all',st:'all',pg:0};
+/* sample batches come without orders; make them the first time a batch is opened */
+function genOrders(b){if(b.orders)return b.orders;let sd=parseInt(b.id.slice(0,6),16)%233280||7;const r=n=>{sd=(sd*9301+49297)%233280;return Math.floor(sd/233280*n)};
+  const FN=['Rina','Budi','Sari','Andi','Dewi','Fajar','Maya','Rizky','Putri','Agus','Nadia','Yoga'],LN=['Putri','Santoso','Wulandari','Pratama','Lestari','Nugroho','Sari','Ramadhan'];
+  const PR=[['Linen shirt · White',289000,.4],['Canvas tote bag',149000,.3],['Wide-leg trousers',219000,.5],['Basic tee · Black',99000,.2],['Batik dress · Indigo',375000,.5]];
+  const day=k=>new Date(b.created.getTime()+k*86400000+r(8)*36e5);
+  b.when=b.when||fdateY(new Date(b.created.getTime()+86400000)).replace(/, \d\d:\d\d$/,', 09:00–12:00');
+  b.orders=Array.from({length:b.n},(_,k)=>{const a=AREAS[r(AREAS.length)],p=PR[r(PR.length)],q=1+r(2),kg=Math.max(1,Math.ceil(p[2]*q)),cod=k<b.cod?p[1]*q:0;
+    const st=b.st==='done'?(k===b.n-1&&b.n>2?'returned':'done'):b.st==='transit'?(k%3===0?'done':'transit'):'pickup';
+    return{id:bid(),awb:awbNo(),name:FN[r(FN.length)]+' '+LN[r(LN.length)],phone:`8${1+r(8)}${r(10)}-${1000+r(9000)}-${1000+r(9000)}`,addr:{street:`Jl. Melati No. ${1+r(90)}`,city:`${a[0]}, ${a[1]}, ${a[2]}, ${a[3]}`,zip:a[4]},items:`${p[0]} ×${q}`,kg:String(kg),dim:'30×20×10',cod,val:p[1]*q,cost:b.svc[4]*kg,list:(b.svc[5]||b.svc[4])*kg,st,src:'manual',t:[day(1),day(1.4),day(2),day(2.3)]}});
+  return b.orders}
+function shpRoute(){const m=location.hash.match(/^#shipments\/([0-9A-F]{8})(?:\/([0-9A-F]{8}))?$/),b=m&&SHP.find(x=>x.id===m[1]);if(b)genOrders(b);const o=b&&m[2]&&b.orders.find(x=>x.id===m[2]);
+  if(m&&!b)history.replaceState(null,'','#shipments');
+  const g=id=>document.getElementById(id);g('shp-home').hidden=!!b;g('shp-batch').hidden=!b||!!o;g('shp-order').hidden=!o;
+  if(o)renderOrder(b,o);else if(b)renderBatch(b);else renderShp()}
+const crumbs=list=>`<nav class="crumbs" aria-label="Breadcrumb">${list.map(([t,h])=>h?`<a class="lnk" href="${h}">${t}</a>`:`<span>${t}</span>`).join(`<span class="sep">${ic('chev',13)}</span>`)}</nav>`;
+function renderBatch(b){if(BQ.id!==b.id)BQ={id:b.id,q:'',pay:'all',st:'all',pg:0};
+  const O=b.orders||[],q=BQ.q.toLowerCase(),PG=20,fmt=x=>x.toLocaleString('id-ID');
+  const rows=O.filter(o=>(BQ.pay==='all'||(BQ.pay==='cod')===!!o.cod)&&(BQ.st==='all'||o.st===BQ.st)&&(!q||[o.id,o.awb,o.name,o.phone].join(' ').toLowerCase().includes(q)));
+  const page=rows.slice(BQ.pg*PG,BQ.pg*PG+PG);
+  document.getElementById('shp-batch').innerHTML=`${crumbs([['Shipments','#shipments'],[`Batch ${b.id}`]])}
+  <div class="ph"><h1>Batch ${b.id}</h1><button class="btn btn-o" data-toast="Printing ${fmt(O.length)} shipping ${O.length===1?'label':'labels'}">${ic('print',15)}Print labels</button></div>
+  <div class="bt-meta">${cLogo(b.svc[0])}<span>${svcLabel(b.svc)}</span><span class="dot">·</span><span>${b.pk&&b.pk.length>1?`${b.pk.length} pickups: ${b.pk.map(p=>`${p.n} (${fmt(p.cnt)})`).join(', ')}`:b.wh.n}</span><span class="dot">·</span><span>Pickup ${b.when||fdate(b.created)}</span>${sPill(b.st)}</div>
+  <div class="filters">
+    <label class="search bl-search">${ic('search',16)}<input id="bt-q" value="${BQ.q}" placeholder="Order ID, AWB, customer or phone" autocomplete="off" aria-label="Search orders"></label>
+    <div class="seg" role="tablist" aria-label="Payment">${[['all','All'],['cod','COD'],['non','Non-COD']].map(p=>`<button class="${BQ.pay===p[0]?'on':''}" data-btpay="${p[0]}" role="tab">${p[1]}</button>`).join('')}</div>
+    <button class="chip${BQ.st!=='all'?' set':''}" data-btst>${ic(BQ.st==='all'?'pluscirc':'check',14)}${BQ.st==='all'?'Status':OST[BQ.st][0]}</button>
+    <div class="fright"><button class="btn btn-o" data-export="Shipments|Batch ${b.id} · orders|CSV">${ic('export',15)}Export</button></div></div>
+  <div class="tbl-wrap"><table class="bt-tbl"><thead><tr><th>Order ID</th><th>AWB</th><th>Customer</th><th>Address</th><th>COD</th><th>Weight</th><th>Product</th><th>Status</th><th></th></tr></thead><tbody>${page.length?page.map(o=>`<tr data-ord="${o.id}" tabindex="0"><td class="mono">${o.id}</td><td><span class="mono">${o.awb}</span><button class="ib cp" data-copy="${o.awb}" aria-label="Copy AWB ${o.awb}">${ic('copy',14)}</button></td><td><b>${o.name}</b><span class="src">+62 ${o.phone}</span></td><td class="bt-ad" title="${o.addr.street}, ${o.addr.city} ${o.addr.zip}">${o.addr.street}, ${o.addr.city}</td><td class="num">${o.cod?rp(o.cod):'<span class="src">—</span>'}</td><td class="num">${o.kg} kg</td><td>${o.items}</td><td>${oPill(o.st)}</td><td><button class="dots-b" data-toast="Opens actions for order ${o.id}" aria-label="Actions for order ${o.id}">${ic('dots',16)}</button></td></tr>`).join('')
+    :`<tr><td colspan="9" style="height:auto;border:0;cursor:default"><div class="empty"><b>No orders match</b>Try another search or filter.</div></td></tr>`}</tbody></table></div>
+  <div class="foot"><span>Showing <b>${rows.length?BQ.pg*PG+1:0}–${Math.min(rows.length,BQ.pg*PG+PG)}</b> of <b>${fmt(rows.length)}</b></span><div class="pager"><button class="btn btn-o" data-btpg="-1" ${BQ.pg?'':'disabled'}>Previous</button><button class="btn btn-o" data-btpg="1" ${(BQ.pg+1)*PG<rows.length?'':'disabled'}>Next</button></div></div>`;
+  const qi=document.getElementById('bt-q');qi.oninput=()=>{BQ.q=qi.value.trim();BQ.pg=0;renderBatch(b);const n=document.getElementById('bt-q');n.focus();n.setSelectionRange(n.value.length,n.value.length)}}
+function renderOrder(b,o){const ow=o.wh||b.wh;const sv=b.svc,fmt=x=>x.toLocaleString('id-ID'),kv=l=>`<dl class="od-kv">${l.map(([k,v,w])=>`<div${w?` class="${w===1?'w2':w}"`:''}><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>`;
+  const city=o.addr.city.split(', ')[2]||o.addr.city,T=o.t||[],base=[['Shipping label created',`FLIK · ${fdateY(b.created)}`,''],['Order created',`${o.src==='bulk'?'Bulk upload':'Manual entry'} · ${fdateY(b.created)}`,'ok']];
+  const ev=o.st==='confirm'||o.st==='payment'?[[o.st==='confirm'?'Asked the shopper to confirm on WhatsApp':'Payment link sent on WhatsApp',`WhatsApp · ${fdateY(b.created)}`,'pu'],...base]:o.st==='pickup'?[['Pickup scheduled',`${ow.n} · ${b.when||'—'}`,'pu'],...base]
+    :o.st==='transit'?[['Arrived at sorting hub',`${city} · ${fdateY(T[2])}`,'pu'],['Left sorting hub',`Jakarta · ${fdateY(T[1])}`,''],['Picked up by courier',`${ow.n} · ${fdateY(T[0])}`,''],...base]
+    :o.st==='done'?[[`Delivered, received by ${o.name}`,`${city} · ${fdateY(T[3])}`,'ok'],['Out for delivery',`${city} · ${fdateY(T[2])}`,''],['Arrived at sorting hub',`${city} · ${fdateY(T[1])}`,''],['Picked up by courier',`${ow.n} · ${fdateY(T[0])}`,''],...base]
+    :[['Returned to sender',`${ow.n} · ${fdateY(T[3])}`,'bad'],['Delivery failed: recipient not at home',`${city} · ${fdateY(T[2])}`,'warn'],['Out for delivery',`${city} · ${fdateY(T[1])}`,''],['Picked up by courier',`${ow.n} · ${fdateY(T[0])}`,''],...base];
+  const cn=COURIERS.find(c=>c.k===sv[0]).n;
+  document.getElementById('shp-order').innerHTML=`${crumbs([['Shipments','#shipments'],[`Batch ${b.id}`,`#shipments/${b.id}`],[`Order ${o.id}`]])}
+  <div class="od-title"><h1>Order ${o.id}</h1>${oPill(o.st)}</div>
+  <div class="od-acts"><button class="btn btn-o" data-toast="Status is up to date">${ic('refund',15)}Refresh status</button><button class="btn btn-o" data-toast="Printing the label for ${o.id}">${ic('print',15)}Print label</button><button class="btn btn-o" data-toast="Opens help for this order">${ic('help',15)}Get help</button></div>
+  <div class="od-grid"><div class="od-main">
+    <section class="card od-card"><h3>Order</h3>${kv([['Order ID',`<span class="mono">${o.id}</span>`],['AWB',`<span class="mono">${o.awb}</span><button class="ib cp" data-copy="${o.awb}" aria-label="Copy AWB">${ic('copy',14)}</button>`],['Created',fdateY(b.created)],['Source',o.src==='bulk'?'Bulk upload':'Manual entry']])}</section>
+    <section class="card od-card"><h3>Package</h3>${kv([['Service',`<span class="od-c"><span class="tt" data-tt="${svcLabel(sv)}" tabindex="0" aria-label="${svcLabel(sv)}">${cLogo(sv[0])}</span><span><span class="nw">${sv[1]} ·</span> <span class="nw">${sv[3]}</span></span></span>`],['Payment',o.cod?`COD · ${rp(o.cod)}`:'Non-COD'],['Item value',rp(o.val)],['Contents',o.items],['Weight',`${o.kg} kg`],['Size',`${o.dim} cm`],['Shipping cost',rp(o.cost)],['You saved',o.list>o.cost?`<span class="od-save">${rp(o.list-o.cost)}</span>`:rp(0)]])}</section>
+    <div class="od-two"><section class="card od-card od-rcp"><h3>Recipient</h3>${kv([['Name',o.name],['Phone',`+62 ${o.phone}`],['Address',`${o.addr.street}, ${o.addr.city} ${o.addr.zip}`,1]])}</section>
+    <section class="card od-card od-snd"><h3>Sender</h3>${kv([['Warehouse',ow.n],['Phone',ow.ph||'+62 812-3456-7890'],['Address',ow.a,1]])}</section></div></div>
+    <section class="card od-card od-trk"><h3>Tracking</h3><div class="tl">${ev.map(e=>`<div class="tli ${e[2]}"><i>${e[2]==='ok'?ic('check',11,3):''}</i><div><b>${e[0]}</b><span>${e[1]}</span></div></div>`).join('')}</div><p class="hint">Updates appear here as the courier scans the parcel.</p></section></div>`}
+document.getElementById('view-shp').addEventListener('click',e=>{const t=e.target;
+  const cp=t.closest('[data-copy]');if(cp&&t.closest('#shp-batch,#shp-order')){copyId(cp.dataset.copy);return}
+  if(t.closest('#shp-batch')){const b=SHP.find(x=>x.id===BQ.id);if(!b)return;
+    const p=t.closest('[data-btpay]');if(p){BQ.pay=p.dataset.btpay;BQ.pg=0;renderBatch(b);return}
+    const pg=t.closest('[data-btpg]');if(pg){BQ.pg+=+pg.dataset.btpg;renderBatch(b);window.scrollTo(0,0);return}
+    const sc=t.closest('[data-btst]');if(sc){e.stopPropagation();if(popFor===sc){closePop();return}popFor=sc;
+      pop.innerHTML=`<div class="menu" style="width:220px">${[['all','All statuses'],...Object.keys(OST).map(k=>[k,OST[k][0]])].map(([k,l])=>`<button class="opt" data-bto="${k}">${l}${BQ.st===k?`<span style="margin-left:auto;color:var(--primary)">${ic('check',14,2.4)}</span>`:''}</button>`).join('')}</div>`;
+      pop.querySelectorAll('[data-bto]').forEach(x=>x.onclick=()=>{BQ.st=x.dataset.bto;BQ.pg=0;closePop();renderBatch(b)});placePop(sc);return}
+    if(t.closest('button,a,input'))return;
+    const tr=t.closest('tr[data-ord]');if(tr)location.hash=`shipments/${b.id}/${tr.dataset.ord}`}});
+document.getElementById('view-shp').addEventListener('keydown',e=>{const tr=e.target.closest&&e.target.closest('tr[data-ord]');if(tr&&e.key==='Enter')location.hash=`shipments/${BQ.id}/${tr.dataset.ord}`});
+
 
 /* ===== Shipments: create flow ===== */
 const sx=document.getElementById('sx'),sxBody=document.getElementById('sx-body'),sxFoot=document.getElementById('sx-foot');
 const SSTEPS=['Details','Courier','Pickup','Summary','Payment'];
-const BAL=4523800,PLATFORM=1000,PAYOUT=[['same','Same-day payout · 3% COD fee',.03],['next','Next-day payout · 2.5% COD fee',.025],['week','Weekly payout · 2% COD fee',.02]];
+let BAL=4523800;const PLATFORM=1000,PAYOUT=[['same','Same-day payout · 3% COD fee',.03],['next','Next-day payout · 2.5% COD fee',.025],['week','Weekly payout · 2% COD fee',.02]];
 let X;
-const newShip=()=>({phone:'',name:'',addr:null,l:'',w:'',h:'',kg:'',items:'',cod:'',open:true});
-const blankX=()=>({step:0,wh:0,how:'manual',pay:'cod',payout:'same',ships:[newShip()],svc:null,day:null,slot:null,done:null});
+const defWh=()=>{const w=WH.find(x=>x.active&&x.def)||WH.find(x=>x.active);return w?w.code:''};
+const newShip=(whk,pay)=>({whk:whk||defWh(),pay:pay||'cod',qty:1,phone:'',name:'',addr:null,l:'',w:'',h:'',kg:'',items:'',cod:'',open:true});
+const blankX=()=>({alt:{},held:[],rkDone:false,step:0,wh:0,how:'manual',pay:'cod',payout:'same',ships:[newShip()],svc:null,day:null,slot:null,done:null});
 const kgOf=s=>Math.max(1,Math.ceil(+s.kg||0),Math.ceil((+s.l||0)*(+s.w||0)*(+s.h||0)/6000));
-const shipOk=s=>s.phone.replace(/\D/g,'').length>=9&&s.name.trim()&&s.addr&&+s.kg>0&&s.items.trim()&&(X.pay!=='cod'||+String(s.cod).replace(/\D/g,'')>0);
+const shipOk=s=>s.phone.replace(/\D/g,'').length>=9&&s.name.trim()&&s.addr&&+s.kg>0&&s.items.trim()&&(!isCod(s)||+String(s.cod).replace(/\D/g,'')>0);
+const isCod=s=>(s.pay||X.pay)==='cod',anyCod=()=>X.ships.some(isCod);
 const codVal=s=>+String(s.cod).replace(/\D/g,'')||0;
 const svcPrice=sv=>X.ships.reduce((a,s)=>a+sv[4]*kgOf(s),0);
 const svcList=sv=>sv[5]?X.ships.reduce((a,s)=>a+sv[5]*kgOf(s),0):null;
-function costs(){const sv=X.svc!=null?SERVICES[X.svc]:null;const ship=sv?svcPrice(sv):0,list=sv?svcList(sv)||ship:0;
-  const codTot=X.pay==='cod'?X.ships.reduce((a,s)=>a+codVal(s),0):0;const rate=PAYOUT.find(p=>p[0]===X.payout)[2];
-  const codFee=X.pay==='cod'?Math.round(codTot*rate):0;return{ship,list,save:list-ship,codTot,codFee,platform:PLATFORM,total:ship+codFee+PLATFORM}}
+function costs(){const sv=X.svc!=null?SERVICES[X.svc]:null;let ship=0,list=0,shipC=0,listC=0,nCod=0;
+  if(sv)X.ships.forEach((s,i)=>{const v=SERVICES[svcFor(i)],kg=kgOf(s),p=v[4]*kg,l=(v[5]||v[4])*kg;ship+=p;list+=l;if(isCod(s)){shipC+=p;listC+=l;nCod++}});
+  const codTot=X.ships.filter(isCod).reduce((a,s)=>a+codVal(s),0);const rate=PAYOUT.find(p=>p[0]===X.payout)[2];
+  const codFee=codTot?Math.round(codTot*rate):0,nNon=X.ships.length-nCod,platN=PLATFORM*nNon,platC=PLATFORM*nCod;
+  /* Non-COD orders are paid now from the balance; COD orders are paid from the COD money on delivery, or from the balance if the parcel comes back */
+  const now=ship-shipC+platN,later=shipC+codFee+platC;
+  return{ship,list,save:list-ship,codTot,codFee,rate,platform:platN+platC,platN,platC,listN:list-listC,listC,discN:(list-listC)-(ship-shipC),discC:listC-shipC,now,later,total:now+later,nCod,nNon}}
+/* Payment: one column per payment type, with when each is charged */
+function payTable(c){const both=c.nCod&&c.nNon,neg=x=>x?`−${rp(x)}`:rp(0),fmt=x=>x.toLocaleString('id-ID');
+  const cols=[c.nNon?{h:`Non-COD · ${fmt(c.nNon)}`,k:'N'}:null,c.nCod?{h:`COD · ${fmt(c.nCod)}`,k:'C'}:null,both?{h:'Total',k:'T'}:null].filter(Boolean);
+  const v={N:{pub:c.listN,disc:c.discN,cod:0,plat:c.platN,pay:c.now,when:'Now, from your balance'},C:{pub:c.listC,disc:c.discC,cod:c.codFee,plat:c.platC,pay:c.later,when:'When delivered or returned'},T:{pub:c.list,disc:c.save,cod:c.codFee,plat:c.platform,pay:c.total,when:''}};
+  const row=(l,sub,f,cls='')=>`<tr class="${cls}"><td><b>${l}</b>${sub?`<span>${sub}</span>`:''}</td>${cols.map(x=>`<td class="num">${f(v[x.k])}</td>`).join('')}</tr>`;
+  return`<div class="tbl-wrap pt-wrap"><table class="pt"><thead><tr><th></th>${cols.map(x=>`<th>${x.h}</th>`).join('')}</tr></thead><tbody>
+    ${row('Published rate',"The couriers' own price",o=>rp(o.pub))}
+    ${c.save?row('FLIK discount','',o=>neg(o.disc),'pt-disc'):''}
+    ${c.nCod?row('COD fee',`${Math.round(c.rate*1000)/10}% of the COD amount`,o=>rp(o.cod)):''}
+    ${row('Platform fee',`${rp(PLATFORM)} per shipment`,o=>rp(o.plat))}
+    ${row('Total payable','',o=>rp(o.pay),'pt-tot')}
+    <tr class="pt-when"><td>When it's charged</td>${cols.map(x=>`<td>${v[x.k].when}</td>`).join('')}</tr></tbody></table></div>`}
 const DAYS=[0,1,2].map(i=>new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()+1+i));
 const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const SLOTS=['09:00–12:00','12:00–15:00','15:00–18:00'];
 const pickupTx=()=>X.day==null?'—':`${DOW[DAYS[X.day].getDay()]}, ${fday(DAYS[X.day])} · ${SLOTS[X.slot]}`;
-function stepOk(){if(X.step===0)return X.how==='bulk'?!!(X.uploaded&&X.bulk&&!X.bfix&&!bCounts().left):X.ships.length&&X.ships.every(shipOk);if(X.step===1)return X.svc!=null;if(X.step===2)return X.day!=null&&X.slot!=null;if(X.step===4)return BAL>=costs().total;return true}
+function stepOk(){if(X.step===0)return X.how==='bulk'?!!(X.uploaded&&X.bulk&&!X.bfix&&!bCounts().left):X.ships.length&&X.ships.every(shipOk);if(X.step===1)return X.svc!=null&&!unresolved().length;if(X.step===2)return X.day!=null&&X.slot!=null;if(X.step===4)return BAL>=costs().now;return true}
 function openShip(){X=blankX();sx.hidden=false;document.body.style.overflow='hidden';drawSx()}
 function closeShip(){sx.hidden=true;document.body.style.overflow=''}
 const inp=(i,k,lab,ph,o={})=>`<div class="sx-f"><label for="s${i}${k}">${lab}</label><div class="${o.pre?'pre':o.unit?'unit':''}">${o.pre?`<em>${o.pre}</em>`:''}<input id="s${i}${k}" data-si="${i}" data-k="${k}" value="${X.ships[i][k]}" placeholder="${ph}" ${o.num?'inputmode="numeric"':''}>${o.unit?`<em>${o.unit}</em>`:''}</div></div>`;
-function shipCard(s,i){const ok=shipOk(s);
-  return`<div class="sx-ship${s.open?' open':''}"><button class="sx-sh" data-tog="${i}"><b>Shipment ${i+1}</b>${ok?`<span class="ok">${ic('check',15,2.4)}</span>`:''}<span class="sum">${!s.open&&s.name?`${s.name}${s.addr?' · '+s.addr.city:''}`:''}</span><span class="chev">${ic('chev',16)}</span></button>
+function shipCard(s,i){const ok=shipOk(s),cod=isCod(s);
+  return`<div class="sx-ship${s.open?' open':''}"><button class="sx-sh" data-tog="${i}"><b>Shipment ${i+1}</b>${ok?`<span class="ok">${ic('check',15,2.4)}</span>`:''}${s.addr&&s.phone.replace(/\D/g,'').length>=9&&health(s).band!=='ok'?`<span class="st ${health(s).band}" title="${health(s).why.join('. ')}">${HB[health(s).band]} number · ${health(s).sc}</span>`:''}<span class="sum">${!s.open?`${s.name?s.name+' · ':''}${whOf(s).n}${s.addr?` → ${s.addr.city.split(', ').slice(-2,-1)[0]||s.addr.city}`:''} · ${cod?'COD':'Non-COD'}`:''}</span><span class="chev">${ic('chev',16)}</span></button>
   <div class="sx-sb"><div class="sx-g sx-g2">${inp(i,'phone','Customer WhatsApp','812-3456-7890',{pre:'+62',num:1})}${inp(i,'name','Customer name','Full name')}</div>
-  <div class="sx-g"><div class="sx-f"><label>Customer address</label><button class="sx-addr${s.addr?' set':''}" data-addr="${i}">${s.addr?`${s.addr.street}, ${s.addr.city} ${s.addr.zip}`:'Set customer address'}<span class="chev">${ic('chev',16)}</span></button></div></div>
+  <div class="sx-g"><div class="sx-f"><label>Customer address</label><button class="sx-addr${s.addr?' set':''}" data-addr="${i}">${ic('pin',16)}<span>${s.addr?`${s.addr.street}, ${s.addr.city} ${s.addr.zip}`:'Search the address or drop a pin'}</span><span class="chev">${ic('chev',16)}</span></button></div></div>
+  <div class="sx-g sx-g2"><div class="sx-f"><label id="s${i}whl">Pickup from</label>${(()=>{const w=WH.find(x=>x.code===s.whk)||{n:'Choose a warehouse',code:''},open=X.whOpen===i;return`<div class="ie-fld whp"><button class="whp-btn${open?' on':''}" data-whp="${i}" aria-haspopup="listbox" aria-expanded="${open}" aria-labelledby="s${i}whl">${ic('wh',16)}<span>${w.n}${w.code?` · ${w.code}`:''}</span><span class="chev">${ic('chev',14)}</span></button>${open?`<div class="ie-dd" role="listbox"><button class="opt add" data-whnew="${i}">${ic('plus',15,2)}Add new warehouse</button><h6>Warehouses</h6>${WH.filter(x=>x.active).map(x=>`<button class="opt${x.code===s.whk?' on':''}" role="option" aria-selected="${x.code===s.whk}" data-whpick="${i}" data-code="${x.code}"><b>${x.n}</b><span>${x.code} · ${x.city}</span></button>`).join('')}</div>`:''}</div>`})()}</div>
+    <div class="sx-f"><label id="s${i}pl">Payment method</label><div class="seg sx-seg" role="radiogroup" aria-labelledby="s${i}pl"><button role="radio" aria-checked="${cod}" class="${cod?'on':''}" data-spay="${i}" data-v="cod">COD</button><button role="radio" aria-checked="${!cod}" class="${cod?'':'on'}" data-spay="${i}" data-v="non">Non-COD</button></div></div></div>
+  <div class="sx-g sx-gpq">${inp(i,'items','Product name','e.g. Linen shirt · White')}<div class="sx-f"><label>Quantity</label><div class="qty sx-qty"><button data-sq="${i}" data-d="-1" aria-label="Less" ${(s.qty||1)<=1?'disabled':''}>${ic('minus',14,2)}</button><span class="num">${s.qty||1}</span><button data-sq="${i}" data-d="1" aria-label="More">${ic('plus',14,2)}</button></div></div></div>
   <div class="sx-g sx-g4">${inp(i,'l','Length','0',{unit:'cm',num:1})}${inp(i,'w','Width','0',{unit:'cm',num:1})}${inp(i,'h','Height','0',{unit:'cm',num:1})}${inp(i,'kg','Weight','0',{unit:'kg',num:1})}</div>
-  <div class="sx-g ${X.pay==='cod'?'sx-g2':''}">${inp(i,'items','Package contents','e.g. 3 pyjamas, 5 swimsuits')}${X.pay==='cod'?inp(i,'cod','COD amount','0',{pre:'Rp',num:1}):''}</div>
+  <div class="sx-g sx-g2 sx-cod">${inp(i,'cod',cod?'COD amount':'Item value','0',{pre:'Rp',num:1})}<p class="hint">${cod?'What the courier collects from the shopper. FLIK charges a COD fee on it after delivery.':'The value of the goods, used if the parcel is lost or damaged.'}</p></div>
   ${X.ships.length>1?`<div class="sx-row" style="margin-top:14px;justify-content:flex-end"><button class="btn btn-d" data-del="${i}">${ic('trash',15)}Remove</button></div>`:''}</div></div>`}
 function drawSx(){
   const st=X.step;
   document.getElementById('sx-steps').innerHTML=X.done?'':SSTEPS.map((t,i)=>`${i?'<span class="stp-l"></span>':''}<span class="stp${i===st?' on':i<st?' done':''}"><i>${i<st?ic('check',11,3):i+1}</i><span>${t}</span></span>`).join('');
-  if(X.done){sxFoot.hidden=true;sxBody.innerHTML=doneHtml();return}
-  sxFoot.hidden=false;let main='';
+  /* done: the next actions sit in the sticky footer, like Back and Continue on the steps */
+  if(X.done){sxFoot.hidden=false;sxBody.innerHTML=doneHtml();sxFoot.innerHTML=`<button class="btn btn-o" data-again>Create another</button><span class="sp"></span><button class="btn btn-p" data-view-shp>View shipments</button>`;return}
+  sxFoot.hidden=false;let main='',side='';
   if(st===0){const w=WAREHOUSES[X.wh];
     main=`<h2>Shipment details</h2><p class="sx-lead">Where it ships from, how customers pay, and who receives it.</p>
-    ${X.how==='bulk'?'':`<section><div class="sx-h">Pickup from</div><div class="sx-card sx-whc"><span class="ic">${ic('wh',18)}</span><div><b>${w.n}</b><span>${w.a}</span></div><button class="btn btn-o" data-wh>Change</button></div></section>`}
     <section><div class="sx-h">Add shipments</div><div class="sx-opts">
-      <button class="sx-opt${X.how==='manual'?' on':''}" data-how="manual"><span class="ic">${ic('pkg',18)}</span><div><b>Manual entry</b><span>Fill in each shipment</span></div></button>
-      <button class="sx-opt${X.how==='bulk'?' on':''}" data-how="bulk"><span class="ic">${ic('sheet',18)}</span><div><b>Bulk upload</b><span>Upload many at once with a spreadsheet</span></div></button></div></section>
-    <section><div class="sx-h">Payment</div><div class="sx-opts">
-      <button class="sx-opt${X.pay==='cod'?' on':''}" data-pay="cod"><span class="ic">${ic('coins',18)}</span><div><b>COD</b><span>The customer pays the courier on delivery</span></div></button>
-      <button class="sx-opt${X.pay==='non'?' on':''}" data-pay="non"><span class="ic">${ic('check',18)}</span><div><b>Non-COD</b><span>Already paid, the courier only delivers</span></div></button></div>
-      ${X.pay==='cod'?`<select class="sx-sel" id="sx-payout" aria-label="COD payout">${PAYOUT.map(p=>`<option value="${p[0]}" ${X.payout===p[0]?'selected':''}>${p[1]}</option>`).join('')}</select>`:''}</section>
-    <section><div class="sx-h">Shipments</div>${X.how==='bulk'&&!X.uploaded?`<div class="sx-drop"><span class="ic">${ic('upload',20)}</span><b>Upload your spreadsheet</b>CSV or Excel, up to 500 shipments. Each row has its own warehouse code.<div class="sx-row" style="justify-content:center;margin-top:16px"><button class="btn btn-o" data-toast="Downloading the template">${ic('export',15)}Download template</button><button class="btn btn-p" data-upload>Upload file</button></div></div>`
+      <button class="sx-opt${X.how==='manual'?' on':''}" data-how="manual"><span class="ic">${ic('pkg',18)}</span><div><b>Manual entry</b><span>Best for fewer than 10 shipments, each from any of your warehouses.</span></div></button>
+      <button class="sx-opt${X.how==='bulk'?' on':''}" data-how="bulk"><span class="ic">${ic('sheet',18)}</span><div><b>Bulk upload</b><span>Best for up to 500 orders at once, shipped from multiple warehouses.</span></div></button></div></section>
+    ${X.how==='bulk'?`<section><div class="sx-h">Payment</div><div class="sx-card sx-whc"><span class="ic">${ic('coins',18)}</span><div><b>Set per order in your spreadsheet</b><span>${X.uploaded&&X.bulk?`${X.bulk.filter(r=>r.pay==='cod').length.toLocaleString('id-ID')} COD and ${X.bulk.filter(r=>r.pay!=='cod').length.toLocaleString('id-ID')} Non-COD orders. `:''}Each row says COD or Non-COD in the Payment column, so one upload can mix both.</span></div></div></section>`:''}
+    <section><div class="sx-h">Shipments</div>${X.how==='bulk'&&X.uploading?bLoadHtml():X.how==='bulk'&&!X.uploaded?`<div class="sx-drop"><span class="ic">${ic('upload',20)}</span><b>Upload your spreadsheet</b>CSV or Excel, up to 500 shipments. Each row has its own warehouse code.<div class="sx-row" style="justify-content:center;margin-top:16px"><button class="btn btn-o" data-toast="Downloading the template">${ic('export',15)}Download template</button><button class="btn btn-p" data-upload>Upload file</button></div></div>`
       :X.how==='bulk'?bulkHtml():X.ships.map(shipCard).join('')+`<div class="sx-row"><button class="btn btn-o" data-addship>${ic('plus',15,2)}Add shipment</button><button class="btn btn-o" data-reset style="color:var(--muted)">Reset</button></div>`}</section>`}
   else if(st===1){
-    main=`<h2>Choose a courier</h2><p class="sx-lead">Prices cover all ${X.ships.length} ${X.ships.length===1?'shipment':'shipments'} (${X.ships.reduce((a,s)=>a+kgOf(s),0)} kg in total).</p>`+
-    [['reg','Regular'],['exp','Express'],['cargo','Cargo']].map(g=>{const rows=COURIERS.map(c=>[c,SERVICES.map((v,i)=>[v,i]).filter(([v])=>v[0]===c.k&&v[2]===g[0]&&svcOn(v[0],v[1]))]).filter(r=>r[1].length);
-      return`<div class="sx-grp"><h3>${g[1]}</h3>${rows.map(([c,list])=>`<div class="sx-cr"><div class="nm">${cLogo(c.k)}${c.n}</div><div class="sx-svcs">${list.map(([v,i])=>{const p=svcPrice(v),l=svcList(v);return`<button class="sx-svc${X.svc===i?' on':''}" data-svc="${i}">${v[6]?`<span class="sx-tag${v[6]==='Cheapest'?' ch':''}">${v[6]}</span>`:''}<span class="n">${v[1]}<span class="rdo${X.svc===i?' on':''}"></span></span><span class="d">${v[3]}</span><span class="p num">${rp(p)}${l?`<s>${rp(l)}</s>`:''}</span></button>`}).join('')}</div></div>`).join('')}</div>`}).join('')}
-  else if(st===2){const sv=SERVICES[X.svc],c=COURIERS.find(x=>x.k===sv[0]);
-    main=`<h2>Schedule pickup</h2><p class="sx-lead">${c.n} will pick up ${X.ships.length} ${X.ships.length===1?'shipment':'shipments'} from ${X.how==='bulk'?bPickup():WAREHOUSES[X.wh].n}.</p>
-    <section class="sx-card"><div class="sx-h" style="margin-bottom:4px">${cLogo(c.k)}${c.n} ${sv[1]}</div>
+    const ur=unresolved().length,sp=Object.keys(X.alt).length,N=X.ships.length,fmt=x=>x.toLocaleString('id-ID'),pct=x=>x.toLocaleString('id-ID',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';
+    const ST=svcStats(),grp=X.cgrp||'reg',rec=recSvc(ST,grp);
+    const recBox=rec!=null?`<div class="cr-rec"><span class="cr-rec-ic">${ic('bolt',18)}</span><div><b>Recommended: ${svName(rec)}</b><span>Delivers best where your orders are going: ${pct(ST[rec].rate)} of its parcels there arrived in the last 90 days, and it can take every order. ${rp(svcPrice(SERVICES[rec]))} for ${fmt(N)} ${N===1?'shipment':'shipments'}.</span></div>${X.svc===rec?`<span class="cr-rec-on">${ic('check',15,2.4)}Selected</span>`:`<button class="btn btn-p" data-svc="${rec}">Use ${COURIERS.find(c=>c.k===SERVICES[rec][0]).n}</button>`}</div>`:'';
+    const cheap=Math.min(...SERVICES.map((v,i)=>i).filter(i=>SERVICES[i][2]===grp&&svcOn(SERVICES[i][0],SERVICES[i][1])).map(i=>SERVICES[i][4]));
+    const rows=COURIERS.map(c=>[c,SERVICES.map((v,i)=>[v,i]).filter(([v])=>v[0]===c.k&&v[2]===grp&&svcOn(v[0],v[1]))]).filter(r=>r[1].length).sort((a,b)=>Math.max(...b[1].map(x=>ST[x[1]].rate))-Math.max(...a[1].map(x=>ST[x[1]].rate)));
+    main=`<div class="sx-main cr-head"><h2>Choose a courier</h2><p class="sx-lead">Prices cover all ${fmt(N)} ${N===1?'shipment':'shipments'}. Delivered means: of all the parcels a courier carried to the same kecamatans as your orders in the last 90 days, for every FLIK merchant, how many arrived.</p></div>
+    <div class="sx-main cr-tabrow"><div class="seg cr-tabs" role="tablist" aria-label="Service type">${[['reg','Regular'],['exp','Express'],['cargo','Cargo']].map(g=>`<button role="tab" aria-selected="${grp===g[0]}" class="${grp===g[0]?'on':''}" data-cgrp="${g[0]}">${g[1]}</button>`).join('')}</div></div>
+    <div class="sx-main cr-l"><div class="cr-list">${rows.map(([c,list])=>`<div class="sx-cr"><div class="nm">${cLogo(c.k)}${c.n}</div><div class="sx-svcs">${list.map(([v,i])=>{const p=svcPrice(v),l=svcList(v),t=ST[i],tag=i===rec?'<span class="sx-tag">Recommended</span>':v[4]===cheap?'<span class="sx-tag ch">Cheapest</span>':'';
+      return`<button class="sx-svc${X.svc===i?' on':''}${t.red?' rz':''}" data-svc="${i}">${tag}<span class="n">${v[1]}<span class="rdo${X.svc===i?' on':''}"></span></span><span class="d">${v[3]}</span><span class="p num">${rp(p)}${l?`<s>${rp(l)}</s>`:''}</span><span class="cr-bar" aria-hidden="true"><i style="width:${t.rate}%"></i></span><span class="cr-rate">${pct(t.rate)} delivered</span>${t.red?`<span class="cr-rz">${ic('warn',13)}${fmt(t.red)} ${t.red===1?'parcel':'parcels'} in red zone</span>`:''}</button>`}).join('')}</div></div>`).join('')||`<p class="bk-mp" style="padding:16px 0">No ${grp==='exp'?'express':'cargo'} services are available for this batch.</p>`}</div></div>`;side=crSide(ST,rec)}
+  else if(st===2){const G=groups(),n=X.ships.length;
+    const nb=new Set(G.map(g=>g.v)).size,nW=new Set(G.map(g=>g.w.n)).size,K=nBatches();
+    main=`<h2>Schedule pickup</h2><p class="sx-lead">${G.length===1?`One batch: ${svName(G[0].v)} picks up ${parcels(n)} from ${G[0].w.n}.`:`${G.length} batches, one for each warehouse and courier service.`} All at the time you choose.</p>
+    <section class="sx-card"><div class="sx-h" style="margin-bottom:4px">${ic('clock',17)}Pickup window</div>
       <div class="sx-f" style="margin-top:14px"><label>Day</label><div class="sx-slots">${DAYS.map((d,i)=>`<button class="${X.day===i?'on':''}" data-day="${i}">${i===0?'Tomorrow':DOW[d.getDay()]}, ${d.getDate()} ${MON[d.getMonth()]}</button>`).join('')}</div></div>
-      <div class="sx-f" style="margin-top:18px"><label>Time</label><div class="sx-slots">${SLOTS.map((t,i)=>`<button class="${X.slot===i?'on':''}" data-slot="${i}">${t}</button>`).join('')}</div></div></section>`}
-  else if(st===3){const sv=SERVICES[X.svc],cn=COURIERS.find(x=>x.k===sv[0]).n;
+      <div class="sx-f" style="margin-top:18px"><label>Time</label><div class="sx-slots">${SLOTS.map((t,i)=>`<button class="${X.slot===i?'on':''}" data-slot="${i}">${t}</button>`).join('')}</div></div>
+      <p class="hint" style="margin-top:16px">Slots come from each courier's API. The courier confirms the pickup after you pay.</p></section>
+    <section><div class="sx-h">Batches · ${K.toLocaleString('id-ID')}</div><div class="sx-pks">${pkGroups()}${heldCard()}</div></section>`}
+  else if(st===3){const K=nBatches();
     main=`<h2>Review shipments</h2><p class="sx-lead">Check everything before you pay.</p>
-    <section><div class="sx-h">Pickup</div><div class="sx-card sx-whc"><span class="ic">${ic('clock',18)}</span><div><b>${pickupTx()}</b><span>${X.how==='bulk'?bPickup():WAREHOUSES[X.wh].n+' · '+WAREHOUSES[X.wh].a}</span></div><button class="btn btn-o" data-go="2">Edit</button></div></section>
-    <section><div class="sx-h">Shipments</div>${X.how==='bulk'?bReview():X.ships.map((s,i)=>`<div class="sx-card" style="margin-bottom:12px"><div class="sx-row" style="margin:0 0 14px"><b style="color:var(--ink);font-weight:600">Shipment ${i+1}</b><button class="btn btn-o" data-go="0">Edit</button></div>
-      <dl class="sx-dl"><div><dt>Customer</dt><dd>${s.name}</dd></div><div><dt>WhatsApp</dt><dd>+62 ${s.phone}</dd></div><div><dt>Courier</dt><dd>${cn} ${sv[1]}</dd></div><div><dt>Shipping</dt><dd class="num">${rp(sv[4]*kgOf(s))}</dd></div>
-      <div class="w2"><dt>Address</dt><dd>${s.addr.street}, ${s.addr.city} ${s.addr.zip}</dd></div><div><dt>Contents</dt><dd>${s.items}</dd></div><div><dt>Size · weight</dt><dd>${s.l||0}×${s.w||0}×${s.h||0} cm · ${s.kg} kg</dd></div>
-      <div><dt>Payment</dt><dd>${X.pay==='cod'?'COD':'Non-COD'}</dd></div>${X.pay==='cod'?`<div><dt>COD amount</dt><dd class="num">${rp(codVal(s))}</dd></div>`:''}</dl></div>`).join('')}</section>`}
-  else{const c=costs();
-    main=`<h2>Payment</h2><p class="sx-lead">Fees are paid from your FLIK balance.</p>
-    <div class="sx-pay"><div class="sx-bal"><span>FLIK balance</span><b class="num">${rp(BAL)}</b></div><div class="sx-due"><span>You pay</span><b class="num">${rp(c.total)}</b></div></div>
-    <section class="sx-card"><div class="sx-h">Details</div><dl class="sx-kv"><dt>Shipping for ${X.ships.length} ${X.ships.length===1?'shipment':'shipments'}</dt><dd class="num">${c.save?`<s>${rp(c.list)}</s>`:''}${rp(c.ship)}</dd>${X.pay==='cod'?`<dt>COD fee (${PAYOUT.find(p=>p[0]===X.payout)[2]*100}% of ${rp(c.codTot)})</dt><dd class="num">${rp(c.codFee)}</dd>`:''}<dt>Platform fee</dt><dd class="num">${rp(c.platform)}</dd><dt class="t">Total</dt><dd class="t num">${rp(c.total)}</dd></dl></section>
-    ${X.pay==='cod'?`<p style="color:var(--muted);margin-top:14px;font-size:13.5px">The ${rp(c.codTot)} COD value goes to your balance after delivery.</p>`:''}`}
-  sxBody.innerHTML=`<div class="sx-in solo${X.how==='bulk'&&X.uploaded&&(st===0||st===3)?' wide':''}"><div class="sx-main">${main}</div></div>`;
-  sxFoot.innerHTML=`${st?`<button class="btn btn-o" data-back>Back</button>`:''}<span class="sp"></span><button class="btn btn-p" id="sx-next" ${stepOk()?'':'disabled'}>${st===4?'Confirm and pay':'Continue'}</button>`;
+    <section><div class="sx-h">${K.toLocaleString('id-ID')} ${K===1?'batch':'batches'}</div><div class="sx-pks"><div class="sx-card sx-whc"><span class="ic">${ic('clock',18)}</span><div><b>${pickupTx()}</b><span>Pickup time for every batch shipping now</span></div><button class="btn btn-o" data-go="2">Edit</button></div>${pkGroups(true)}${heldCard()}</div></section>
+    ${X.how==='bulk'?bCompare():''}<section><div class="sx-h">Shipments</div>${X.how==='bulk'?bReview():X.ships.map((s,i)=>`<div class="sx-card" style="margin-bottom:12px"><div class="sx-row" style="margin:0 0 14px"><b style="color:var(--ink);font-weight:600">Shipment ${i+1}</b><button class="btn btn-o" data-go="0">Edit</button></div>
+      <dl class="sx-dl"><div class="w2"><dt>Route</dt><dd>${whOf(s).n} → ${s.addr.city}</dd></div><div><dt>Customer</dt><dd>${s.name}</dd></div><div><dt>WhatsApp</dt><dd>+62 ${s.phone}</dd></div><div><dt>Courier</dt><dd>${svName(svcFor(i))}</dd></div><div><dt>Shipping</dt><dd class="num">${rp(SERVICES[svcFor(i)][4]*kgOf(s))}</dd></div>
+      <div class="w2"><dt>Address</dt><dd>${s.addr.street}, ${s.addr.city} ${s.addr.zip}</dd></div><div><dt>Contents</dt><dd>${s.items}${(s.qty||1)>1?` ×${s.qty}`:''}</dd></div><div><dt>Size · weight</dt><dd>${s.l||0}×${s.w||0}×${s.h||0} cm · ${s.kg} kg</dd></div>
+      <div><dt>Payment</dt><dd>${isCod(s)?'COD':'Non-COD'}</dd></div>${isCod(s)?`<div><dt>COD amount</dt><dd class="num">${rp(codVal(s))}</dd></div>`:''}</dl></div>`).join('')}</section>`}
+  else{const c=costs(),short=c.now-BAL;
+    main=`<h2>Payment</h2><p class="sx-lead">${c.nCod?`${c.nNon?'Non-COD shipping is paid now from your FLIK balance. ':''}COD shipping is deducted from the COD when the parcel is delivered, or from your balance if it comes back.`:'Shipping is paid now from your FLIK balance.'}</p>${short>0?`<div class="sx-note bad">${ic('warn',16)}<span>Your balance is <b class="num">${rp(short)}</b> short. Top up to create ${X.ships.length===1?'this shipment':`these ${X.ships.length.toLocaleString('id-ID')} shipments`}.</span></div>`:''}
+    <div class="sx-pay"><div class="sx-bal"><span>FLIK balance</span><b class="num">${rp(BAL)}</b></div><div class="sx-due"><span>You pay now</span><b class="num">${rp(c.now)}</b></div></div>
+    <section class="sx-card"><div class="sx-h">Cost breakdown</div>${payTable(c)}</section>
+    ${c.nCod?`<p class="pt-note">When all ${c.nCod.toLocaleString('id-ID')} COD ${c.nCod===1?'parcel is':'parcels are'} delivered, ${rp(c.codTot-c.later)} goes to your balance (${rp(c.codTot)} collected, minus ${rp(c.later)}).</p>`:''}`}
+  sxBody.innerHTML=st===1?`<div class="sx-in cr2">${main}<aside class="cr-side" aria-label="Batches">${side}</aside></div>`:`<div class="sx-in solo${X.how==='bulk'&&(X.uploaded||X.uploading)&&(st===0||st===3)?' wide':''}"><div class="sx-main">${main}</div></div>`;
+  sxFoot.innerHTML=`${st?`<button class="btn btn-o" data-back>Back</button>`:''}<span class="sp"></span>${st===4&&costs().now>BAL?`<button class="btn btn-p" data-topup>Top up ${rp(topupAmt())}</button>`:`<button class="btn btn-p" id="sx-next" ${stepOk()?'':'disabled'}>${st===4?'Confirm and pay':'Continue'}</button>`}`;
 }
-function doneHtml(){const d=X.done;return`<div class="sx-done"><div class="sx-ok"><i>${ic('check',18,2.6)}</i><b>Shipment created<span>Batch ${d.id} · ${d.n} ${d.n===1?'shipment':'shipments'}</span></b><button class="btn btn-o" data-toast="Printing shipping labels">${ic('print',15)}Print labels</button></div>
-  <div class="sx-next"><div><span class="ic">${ic('truck',19)}</span><b>Pickup</b><span>${d.courier} will pick up your ${d.n===1?'parcel':'parcels'} on ${d.when}.</span></div><div><span class="ic">${ic('pkg',19)}</span><b>Pack your parcel</b><span>Pack each order and stick its label on before the courier arrives.</span></div></div>
-  <div class="sx-row" style="margin-top:24px;justify-content:flex-end"><button class="btn btn-o" data-again>Create another</button><button class="btn btn-p" data-view-shp>View shipments</button></div></div>`}
+/* top up from the payment step: suggest the shortfall rounded up to Rp10.000 */
+const topupAmt=()=>Math.max(10000,Math.ceil((costs().now-BAL)/10000)*10000);
+function shipTopup(){const short=costs().now-BAL;topupModal('Top up balance',{amt:topupAmt(),min:short,onPaid:a=>{BAL+=a;const bv=document.getElementById('balv');if(bv)bv.textContent=rp(BAL);drawSx();toast(`${rp(a)} added to your balance. You can pay now.`)}})}
+function doneHtml(){if(X.done.heldOnly){const h=X.done.held,f=x=>x.toLocaleString('id-ID');return`<div class="sx-done dn">
+  <div class="sx-ok"><i>${ic('chat',18,2.2)}</i><b>${f(h.n)} ${h.n===1?'order waits':'orders wait'} for the shopper<span>${h.nb===1?`Batch ${h.id}`:`${f(h.nb)} batches, one per order`} · ${[h.wa?`${h.wa} asked to confirm`:'',h.pay?`${h.pay} sent a payment link`:''].filter(Boolean).join(' and ')} on WhatsApp · nothing paid yet</span></b></div>
+  <section><div class="sx-h">What happens next</div><ol class="dn-steps">
+    <li><span class="ic">${ic('chat',18)}</span><div><b>The shopper replies on WhatsApp</b><span>They confirm the order${h.pay?' or pay the link':''}. You'll see each reply on the batch page.</span></div></li>
+    <li><span class="ic">${ic('truck',18)}</span><div><b>We book the courier</b><span>Confirmed orders go with ${svcLabel(h.svc)}. Shipping is charged then, not now.</span></div></li>
+    <li><span class="ic">${ic('x',18)}</span><div><b>No reply in 24 hours</b><span>The order is cancelled and nothing is charged.</span></div></li></ol></section></div>`}
+  const d=X.done,fmt=x=>x.toLocaleString('id-ID'),one=d.n===1,many=d.rows.length>1;
+  const kpi=(l,v)=>`<div class="dn-k"><span class="kpi-l">${l}</span><b class="num">${v}</b></div>`;
+  return`<div class="sx-done dn">
+  <div class="sx-ok"><i>${ic('check',18,2.6)}</i><b>${fmt(d.n)} ${one?'shipment':'shipments'} created<span>${d.nb===1?`Batch ${d.id}`:`${d.nb} batches`} · Paid ${rp(d.paid)} from your FLIK balance${d.later?` · ${rp(d.later)} when delivered`:''}</span></b><button class="btn btn-o" data-toast="Printing ${fmt(d.n)} shipping ${one?'label':'labels'}">${ic('print',15)}Print ${one?'label':'all labels'}</button></div>
+  ${d.held?(h=>`<div class="sx-note info dn-wait">${ic('chat',16)}<span><b>${fmt(h.n)} ${h.n===1?'order is':'orders are'} waiting for ${h.n===1?'the shopper':'shoppers'}</b>${[h.wa?`${fmt(h.wa)} to confirm`:'',h.pay?`${fmt(h.pay)} to pay`:''].filter(Boolean).join(' and ')} on WhatsApp. ${h.n===1?'It ships':'Each ships as its own batch'} as soon as ${h.n===1?'the':'its'} shopper replies, and is cancelled after 24 hours without a reply.</span><button class="btn btn-o" data-view-hold>View waiting</button></div>`)(d.held):''}
+  <div class="sx-card dn-kpis">${kpi('Shipments',fmt(d.n))}${kpi('Batches',d.nb+(d.held?d.held.nb:0))}${kpi('Shipping',rp(d.ship))}${d.cod?kpi('COD to collect',rp(d.cod)):kpi('Balance left',rp(BAL))}</div>
+  <section><div class="sx-h">What happens next</div><ol class="dn-steps">
+    <li><span class="ic">${ic('print',18)}</span><div><b>Print the labels</b><span>One label per parcel. Each batch prints on its own, so you can hand them to different couriers.</span></div></li>
+    <li><span class="ic">${ic('pkg',18)}</span><div><b>Pack and label each parcel</b><span>Stick the label on the outside where the courier can scan it.</span></div></li>
+    <li><span class="ic">${ic('truck',18)}</span><div><b>Hand over at pickup</b><span>${d.courier} ${many?'arrive':'arrives'} on ${d.when}. You'll get a WhatsApp message when ${many?'each courier is':'the courier is'} on the way.</span></div></li></ol></section>
+  <section><div class="sx-h">Batches · ${fmt(d.nb+(d.held?d.held.nb:0))}</div><div class="tbl-wrap dn-tbl dn-bt"><table><thead><tr><th>Batch</th><th>Courier</th><th>Orders</th><th>Pickup from</th><th>Status</th><th></th></tr></thead><tbody>
+    ${d.batches.map(b=>`<tr><td class="dn-id">${b.id}</td><td><div class="dn-c">${cLogo(SERVICES[b.v][0])}${svName(b.v)}</div></td><td class="num">${fmt(b.n)}</td><td>${b.wh.length<3?b.wh.join(', '):`<span class="tt" data-tip="${b.wh.join(', ')}" tabindex="0">${b.wh.length} warehouses</span>`}</td><td><span class="st warn">Waiting for pickup</span></td><td><button class="btn btn-o" data-toast="Printing ${fmt(b.n)} ${b.n===1?'label':'labels'} for batch ${b.id}">${ic('print',14)}Labels</button></td></tr>`).join('')}
+    ${d.held?d.held.list.map(b=>`<tr><td class="dn-id">${b.id}</td><td><div class="dn-c">${cLogo(SERVICES[b.v][0])}${svName(b.v)}</div></td><td class="num">1</td><td><span class="src">${b.name} · after they reply</span></td><td><span class="st pu">${b.kind==='pay'?'Waiting for payment':'Waiting for confirmation'}</span></td><td></td></tr>`).join(''):''}</tbody></table></div></section></div>`}
 // edits
 sxBody.addEventListener('input',e=>{const t=e.target;if(t.dataset.br!=null){if(t.tagName==='SELECT')return;X.bulk[t.dataset.br][t.dataset.bk]=t.value.trim();bRefresh(+t.dataset.br);return}if(t.dataset.si!=null){if(t.dataset.k==='cod'){const n=+t.value.replace(/\D/g,'');t.value=n?n.toLocaleString('id-ID'):''}X.ships[t.dataset.si][t.dataset.k]=t.value;
   const card=t.closest('.sx-ship'),i=+t.dataset.si,ok=shipOk(X.ships[i]);const has=card.querySelector('.sx-sh .ok');
   if(ok&&!has)card.querySelector('.sx-sh b').insertAdjacentHTML('afterend',`<span class="ok">${ic('check',15,2.4)}</span>`);if(!ok&&has)has.remove();
   document.getElementById('sx-next').disabled=!stepOk()}});
-sxBody.addEventListener('change',e=>{if(e.target.id==='sx-payout'){X.payout=e.target.value}else if(e.target.dataset.br!=null){const t=e.target;if(t.tagName==='SELECT')bPick(t);bDoneCheck()||bRefresh(+t.dataset.br,t.tagName==='SELECT')}});
+sxBody.addEventListener('change',e=>{if(e.target.dataset.alti!=null){const k=e.target.dataset.alti,c=e.target.value===''?null:+e.target.value,o=k[0]==='h'?(X.halt=X.halt||{}):(X.alt=X.alt||{}),kk=k[0]==='h'?k.slice(1):k;if(c==null)delete o[kk];else o[kk]=c;drawSx();return}
+  if(e.target.dataset.swh!=null){const i=+e.target.dataset.swh;if(e.target.value==='__new'){e.target.value=X.ships[i].whk;whQuickModal(nw=>{X.ships[i].whk=nw.code;X.alt={};drawSx();toast(`${nw.n} added. Shipment ${i+1} now ships from there.`)});return}X.ships[i].whk=e.target.value;X.alt={};return}if(e.target.id==='sx-payout'){X.payout=e.target.value}else if(e.target.dataset.br!=null){const t=e.target;if(t.tagName==='SELECT')bPick(t);const rw=X.bulk[t.dataset.br];(rw&&rw.flag&&bDoneCheck())||bRefresh(+t.dataset.br,t.tagName==='SELECT'||t.dataset.bk==='phone'||t.dataset.bk==='name')}});
 sxBody.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;const d=t.dataset;
   if(d.tog!=null)X.ships[d.tog].open=!X.ships[d.tog].open;
-  else if(d.how){X.how=d.how;X.uploaded=false}
+  else if(d.how){X.how=d.how;X.uploaded=false;X.uploading=null}
   else if(d.pay)X.pay=d.pay;
-  else if('upload' in d){X.uploaded=true;X.bulk=makeBulk();X.bv='issues';X.bpg=0;toast(`orders.xlsx uploaded: ${X.bulk.length} rows, ${BULK_ISSUES.length} to check`)}
+  else if(d.whp!=null){X.whOpen=X.whOpen===+d.whp?null:+d.whp}
+  else if(d.whpick!=null){X.ships[d.whpick].whk=d.code;X.whOpen=null;X.alt={}}
+  else if(d.whnew!=null){const i=+d.whnew;X.whOpen=null;drawSx();whQuickModal(nw=>{X.ships[i].whk=nw.code;X.alt={};drawSx();toast(`${nw.n} added. Shipment ${i+1} now ships from there.`)});return}
+  else if(d.spay!=null){X.ships[d.spay].pay=d.v;X.alt={}}
+  else if(d.sq!=null){const s=X.ships[d.sq];s.qty=Math.max(1,(s.qty||1)+(+d.d))}
+  else if('upload' in d){X.rkDone=false;X.held=[];bUpload();return}
   else if(d.bacc!=null){bApply(X.bulk[d.bacc]);if(bDoneCheck())return}
   else if('bfix' in d){bFixConfirm();return}
   else if(d.bv){X.bv=d.bv;X.bpg=0}
+  else if(d.dv){X.dv=d.dv}
   else if(d.bpg){X.bpg+=+d.bpg;drawSx();(sxBody.querySelector('.bk')||sxBody).scrollIntoView({block:'start'});return}
-  else if('addship' in d){X.ships.forEach(s=>s.open=false);X.ships.push(newShip())}
+  else if('addship' in d){X.ships.forEach(s=>s.open=false);const last=X.ships[X.ships.length-1]||{};X.ships.push(newShip(last.whk,last.pay))}
   else if('reset' in d){X.ships=[newShip()];X.uploaded=false;X.bulk=null}
   else if(d.del!=null)X.ships.splice(+d.del,1);
-  else if(d.svc!=null)X.svc=+d.svc;
+  else if('topup' in d){shipTopup();return}
+  else if(d.brk!=null){X.ships=X.bulk.map(bShip);const L=riskyList();if(L.length)riskyModal(L,()=>drawSx());return}
+  else if(d.brm!=null){const i=+d.brm,nm=X.bulk[i].name;X.bulk.splice(i,1);X.bulk.forEach((x,k)=>x.i=k);toast(`Row ${i+1} (${nm}) removed`)}
+  else if(d.pkg!=null){X.pkOpen=X.pkOpen||{};X.pkOpen[d.pkg]=!X.pkOpen[d.pkg]}
+  else if(d.cgrp){X.cgrp=d.cgrp}
+  else if(d.svc!=null){X.svc=+d.svc;X.cgrp=SERVICES[+d.svc][2];X.alt={};X.halt={};autoAlt()}
+  else if(d.altrm!=null){const nm=altRemove(d.altrm);drawSx();toast(`${nm}'s order removed`);return}
+  else if('altrmall' in d){const B=blockedList();B.map(b=>b[1]).sort((a,b)=>(b[0]==='h')-(a[0]==='h')||+String(b).replace('h','')-+String(a).replace('h','')).forEach(altRemove);drawSx();toast(`${B.length.toLocaleString('id-ID')} ${B.length===1?'order':'orders'} removed`);return}
+  else if('split' in d){splitModal();return}
   else if(d.day!=null)X.day=+d.day;
   else if(d.slot!=null)X.slot=+d.slot;
   else if(d.go!=null)X.step=+d.go;
@@ -2049,18 +2565,28 @@ sxBody.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)ret
   else if('wh' in d){whModal();return}
   else if('again' in d){X=blankX()}
   else if('viewShp' in d){location.hash='shipments';return}
+  else if('viewHold' in d){stab='hold';location.hash='shipments';return}
   else return;
   drawSx()});
-sxFoot.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;
+sxFoot.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;if('again' in t.dataset){X=blankX();drawSx();sxBody.scrollTop=0;return}if('viewShp' in t.dataset){location.hash='shipments';return}if('topup' in t.dataset){shipTopup();return}
   if('back' in t.dataset){X.step--;drawSx();sxBody.scrollTop=0;return}
-  if(t.id==='sx-next'&&!t.disabled){if(X.step<4){if(X.step===0&&X.how==='bulk')X.ships=X.bulk.map(bShip);X.step++;X.bpg=0;drawSx();sxBody.scrollTop=0;return}
-    const c=costs(),sv=SERVICES[X.svc],id=bid(),cod=X.pay==='cod'?X.ships.length:0;
-    SHP.unshift({id,st:'ready',svc:sv,n:X.ships.length,cod,codv:c.codTot,cost:c.ship,wh:WAREHOUSES[X.wh],created:new Date(NOW.getTime()+60000*SHP.length)});
-    X.done={id,n:X.ships.length,courier:COURIERS.find(x=>x.k===sv[0]).n,when:pickupTx().replace(' · ',', ')};stab='all';drawSx();sxBody.scrollTop=0}});
+  if(t.id==='sx-next'&&!t.disabled){if(X.step<4){if(X.step===0&&X.how==='bulk')X.ships=X.bulk.map(bShip);
+    if(X.step===0&&!X.rkDone){const L=riskyList();if(L.length){riskyModal(L,()=>{X.step=1;X.bpg=0;drawSx();sxBody.scrollTop=0});return}}
+    X.step++;X.bpg=0;drawSx();sxBody.scrollTop=0;return}
+    /* one batch per warehouse and courier service */
+    const G=groups(),byV=new Map();G.forEach(g=>byV.set(g.v+'|'+g.w.k,[g]));const bOf=new Map(),ids=[];
+    byV.forEach((gs,kk)=>{const v=gs[0].v,id=bid(),sv=SERVICES[v];ids.push(id);bOf.set(kk,id);
+      const orders=gs.flatMap(g=>g.ships.map(i=>{const s=X.ships[i],kg=kgOf(s);return{id:bid(),awb:awbNo(),name:s.name,phone:s.phone,addr:s.addr,items:`${s.items}${(s.qty||1)>1?` ×${s.qty}`:''}`,kg:s.kg||kg,dim:`${s.l||0}×${s.w||0}×${s.h||0}`,cod:isCod(s)?codVal(s):0,val:codVal(s),cost:sv[4]*kg,list:(sv[5]||sv[4])*kg,st:'pickup',src:X.how,wh:{n:g.w.n,a:g.w.a}}}));
+      const pk=gs.map(g=>({n:g.w.n,a:g.w.a,cnt:g.ships.length}));
+      SHP.unshift({id,st:'ready',svc:sv,n:orders.length,cod:orders.filter(o=>o.cod).length,codv:orders.reduce((a,o)=>a+o.cod,0),cost:gs.reduce((a,g)=>a+gCost(g),0),wh:pk.length===1?{n:pk[0].n,a:pk[0].a}:{n:`${pk.length} pickups`,a:pk.map(p=>p.n).join(', ')},pk,when:pickupTx().replace(' · ',', '),orders,created:new Date(NOW.getTime()+60000*SHP.length)})});
+    const cs=[...new Set(G.map(g=>SERVICES[g.v][0]))];
+    const c=costs();BAL-=c.now;const bv=document.getElementById('balv');if(bv)bv.textContent=rp(BAL);
+    const held=makeHeld(SERVICES[X.svc]);
+    X.done={held,id:ids[0],ids,n:X.ships.length,courier:cs.length===1?COURIERS.find(x=>x.k===cs[0]).n:'The couriers',when:pickupTx().replace(' · ',', '),paid:c.now,later:c.later,c,ship:c.ship,cod:c.codTot,nb:ids.length,rows:G.map(g=>({id:bOf.get(g.v+'|'+g.w.k),v:g.v,w:g.w,n:g.ships.length})),batches:[...byV].map(([kk,gs])=>({id:bOf.get(kk),v:gs[0].v,n:gs.reduce((a,g)=>a+g.ships.length,0),wh:gs.map(g=>g.w.n)}))};stab='all';drawSx();sxBody.scrollTop=0}});
 document.getElementById('sx-close').onclick=()=>{location.hash='shipments'};
 /* ===== Bulk upload: check the spreadsheet rows, AI fixes typos, the merchant fills what's missing ===== */
 const AREAS=[['Dago','Coblong','Kota Bandung','Jawa Barat','40135'],['Lebak Siliwangi','Coblong','Kota Bandung','Jawa Barat','40132'],['Sukapada','Cibeunying Kidul','Kota Bandung','Jawa Barat','40125'],['Sekayu','Semarang Tengah','Kota Semarang','Jawa Tengah','50132'],['Sosromenduran','Gedongtengen','Kota Yogyakarta','DI Yogyakarta','55271'],['Bangka','Mampang Prapatan','Jakarta Selatan','DKI Jakarta','12730'],['Cilandak Barat','Cilandak','Jakarta Selatan','DKI Jakarta','12430'],['Senayan','Kebayoran Baru','Jakarta Selatan','DKI Jakarta','12190'],['Tebet Timur','Tebet','Jakarta Selatan','DKI Jakarta','12820'],['Darmo','Wonokromo','Kota Surabaya','Jawa Timur','60241'],['Oro-oro Dowo','Klojen','Kota Malang','Jawa Timur','65119'],['Dauh Puri','Denpasar Barat','Kota Denpasar','Bali','80113'],['Petisah Tengah','Medan Petisah','Kota Medan','Sumatera Utara','20112'],['Cipondoh','Cipondoh','Kota Tangerang','Banten','15148']];
-const ADDR_DB=AREAS.concat([['Sekeloa','Coblong','Kota Bandung','Jawa Barat','40134'],['Cipaganti','Coblong','Kota Bandung','Jawa Barat','40131'],['Pringgokusuman','Gedongtengen','Kota Yogyakarta','DI Yogyakarta','55272'],['Ngagel','Wonokromo','Kota Surabaya','Jawa Timur','60246'],['Jagir','Wonokromo','Kota Surabaya','Jawa Timur','60244'],['Pekunden','Semarang Tengah','Kota Semarang','Jawa Tengah','50134'],['Kauman','Klojen','Kota Malang','Jawa Timur','65119'],['Kuningan Barat','Mampang Prapatan','Jakarta Selatan','DKI Jakarta','12710'],['Tegal Parang','Mampang Prapatan','Jakarta Selatan','DKI Jakarta','12790'],['Lebak Bulus','Cilandak','Jakarta Selatan','DKI Jakarta','12440'],['Pondok Labu','Cilandak','Jakarta Selatan','DKI Jakarta','12450'],['Gandaria Selatan','Cilandak','Jakarta Selatan','DKI Jakarta','12420'],['Gunung','Kebayoran Baru','Jakarta Selatan','DKI Jakarta','12120'],['Tebet Barat','Tebet','Jakarta Selatan','DKI Jakarta','12810'],['Menteng Dalam','Tebet','Jakarta Selatan','DKI Jakarta','12870'],['Kebon Baru','Tebet','Jakarta Selatan','DKI Jakarta','12830'],['Sukaluyu','Cibeunying Kaler','Kota Bandung','Jawa Barat','40123'],['Ketintang','Gayungan','Kota Surabaya','Jawa Timur','60231']]);
+const ADDR_DB=AREAS.concat([['Pandang','Panakkukang','Kota Makassar','Sulawesi Selatan','90231'],['Tamalanrea','Tamalanrea','Kota Makassar','Sulawesi Selatan','90245'],['Sekeloa','Coblong','Kota Bandung','Jawa Barat','40134'],['Cipaganti','Coblong','Kota Bandung','Jawa Barat','40131'],['Pringgokusuman','Gedongtengen','Kota Yogyakarta','DI Yogyakarta','55272'],['Ngagel','Wonokromo','Kota Surabaya','Jawa Timur','60246'],['Jagir','Wonokromo','Kota Surabaya','Jawa Timur','60244'],['Pekunden','Semarang Tengah','Kota Semarang','Jawa Tengah','50134'],['Kauman','Klojen','Kota Malang','Jawa Timur','65119'],['Kuningan Barat','Mampang Prapatan','Jakarta Selatan','DKI Jakarta','12710'],['Tegal Parang','Mampang Prapatan','Jakarta Selatan','DKI Jakarta','12790'],['Lebak Bulus','Cilandak','Jakarta Selatan','DKI Jakarta','12440'],['Pondok Labu','Cilandak','Jakarta Selatan','DKI Jakarta','12450'],['Gandaria Selatan','Cilandak','Jakarta Selatan','DKI Jakarta','12420'],['Gunung','Kebayoran Baru','Jakarta Selatan','DKI Jakarta','12120'],['Tebet Barat','Tebet','Jakarta Selatan','DKI Jakarta','12810'],['Menteng Dalam','Tebet','Jakarta Selatan','DKI Jakarta','12870'],['Kebon Baru','Tebet','Jakarta Selatan','DKI Jakarta','12830'],['Sukaluyu','Cibeunying Kaler','Kota Bandung','Jawa Barat','40123'],['Ketintang','Gayungan','Kota Surabaya','Jawa Timur','60231']]);
 const ADDR_I={kel:0,kec:1,city:2,prov:3,zip:4},ADDR_K=['prov','city','kec','kel','zip'];
 /* options for a cell come from the database, narrowed by the row's other address cells that are already valid */
 function bOpts(r,k){if(k==='wh')return whCodes();const ok=(f,v)=>ADDR_DB.some(a=>a[ADDR_I[f]]===v);
@@ -2085,45 +2611,74 @@ function makeBulk(){let sd=11;const r=n=>{sd=(sd*9301+49297)%233280;return Math.
   const ST=['Jl. Melati','Jl. Kenanga','Jl. Mawar','Jl. Anggrek','Jl. Cempaka','Jl. Flamboyan','Jl. Merdeka','Jl. Sudirman','Jl. Diponegoro','Jl. Gajah Mada'];
   const PR=[['Linen shirt · White',289000,.4],['Canvas tote bag',149000,.3],['Wide-leg trousers',219000,.5],['Basic tee · Black',99000,.2],['Voile scarf · Floral',125000,.1],['Leather sneakers',459000,1.2],['Batik dress · Indigo',375000,.5]];
   const rows=[];for(let i=0;i<500;i++){const a=AREAS[r(AREAS.length)],p=PR[r(PR.length)],q=1+r(3);
-    rows.push({i,name:FN[r(FN.length)]+' '+LN[r(LN.length)],phone:`8${1+r(8)}${r(10)}-${1000+r(9000)}-${1000+r(9000)}`,street:`${ST[r(ST.length)]} No. ${1+r(120)}`,kel:a[0],kec:a[1],city:a[2],prov:a[3],zip:a[4],items:`${p[0]} ×${q}`,kg:String(Math.max(.1,Math.round(p[2]*q*10)/10)),val:p[1]*q,wh:['JKT-01','JKT-01','BDG-01','SBY-01'][r(4)]})}
+    rows.push({i,ro:i+1,pay:(i*7)%10<7?'cod':'non',name:FN[r(FN.length)]+' '+LN[r(LN.length)],phone:`8${1+r(8)}${r(10)}-${1000+r(9000)}-${1000+r(9000)}`,street:`${ST[r(ST.length)]} No. ${1+r(120)}`,kel:a[0],kec:a[1],city:a[2],prov:a[3],zip:a[4],items:`${p[0]} ×${q}`,kg:String(Math.max(.1,Math.round(p[2]*q*10)/10)),val:p[1]*q,wh:['JKT-01','JKT-01','BDG-01','SBY-01'][r(4)]})}
+  [[23,0],[97,0],[184,1],[302,0],[411,1]].forEach(([i,m])=>{const a=MKS[m];Object.assign(rows[i],{kel:a[0],kec:a[1],city:a[2],prov:a[3],zip:a[4],pay:'cod'})});
   BULK_ISSUES.forEach(([i,ai,wh,bad,fix,msg])=>{const a=AREAS[ai],row=rows[i];Object.assign(row,{kel:a[0],kec:a[1],city:a[2],prov:a[3],zip:a[4],wh},bad,{flag:true,msg,bad});
     if(fix)row.fix=fix;else row.need=Object.keys(bad)});
   return rows}
+const bSnap=rows=>rows.map(r=>({ro:r.ro,...Object.fromEntries(Object.keys(D_LBL).map(k=>[k,r[k]]))}));
 const bFieldOk=(r,k)=>bOpts(r,k).includes(r[k]);
 const bSt=r=>r.fix?'sug':r.need&&r.need.some(k=>!bFieldOk(r,k))?'err':'ok';
-function bCounts(){let ok=0,sug=0,err=0,flag=0;for(const r of X.bulk){if(r.flag)flag++;const s=bSt(r);s==='ok'?ok++:s==='sug'?sug++:err++}return{ok,sug,err,flag,left:sug+err}}
-const bCols=()=>[['wh','Warehouse'],['street','Full address'],['prov','Province'],['city','City or regency'],['kec','Kecamatan'],['kel','Kelurahan'],['zip','Postcode'],['name','Customer name'],['phone','Phone'],['items','Product']];
+const hRow=r=>health({phone:r.phone,addr:{zip:r.zip,city:`${r.kel}, ${r.kec}, ${r.city}, ${r.prov}`}});
+const riskTag=h=>`<span class="st ${h.band} rk-tag" tabindex="0" data-tip="Health score ${h.sc} out of 100, higher is safer. ${h.why.join('. ')}. Check the name and number with your customer and fix them here, or remove the order." aria-label="Health score ${h.sc}">${h.sc}</span>`;
+/* risky rows: name and phone can be edited right in the table */
+const rkEdit=(r,k,h)=>`<td data-c="${k}" class="${k==='phone'?'rk-'+h.band:''}"><div class="rk-in"><input data-br="${r.i}" data-bk="${k}" value="${r[k]}" ${k==='phone'?'inputmode="tel"':''} aria-label="Row ${r.i+1} ${k==='phone'?'phone':'customer name'}">${k==='phone'?riskTag(h):''}</div></td>`;
+function bCounts(){let ok=0,sug=0,err=0,flag=0,risk=0;for(const r of X.bulk){if(r.flag)flag++;if(hRow(r).band!=='ok')risk++;const s=bSt(r);s==='ok'?ok++:s==='sug'?sug++:err++}return{ok,sug,err,flag,risk,left:sug+err}}
+const bCols=()=>[['wh','Warehouse'],['street','Full address'],['prov','Province'],['city','City or regency'],['kec','Kecamatan'],['kel','Kelurahan'],['zip','Postcode'],['name','Customer name'],['phone','Phone'],['items','Product'],['pay','Payment']];
 const bCls=(r,k)=>r.fix&&k in r.fix?'sug':r.need&&r.need.includes(k)&&!bFieldOk(r,k)?'err':r.ai&&r.ai.includes(k)?'auto':'';
 function bApply(r){r.ai=Object.keys(r.fix);r.aiTx=r.ai.map(k=>`${r.bad[k]} → ${r.fix[k]}`).join(', ');Object.assign(r,r.fix);r.fix=null}
 function bCheck(r){
   if(r.fix)return`<div class="is-sm sug">${ic('bolt',13)}AI suggestion</div><div class="is sug full"><span class="msg" title="${r.msg}">${ic('bolt',13)}${r.msg}</span><button class="btn btn-o" data-bacc="${r.i}">Accept</button></div>`;
   if(bSt(r)==='err')return`<div class="is-sm err">${ic('warn',13)}Needs your input</div><div class="is err full"><span class="msg" title="${r.msg}">${r.msg}</span></div>`;
+  const h=hRow(r);
+  if(h.band!=='ok'&&r.rkShip)return`<div class="is-sm ok">${ic('check',13,2.4)}Shipping anyway</div><div class="is ok full"><span class="msg"><b>Health score ${h.sc}</b> · you chose to ship this order.</span><button class="btn btn-o" data-brk="${r.i}">Change</button></div>`;
+  /* flagged COD orders are handled in the risky orders dialog; flagged Non-COD orders are already paid, so the flag is information only */
+  if(h.band!=='ok')return`<div class="is-sm rk ${h.band}">${ic('warn',13)}${h.band==='bad'?'Risky number':'Check number'} · ${h.sc}</div><div class="is rk ${h.band} full"><span class="msg"><b>Health score ${h.sc}</b> · ${h.why.join('. ')}.${isCod(bShip(r))?'':' Paid up front, so it ships as normal.'}</span>${isCod(bShip(r))?`<button class="btn btn-o" data-brk="${r.i}">Take action</button>`:''}</div>`;
   const note=r.ai?`Fixed by AI: ${r.aiTx}`:r.need||r.you?'Chosen by you':'';
   return`<div class="is-sm ok">${ic('check',13,2.4)}Ready</div>${note?`<div class="is ok full"><span class="msg" title="${note}"><b>${ic('check',13,2.4)}Ready</b> · ${note}</span></div>`:''}`}
 function bCell(r,k,lab){const cls=bCls(r,k),need=r.need&&r.need.includes(k);
   if(k in r.bad){const o=bOpts(r,k),cur=o.includes(r[k]),sg=r.fix&&r.fix[k];
     return`<td data-c="${k}" class="${cls} sel"><select data-br="${r.i}" data-bk="${k}" aria-label="Row ${r.i+1} ${lab}">${cur?'':`<option value="${r[k]}" selected>${r[k]||'Choose'}</option>`}${o.map(v=>`<option value="${v}" ${r[k]===v?'selected':''}>${v}${sg===v?' · AI suggestion':''}</option>`).join('')}</select></td>`}
   return`<td data-c="${k}" class="${cls}"><input data-br="${r.i}" data-bk="${k}" value="${k==='val'?Number(r.val).toLocaleString('id-ID'):r[k]}" ${need?'placeholder="Required"':''} ${k==='zip'||k==='val'?'inputmode="numeric"':''} aria-label="Row ${r.i+1} ${lab}"></td>`}
-const bTx=(r,k)=>`<td data-c="${k}" class="tx${k==='val'||k==='kg'?' num':''}">${k==='val'?rp(r.val):r[k]}</td>`;
-const bTr=(r,check)=>`<tr data-br="${r.i}"><td class="rn">${r.i+1}</td>${bCols().map(([k,l])=>check&&r.flag?bCell(r,k,l):bTx(r,k)).join('')}${check?`<td class="iss" tabindex="0">${bCheck(r)}</td>`:''}</tr>`;
-function bTable(rows,check){return`<div class="tbl-wrap bk${X.bfix?' busy':''}"><table><thead><tr><th></th>${bCols().map(c=>`<th>${c[1]}</th>`).join('')}${check?'<th class="iss">Check</th>':''}</tr></thead><tbody>${rows.map(r=>bTr(r,check)).join('')}</tbody></table></div>`}
+const bTx=(r,k)=>{if(k==='pay')return`<td data-c="pay" class="tx">${r.pay==='cod'?`<span class="st pu">COD</span> <span class="num">${rp(r.val)}</span>`:'<span class="st gr">Non-COD</span>'}</td>`;if(k==='phone'){const h=hRow(r);return`<td data-c="phone" class="tx${h.band!=='ok'?' rk-'+h.band:''}"><span class="rk-ph">${r.phone}${h.band!=='ok'?riskTag(h):''}</span></td>`}return`<td data-c="${k}" class="tx${k==='val'||k==='kg'?' num':''}">${k==='val'?rp(r.val):r[k]}</td>`};
+const bTr=(r,check,cour)=>`<tr data-br="${r.i}"><td class="rn">${r.ro}</td>${cour?`<td data-c="svc" class="tx">${svName(svcFor(r.i))}</td>`:''}${(()=>{const h=check&&!r.flag?hRow(r):null;return bCols().map(([k,l])=>check&&r.flag&&k!=='pay'?bCell(r,k,l):h&&h.band!=='ok'&&(k==='name'||k==='phone')?rkEdit(r,k,h):bTx(r,k)).join('')})()}${check?`<td class="iss" tabindex="0">${bCheck(r)}</td>`:''}</tr>`;
+function bTable(rows,check,cour){return`<div class="tbl-wrap bk${X.bfix?' busy':''}"><table><thead><tr><th></th>${cour?'<th>Courier</th>':''}${bCols().map(c=>`<th>${c[1]}</th>`).join('')}${check?'<th class="iss">Check</th>':''}</tr></thead><tbody>${rows.map(r=>bTr(r,check,cour)).join('')}</tbody></table></div>`}
 /* picking from a dropdown: a different value than the AI's settles that cell; the postcode follows the kelurahan */
 function bPick(el){const r=X.bulk[el.dataset.br],k=el.dataset.bk;r[k]=el.value;if(r.fix&&k in r.fix){delete r.fix[k];r.you=true;if(!Object.keys(r.fix).length)r.fix=null}
   if(k==='kel'&&'zip' in r.bad&&!(r.fix&&r.fix.zip)){const z=bOpts(r,'zip');if(z.length===1)r.zip=z[0]}}
 const BPG=50;
 const bPager=()=>{const n=X.bulk.length;return`<div class="foot"><span>Showing <b>${X.bpg*BPG+1}–${Math.min(n,X.bpg*BPG+BPG)}</b> of <b>${n}</b></span><div class="pager"><button class="btn btn-o" data-bpg="-1" ${X.bpg?'':'disabled'}>Previous</button><button class="btn btn-o" data-bpg="1" ${(X.bpg+1)*BPG<n?'':'disabled'}>Next</button></div></div>`};
 function bSumHtml(){const c=bCounts();
-  return`<span class="st ok">${c.ok} ready</span>${c.sug?`<span class="st pu">${c.sug} AI ${c.sug===1?'suggestion':'suggestions'}</span>`:''}${c.err?`<span class="st bad">${c.err} need your input</span>`:''}<span class="sp"></span>
-  <div class="seg" role="tablist" aria-label="Rows"><button class="${X.bv==='issues'?'on':''}" data-bv="issues" role="tab" ${X.bfix?'disabled':''}>Flagged · ${c.flag}</button><button class="${X.bv==='all'?'on':''}" data-bv="all" role="tab" ${X.bfix?'disabled':''}>All rows · ${X.bulk.length}</button></div>
+  return`<span class="st ok">${c.ok} ready</span>${c.sug?`<span class="st pu">${c.sug} AI ${c.sug===1?'suggestion':'suggestions'}</span>`:''}${c.err?`<span class="st bad">${c.err} need your input</span>`:''}${c.risk?`<span class="st warn">${c.risk} to double-check</span>`:''}<span class="sp"></span>
+  <div class="seg" role="tablist" aria-label="Rows"><button class="${X.bv==='issues'?'on':''}" data-bv="issues" role="tab" ${X.bfix?'disabled':''}>Flagged · ${c.flag}</button>${c.risk?`<button class="${X.bv==='risk'?'on':''}" data-bv="risk" role="tab" ${X.bfix?'disabled':''}>Risky numbers · ${c.risk}</button>`:''}<button class="${X.bv==='all'?'on':''}" data-bv="all" role="tab" ${X.bfix?'disabled':''}>All rows · ${X.bulk.length}</button></div>
   ${X.bfix?`<button class="btn btn-p ai-busy" disabled>${aiDots}Fixing ${Math.min(X.bfix.done+1,X.bfix.n)} of ${X.bfix.n}</button>`:c.sug?`<button class="btn btn-p" data-bfix>${ic('bolt',15)}Fix all with AI</button>`:''}`}
-function bulkHtml(){const R=X.bulk,c=bCounts(),rows=X.bv==='issues'?R.filter(r=>r.flag):R.slice(X.bpg*BPG,X.bpg*BPG+BPG);
-  return`<p class="bk-file">${ic('sheet',15)}<span><b>orders.xlsx</b> · ${R.length} rows from ${new Set(R.map(r=>r.wh).filter(c=>whCodes().includes(c))).size} warehouses</span><button class="lnk" data-reset>Replace file</button></p>
+function bulkHtml(){const R=X.bulk,c=bCounts();if(X.bv==='risk'&&!c.risk)X.bv='all';const rows=X.bv==='issues'?R.filter(r=>r.flag):X.bv==='risk'?R.filter(r=>hRow(r).band!=='ok').sort((a,b)=>hRow(a).sc-hRow(b).sc):R.slice(X.bpg*BPG,X.bpg*BPG+BPG);
+  return`<p class="bk-file">${ic('sheet',15)}<span><b>orders.xlsx</b> · ${R.length} rows (${R.filter(r=>r.pay==='cod').length} COD, ${R.filter(r=>r.pay!=='cod').length} Non-COD) from ${new Set(R.map(r=>r.wh).filter(c=>whCodes().includes(c))).size} warehouses</span><button class="lnk" data-reset>Replace file</button></p>
   ${c.left?`<p class="sx-lead" style="margin:0 0 14px">${c.flag} rows need a look. AI can fix the typos; empty cells need you. There's no need to upload again.</p>`:`<div class="sx-note ok">${ic('check',16,2.4)}All ${R.length} orders are ready to ship. Check the list, then continue.</div>`}
   ${X.bfix?`<div class="bk-ai" id="bk-ai" role="status" aria-live="polite"><span class="bk-ai-ic">${ic('bolt',16)}</span><div><b>AI is fixing your rows</b><span id="bk-ai-tx">${X.bfix.tx}</span></div><span class="bk-ai-n" id="bk-ai-n">${X.bfix.done}/${X.bfix.n}</span><div class="bk-ai-bar"><i id="bk-ai-fill"></i></div></div>`:''}
-  <div class="bk-sum" id="bk-sum">${bSumHtml()}</div>${bTable(rows,true)}${X.bv==='all'?bPager():''}`}
-const bReview=()=>bTable(X.bulk.slice(X.bpg*BPG,X.bpg*BPG+BPG),false)+bPager();
+  <div class="bk-sum" id="bk-sum">${bSumHtml()}</div>${X.bv==='risk'?`<p class="bk-mp rk-lead">These numbers failed deliveries before, or go to areas where fewer deliveries succeed. The score runs from 0 to 100: higher means less risk. Keep the ones you trust, or remove them.</p>`:''}${bTable(rows,true)}${X.bv==='all'?bPager():''}`}
+/* Review: every difference between the uploaded file and what ships now, row by row */
+const D_LBL={name:'Customer name',phone:'WhatsApp',street:'Street',kel:'Kelurahan',kec:'Kecamatan',city:'City',prov:'Province',zip:'Postcode',wh:'Warehouse',items:'Contents',kg:'Weight',val:'COD amount',pay:'Payment'};
+const dVal=(k,v)=>k==='val'?rp(+v):k==='pay'?(v==='cod'?'COD':'Non-COD'):k==='phone'?`+62 ${v}`:k==='kg'?`${v} kg`:v||'—';
+function bDiff(){const o=X.orig;if(!o)return[];const held=new Map((X.held||[]).map(h=>[h.s.ro,h.kind])),now=new Map(X.bulk.map((r,i)=>[r.ro,[r,i]])),L=[];
+  o.rows.forEach(r0=>{const ro=r0.ro;
+    if(held.has(ro)){L.push({t:'wait',ro,name:r0.name,what:'Moved to a WhatsApp batch',a:'In this batch',b:held.get(ro)==='pay'?'Waits for payment':'Waits for confirmation'});return}
+    if(!now.has(ro)){L.push({t:'rm',ro,name:r0.name,what:'Removed',a:'In this batch',b:'Not shipped'});return}
+    const [r,i]=now.get(ro);
+    Object.keys(D_LBL).forEach(k=>{if(String(r0[k])!==String(r[k]))L.push({t:'edit',ro,name:r.name,what:`${D_LBL[k]} · ${r.ai&&r.ai.includes(k)&&!r.you?'fixed by AI':'edited by you'}`,a:dVal(k,r0[k]),b:dVal(k,r[k])})});
+    if(X.step>=1&&X.svc!=null&&X.alt&&X.alt[i]!=null&&X.alt[i]!==X.svc)L.push({t:'cour',ro,name:r.name,what:'Courier · split',a:svName(X.svc),b:svName(X.alt[i])})});
+  return L}
+function bCompare(){const o=X.orig;if(!o)return'';const f=x=>x.toLocaleString('id-ID'),L=bDiff(),dv=X.dv||'all';
+  const T=[['all','All'],['edit','Edited'],['wait','WhatsApp batch'],['rm','Removed'],['cour','Courier split']].map(([k,l])=>[k,l,k==='all'?L.length:L.filter(d=>d.t===k).length]).filter(x=>x[0]==='all'||x[2]);
+  const rows=L.filter(d=>dv==='all'||d.t===dv),rowsN=new Set(L.map(d=>d.ro)).size;
+  return`<section><div class="sx-h">Changes from ${o.file}</div>
+    <p class="sx-lead cmp-lead">${L.length?`${f(rowsN)} of ${f(o.n)} rows changed since you uploaded. ${f(X.ships.length)} ${X.ships.length===1?'order ships':'orders ship'} now.`:`Nothing changed. All ${f(o.n)} rows ship as uploaded.`}</p>
+    ${L.length?`<div class="seg cmp-seg" role="tablist" aria-label="Changes">${T.map(([k,l,n])=>`<button role="tab" aria-selected="${dv===k}" class="${dv===k?'on':''}" data-dv="${k}">${l} · ${f(n)}</button>`).join('')}</div>
+    <div class="tbl-wrap cmp-wrap"><table class="cmp-tbl"><thead><tr><th>Row</th><th>Customer</th><th>What changed</th><th>Uploaded</th><th>Final</th></tr></thead><tbody>
+    ${rows.map(d=>`<tr class="cmp-${d.t}"><td class="rn">${d.ro}</td><td>${d.name}</td><td>${d.what}</td><td class="cmp-a">${d.a}</td><td class="cmp-b">${d.b}</td></tr>`).join('')}</tbody></table></div>`:''}</section>`}
+const bReview=()=>bTable(X.bulk.slice(X.bpg*BPG,X.bpg*BPG+BPG),false,true)+bPager();
 const bPickup=()=>{const cs=[...new Set(X.bulk.map(r=>r.wh))];return`${cs.length} warehouses (${cs.join(', ')})`};
-const bShip=r=>({phone:r.phone,name:r.name,addr:{street:r.street,city:`${r.kel}, ${r.kec}, ${r.city}, ${r.prov}`,zip:r.zip},l:'30',w:'20',h:'10',kg:r.kg,items:r.items,cod:String(r.val),open:false});
+const bShip=r=>({ro:r.ro,whk:r.wh,pay:r.pay,phone:r.phone,name:r.name,addr:{street:r.street,city:`${r.kel}, ${r.kec}, ${r.city}, ${r.prov}`,zip:r.zip},l:'30',w:'20',h:'10',kg:r.kg,items:r.items,cod:String(r.val),open:false});
 function bRefresh(i,whole){const r=X.bulk[i],tr=sxBody.querySelector(`tr[data-br="${i}"]`);
   if(tr&&whole)tr.outerHTML=bTr(r,true);else if(tr){tr.querySelector('.iss').innerHTML=bCheck(r);tr.querySelectorAll('td[data-c]').forEach(td=>td.className=bCls(r,td.dataset.c)+(td.querySelector('select')?' sel':''))}
   document.getElementById('bk-sum').innerHTML=bSumHtml();document.getElementById('sx-next').disabled=!stepOk()}
@@ -2133,10 +2688,10 @@ const aiDots='<span class="ai-dots" aria-hidden="true"><i></i><i></i><i></i></sp
 function bFixConfirm(){const rows=X.bulk.filter(r=>r.fix),n=rows.length,left=bCounts().err,rw=n===1?'row':'rows';
   modal.innerHTML=`<div class="mh"><h3>Fix ${n} ${rw} with AI?</h3><button class="ib" data-mclose aria-label="Close">${ic('x',18)}</button></div>
   <div class="mb"><p class="bk-mp">AI will fix every flagged row using its suggestions from your address and warehouse data. You can still change any cell afterwards.</p>
-  <dl class="sum-kv bk-mlist">${rows.map(r=>`<dt>Row ${r.i+1}</dt><dd>${Object.keys(r.fix).map(k=>`${B_LBL[k]} ${r.bad[k]} → <b>${r.fix[k]}</b>`).join('<br>')}</dd>`).join('')}</dl>
+  <div class="tbl-wrap sp-wrap fx-wrap"><table class="sp-tbl fx-tbl"><thead><tr><th>Row</th><th>Field</th><th>In your file</th><th>AI fix</th></tr></thead><tbody>${rows.flatMap(r=>Object.keys(r.fix).map(k=>`<tr><td>${r.ro}</td><td>${B_LBL[k]}</td><td class="fx-old">${r.bad[k]}</td><td class="fx-new">${ic('bolt',13)}${r.fix[k]}</td></tr>`)).join('')}</tbody></table></div>
   ${left?`<p class="bk-mp">${left} ${left===1?'row has':'rows have'} empty cells. AI can't guess those, so you'll choose them yourself.</p>`:''}</div>
   <div class="mf"><button class="btn btn-o" data-mclose>Cancel</button><button class="btn btn-p" id="bk-go">${ic('bolt',15)}Fix ${n} ${rw}</button></div>`;
-  mscrim.classList.add('open');document.getElementById('bk-go').onclick=()=>{closeModal();bFixRun()};setTimeout(()=>document.getElementById('bk-go').focus(),0)}
+  modal.classList.add('md');mscrim.classList.add('open');document.getElementById('bk-go').onclick=()=>{closeModal();bFixRun()};setTimeout(()=>document.getElementById('bk-go').focus(),0)}
 function bFixRun(){const rows=X.bulk.filter(r=>r.fix),n=rows.length;let k=0;
   X.bv='issues';X.bfix={done:0,n,tx:`Reading ${n} suggestions…`};drawSx();
   const g=id=>document.getElementById(id);
@@ -2149,6 +2704,218 @@ function bFixRun(){const rows=X.bulk.filter(r=>r.fix),n=rows.length;let k=0;
     setTimeout(()=>{if(!X.bfix)return;bApply(r);X.bfix.done++;const t2=sxBody.querySelector(`tr[data-br="${r.i}"]`);
       if(t2){t2.outerHTML=bTr(r,true);sxBody.querySelector(`tr[data-br="${r.i}"]`).classList.add('aidone')}k++;upd();setTimeout(step,120)},760)};
   setTimeout(step,650)}
+/* ===== Courier coverage: some couriers don't deliver to a postcode, or not with COD (red zone). JNE, Ninja Xpress and J&T cover these areas. ===== */
+const MKS=[['Pandang','Panakkukang','Kota Makassar','Sulawesi Selatan','90231'],['Tamalanrea','Tamalanrea','Kota Makassar','Sulawesi Selatan','90245']];
+const RZ_COD=Object.fromEntries(['anteraja','sicepat','lion','spx'].map(k=>[k,['90231']])),NO_COVER=Object.fromEntries(['anteraja','sicepat','lion','spx'].map(k=>[k,['90245']]));
+const svName=v=>`${COURIERS.find(c=>c.k===SERVICES[v][0]).n} ${SERVICES[v][1]}`;
+/* Courier step, right side: the batches this choice makes, and the orders the chosen courier can't take, each with its own courier (no pop-up) */
+const altOpts=s=>SERVICES.map((x,j)=>j).filter(j=>j!==X.svc&&svcOn(SERVICES[j][0],SERVICES[j][1])&&!whyBlocked(j,s)).sort((a,b)=>SERVICES[a][4]-SERVICES[b][4]);
+/* on choosing a courier, every order it can't take starts on the cheapest courier that can */
+function autoAlt(){if(X.svc==null)return;X.alt=X.alt||{};X.halt=X.halt||{};
+  X.ships.forEach((s,i)=>{if(whyBlocked(X.svc,s)&&!altOpts(s).includes(X.alt[i])){const o=altOpts(s);if(o.length)X.alt[i]=o[0];else delete X.alt[i]}});
+  (X.held||[]).forEach((h,k)=>{const s=heldShip(h);if(whyBlocked(X.svc,s)&&!altOpts(s).includes(X.halt[k])){const o=altOpts(s);if(o.length)X.halt[k]=o[0];else delete X.halt[k]}})}
+const blockedList=()=>X.svc==null?[]:X.ships.map((s,i)=>[s,String(i),null]).filter(([s])=>whyBlocked(X.svc,s)).concat((X.held||[]).map((h,k)=>[heldShip(h),'h'+k,h.kind]).filter(([s])=>whyBlocked(X.svc,s)));
+const altOf=key=>key[0]==='h'?(X.halt||{})[key.slice(1)]:(X.alt||{})[key];
+function crSide(ST,rec){const f=x=>x.toLocaleString('id-ID'),pct=x=>x.toLocaleString('id-ID',{minimumFractionDigits:1,maximumFractionDigits:1})+'%',N=X.ships.length,held=X.held||[];
+  if(X.svc==null)return`<div class="cr-side-c"><div class="cr-sum-h"><b>Batches</b></div><p class="cr-sum-empty">Choose a courier. You'll see here how your ${f(N)} ${N===1?'shipment':'shipments'} split into batches, and any order that courier can't take.</p></div>`;
+  const v=X.svc,by=new Map();X.ships.forEach((s,i)=>{const c=svcFor(i),e=by.get(c)||{n:0,p:0};e.n++;e.p+=SERVICES[c][4]*kgOf(s);by.set(c,e)});
+  const cs=[...by.keys()].sort((a,b)=>a===v?-1:b===v?1:by.get(b).n-by.get(a).n),G=groups(),tot=[...by.values()].reduce((a,e)=>a+e.p,0),K=nBatches();
+  const hBy=new Map();held.forEach((h,k)=>{const c=heldSvc(k);hBy.set(c,(hBy.get(c)||0)+1)});
+  const bRow=c=>{const e=by.get(c);return`<div class="cr-sum-r">${cLogo(SERVICES[c][0])}<div><b>${svName(c)}</b><span>${f(e.n)} ${e.n===1?'shipment':'shipments'}${c!==v?` · ${svName(v)} can't take them`:''}</span></div><span class="cr-b">1 batch</span></div>`};
+  const hRows=[...hBy].map(([c,n])=>`<div class="cr-sum-r"><span class="cr-ic">${ic('chat',16)}</span><div><b>${f(n)} waiting ${n===1?'order':'orders'}</b><span>${svName(c)} · ${n===1?'ships':'each ships'} as soon as ${n===1?'the':'that'} shopper replies</span></div><span class="cr-b">${f(n)} ${n===1?'batch':'batches'}</span></div>`).join('');
+  const better=rec!=null&&rec!==v&&ST[rec].rate>ST[v].rate?(()=>{const d=svcPrice(SERVICES[rec])-svcPrice(SERVICES[v]);return`<div class="cr-sum-tip">${ic('bolt',15)}<span><b>${svName(rec)}</b> delivers more in your shoppers' areas (${pct(ST[rec].rate)} vs ${pct(ST[v].rate)})${d>0?` for ${rp(d)} more`:d<0?` and costs ${rp(-d)} less`:''}.</span><button class="lnk" data-svc="${rec}">Switch</button></div>`})():'';
+  const B=blockedList(),moved=B.reduce((a,[s,key])=>{const c=altOf(key);return a+(c!=null?SERVICES[c][4]*kgOf(s):0)},0);
+  const row=([s,key,kind])=>{const o=altOpts(s),c=altOf(key);return`<div class="cr-ro"><div class="cr-ro-h"><div><b>${s.name}</b><span>${s.addr.city} ${s.addr.zip}</span></div><button class="ib sp-x tt" data-tt="Remove order" data-altrm="${key}" aria-label="Remove ${s.name}'s order">${ic('trash',16)}</button></div>
+    <div class="cr-ro-tags">${whyBlocked(v,s)==='cod'?'<span class="st bad">Red zone for COD</span>':'<span class="st warn">Out of coverage</span>'}${isCod(s)?'<span class="st pu">COD</span>':'<span class="st gr">Non-COD</span>'}${kind?`<span class="cr-wait">${ic('chat',13)}Waits on WhatsApp</span>`:''}</div>
+    ${o.length?`<span class="sp-sw"><select data-alti="${key}" aria-label="Courier for ${s.name}">${c==null?'<option value="">Choose a courier</option>':''}${o.map((j,k)=>`<option value="${j}" ${c===j?'selected':''}>${svName(j)} · ${rp(SERVICES[j][4]*kgOf(s))} · ${SERVICES[j][3]}${k===0?' · Cheapest':''}</option>`).join('')}</select></span>`:'<p class="cr-none">No courier delivers here. Remove this order to continue.</p>'}</div>`};
+  return`<div class="cr-side-c"><div class="cr-sum-h"><b>${f(K)} ${K===1?'batch':'batches'}</b><span class="num">${rp(tot)}</span></div>
+    <p class="cr-side-sub">One batch per courier, whatever the number of warehouses. Each order waiting for a shopper is a batch of its own.</p>
+    ${cs.map(bRow).join('')}${hRows}</div>
+    ${B.length?`<div class="cr-side-c"><div class="cr-sum-h"><b>${f(B.length)} ${B.length===1?"order can't":"orders can't"} go with ${svName(v)}</b></div>
+    <p class="cr-side-sub">We picked the cheapest courier that delivers there. Change any of them; each extra courier is one more batch.</p>
+    <p class="sp-cover">${ic('check',14,2.4)}Every courier in these lists delivers to that address${B.some(([s])=>isCod(s))?', with no red zone for COD':''}.</p>
+    <div class="cr-ro-list">${B.map(row).join('')}</div>
+    <div class="cr-side-f"><span>${rp(moved)} for ${B.length===1?'this order':`these ${f(B.length)}`}</span><button class="btn btn-o" data-altrmall>Remove ${f(B.length)} ${B.length===1?'order':'orders'}</button></div></div>`:''}`}
+/* take an order out from the right side; the other choices keep their places */
+function altRemove(key){let nm;
+  if(key[0]==='h'){const k=+key.slice(1);nm=X.held[k].s.name;X.held.splice(k,1);const m={};Object.entries(X.halt||{}).forEach(([a,c])=>{a=+a;if(a!==k)m[a>k?a-1:a]=c});X.halt=m}
+  else{const k=+key;nm=X.ships[k].name;X.ships.splice(k,1);if(X.bulk){X.bulk.splice(k,1);X.bulk.forEach((r,j)=>r.i=j)}const m={};Object.entries(X.alt||{}).forEach(([a,c])=>{a=+a;if(a!==k)m[a>k?a-1:a]=c});X.alt=m}
+  return nm}
+function whyBlocked(v,s){const k=SERVICES[v][0],z=s.addr&&s.addr.zip;if(!z)return null;if((NO_COVER[k]||[]).includes(z))return'cover';if(isCod(s)&&(RZ_COD[k]||[]).includes(z))return'cod';return null}
+function altFor(s,v){const ok=SERVICES.map((x,j)=>j).filter(j=>j!==v&&svcOn(SERVICES[j][0],SERVICES[j][1])&&!whyBlocked(j,s));const same=ok.filter(j=>SERVICES[j][2]===SERVICES[v][2]);return(same.length?same:ok).sort((a,b)=>SERVICES[a][4]-SERVICES[b][4])[0]}
+const svcFor=i=>X.alt&&X.alt[i]!=null?X.alt[i]:X.svc;
+/* a waiting order ships later; once the shopper pays the link it is no longer COD */
+const heldShip=h=>h.kind==='pay'?{...h.s,pay:'non'}:h.s;
+const heldSvc=k=>X.halt&&X.halt[k]!=null?X.halt[k]:X.svc;
+/* batches = one per courier for orders shipping now, plus one per waiting order: each ships as soon as its own shopper replies */
+const nBatches=()=>new Set(X.ships.map((s,i)=>svcFor(i)+'|'+whOf(s).k)).size+(X.held||[]).length;
+const unresolved=()=>X.svc==null?[]:X.ships.map((s,i)=>i).filter(i=>X.alt[i]==null&&whyBlocked(X.svc,X.ships[i])).concat((X.held||[]).map((h,k)=>'h'+k).filter(k=>!(X.halt&&X.halt[k.slice(1)]!=null)&&whyBlocked(X.svc,heldShip(X.held[+k.slice(1)]))));
+function whOf(s){if(s.whk){const w=WH.find(x=>x.code===s.whk);if(w)return{k:w.code,n:w.n,a:whAddr(w)}}const w=WAREHOUSES[X.wh];return{k:'m'+X.wh,n:w.n,a:w.a}}
+/* one pickup per courier service and pickup address */
+function groups(){const m=new Map();X.ships.forEach((s,i)=>{const v=svcFor(i),w=whOf(s),key=v+'|'+w.k;if(!m.has(key))m.set(key,{v,w,ships:[]});m.get(key).ships.push(i)});
+  return[...m.values()].sort((a,b)=>(a.v!==X.svc)-(b.v!==X.svc)||b.ships.length-a.ships.length)}
+const gCost=g=>g.ships.reduce((a,i)=>a+SERVICES[g.v][4]*kgOf(X.ships[i]),0);
+const parcels=n=>`${n.toLocaleString('id-ID')} ${n===1?'parcel':'parcels'}`;
+/* pickups grouped by courier service: one row per courier, open it to see each warehouse */
+function pkGroups(cost){const by=new Map();groups().forEach(g=>{if(!by.has(g.v))by.set(g.v,[]);by.get(g.v).push(g)});
+  return[...by].map(([v,gs])=>{const n=gs.reduce((a,g)=>a+g.ships.length,0),p=gs.reduce((a,g)=>a+gCost(g),0),open=X.pkOpen&&X.pkOpen[v];
+    return`<div class="sx-ship pk-g${open?' open':''}"><button class="sx-sh" data-pkg="${v}" aria-expanded="${!!open}">${cLogo(SERVICES[v][0])}<span class="pk-t"><b>${svName(v)}</b><span>1 batch · ${parcels(n)} · ${gs.length===1?gs[0].w.n:`picked up from ${gs.length} warehouses`}</span></span>${cost?`<b class="num pk-p">${rp(p)}</b>`:''}<span class="chev">${ic('chev',16)}</span></button>
+    <div class="sx-sb">${gs.map(g=>`<div class="pk-w"><div><b>${g.w.n}</b><span>${g.w.a}</span></div><span class="num">${parcels(g.ships.length)}</span>${cost?`<b class="num">${rp(gCost(g))}</b>`:''}</div>`).join('')}</div></div>`}).join('')}
+/* the waiting orders: a batch each, picked up only after the shopper replies */
+const heldCard=()=>{const H=X.held||[],f=x=>x.toLocaleString('id-ID');if(!H.length)return'';const cs=[...new Set(H.map((h,k)=>heldSvc(k)))].map(svName).join(', ');return`<div class="sx-card sx-whc"><span class="ic">${ic('chat',18)}</span><div><b>${f(H.length)} waiting ${H.length===1?'batch':'batches'}</b><span>One order each with ${cs}. Picked up after that shopper replies, not at this time.</span></div></div>`};
+const pkCard=(g,cost)=>`<div class="sx-card sx-whc sx-pk">${cLogo(SERVICES[g.v][0])}<div><b>${svName(g.v)} · ${parcels(g.ships.length)}</b><span>${g.w.n} · ${g.w.a}</span></div>${cost?`<b class="num sx-pk-p">${rp(gCost(g))}</b>`:''}</div>`;
+function shipKv(c){const by=new Map();groups().forEach(g=>{const o=by.get(g.v)||{n:0,p:0};o.n+=g.ships.length;o.p+=gCost(g);by.set(g.v,o)});
+  if(by.size<2)return`<dt>Shipping for ${X.ships.length} ${X.ships.length===1?'shipment':'shipments'}</dt><dd class="num">${c.save?`<s>${rp(c.list)}</s>`:''}${rp(c.ship)}</dd>`;
+  return[...by].map(([v,o])=>`<dt>${svName(v)} · ${o.n.toLocaleString('id-ID')} ${o.n===1?'shipment':'shipments'}</dt><dd class="num">${rp(o.p)}</dd>`).join('')}
+/* ===== Delivery health check: 0–100 per shipment from the number's delivery history and the area's success rate. Higher is safer. ===== */
+const AREA_OK={'90245':66,'90231':74};  // success rate in the destination area (prototype data); other areas 86–95%
+const areaRate=z=>AREA_OK[z]||86+(parseInt(z||'0',10)%10);
+function phoneHist(ph){const d=String(ph||'').replace(/\D/g,'');let h=7;for(const c of d)h=(h*31+(+c))%100003;
+  if(h%53===0)return{tot:4,fail:3};if(h%41===0)return{tot:5,fail:2};if(h%9===0)return{tot:3+h%4,fail:0};return null}
+function health(s){const z=s.addr&&s.addr.zip,ar=areaRate(z),hi=phoneHist(s.phone),ps=hi?Math.round(100*(hi.tot-hi.fail)/hi.tot):85,sc=Math.round(.6*ps+.4*ar);
+  const area=s.addr?(s.addr.city.split(', ').slice(-2,-1)[0]||s.addr.city):'this area',why=[];
+  why.push(hi?hi.fail?`${hi.fail} of ${hi.tot} past deliveries to this number failed`:`${hi.tot} past deliveries to this number, all delivered`:'No delivery history for this number yet');
+  why.push(`${ar}% of deliveries in ${area} succeed`);
+  return{sc,band:sc>=80?'ok':sc>=60?'warn':'bad',why}}
+const HB={ok:'Good',warn:'Fair',bad:'Risky'};
+function healthCard(){const H=X.ships.map(health),n={ok:0,warn:0,bad:0};H.forEach(h=>n[h.band]++);const avg=Math.round(H.reduce((a,h)=>a+h.sc,0)/(H.length||1)),flag=n.warn+n.bad,fmt=x=>x.toLocaleString('id-ID');
+  return`<section class="sx-card hc"><div class="hc-t"><b>Delivery health check</b><span>A score from 0 to 100 for each shipment, from the number's delivery history and the area's success rate. Higher means less risk.</span></div>
+  <div class="hc-r"><div class="hc-avg"><span class="kpi-l">Average</span><b class="num">${avg}</b></div><div class="hc-b"><span class="st ok">${fmt(n.ok)} good</span>${n.warn?`<span class="st warn">${fmt(n.warn)} fair</span>`:''}${n.bad?`<span class="st bad">${fmt(n.bad)} risky</span>`:''}</div>
+  ${flag?`<button class="btn btn-o" data-risk>Review ${fmt(flag)}</button>`:`<span class="hc-ok">${ic('check',14,2.4)}All shipments look healthy</span>`}</div></section>`}
+function riskModal(){const L=X.ships.map((s,i)=>[s,i,health(s)]).filter(x=>x[2].band!=='ok').sort((a,b)=>a[2].sc-b[2].sc),rm=new Set(),fmt=x=>x.toLocaleString('id-ID');
+  modal.classList.add('wide');
+  modal.innerHTML=`<div class="mh"><h3>${fmt(L.length)} ${L.length===1?'shipment needs':'shipments need'} a look</h3><button class="ib" data-mclose aria-label="Close">${ic('x',18)}</button></div>
+  <div class="mb"><p class="bk-mp">Lower scores are more likely to fail or come back${anyCod()?', and a returned COD parcel costs you the shipping both ways':''}. Keep the ones you trust, or remove them from this batch.</p>
+  <div class="tbl-wrap sp-wrap"><table class="sp-tbl rk-tbl"><thead><tr><th>Shipment</th><th>Health score</th><th>Why</th><th>Remove</th></tr></thead><tbody>${L.map(([s,i,h])=>`<tr><td><b>${s.name}</b><span class="src">+62 ${s.phone}</span></td><td><span class="rk-sc ${h.band}"><b class="num">${h.sc}</b>${HB[h.band]}</span></td><td><ul class="rk-why">${h.why.map(w=>`<li>${w}</li>`).join('')}</ul></td><td><button class="ie-chk rk-rm" data-rki="${i}" aria-pressed="false" aria-label="Remove ${s.name}"><span class="cb"></span></button></td></tr>`).join('')}</tbody></table></div></div>
+  <div class="mf"><button class="btn btn-o" data-mclose>Keep all</button><span class="sp"></span><button class="btn btn-p" id="rk-go" disabled>Remove shipments</button></div>`;
+  mscrim.classList.add('open');const go=document.getElementById('rk-go');
+  modal.querySelectorAll('[data-rki]').forEach(b=>b.onclick=()=>{const i=+b.dataset.rki,on=!rm.has(i);on?rm.add(i):rm.delete(i);b.setAttribute('aria-pressed',on);b.querySelector('.cb').className='cb'+(on?' on':'');b.querySelector('.cb').innerHTML=on?ic('check',12,3):'';go.disabled=!rm.size;go.textContent=rm.size?`Remove ${fmt(rm.size)} ${rm.size===1?'shipment':'shipments'}`:'Remove shipments'});
+  go.onclick=()=>{const n=rm.size;X.ships=X.ships.filter((s,i)=>!rm.has(i));if(X.bulk){X.bulk=X.bulk.filter((r,i)=>!rm.has(i));X.bulk.forEach((r,i)=>r.i=i)}X.alt={};closeModal();drawSx();toast(`${fmt(n)} ${n===1?'shipment':'shipments'} removed. ${fmt(X.ships.length)} left in this batch.`)}}
+/* courier step: delivery rate per service (FLIK shipments to the same kecamatan in the last 90 days, or the city) and how many parcels fall in its red zone */
+const CR_Q={jne:1.6,jnt:-.4,sicepat:.4,ninja:-.2,anteraja:-1.1,lion:-1.6,spx:-.9};
+const kecOf=s=>{const p=(s.addr&&s.addr.city||'').split(', ');return p.length>2?p[1]:p[0]};
+function svcStats(){const out={},N=X.ships.length;let fb=0;
+  X.ships.forEach(s=>{let h=0;for(const ch of kecOf(s))h=(h*31+ch.charCodeAt(0))%9973;if(h%9<2)fb++});out.fallback=fb;
+  SERVICES.forEach((v,j)=>{let sum=0,red=0;X.ships.forEach(s=>{sum+=Math.min(99.5,Math.max(55,areaRate(s.addr&&s.addr.zip)+(CR_Q[v[0]]||0)+(v[2]==='exp'?1:v[2]==='cargo'?-1.5:0)));if(whyBlocked(j,s))red++});out[j]={rate:N?Math.round(sum/N*10)/10:0,red}});
+  return out}
+/* recommend, within the open tab, the switched-on service with no red-zone parcels and the best delivery rate; cheaper wins a tie */
+function recSvc(ST,grp){let best=null;SERVICES.forEach((v,j)=>{if(v[2]!==grp||!svcOn(v[0],v[1])||ST[j].red)return;if(best==null||ST[j].rate>ST[best].rate||(ST[j].rate===ST[best].rate&&v[4]<SERVICES[best][4]))best=j});return best}
+/* top bar gear: settings, including Warehouses (no longer in the sidebar) */
+document.getElementById('gear').onclick=e=>{e.stopPropagation();const b=e.currentTarget;if(popFor===b){closePop();return}popFor=b;
+  pop.innerHTML=`<div class="menu" style="width:220px" role="menu"><button class="opt" role="menuitem" data-gv="warehouses">${ic('wh',15)}Warehouses</button><button class="opt" role="menuitem" data-gt="Opens Settings">${ic('gear',15)}All settings</button></div>`;
+  pop.querySelector('[data-gv]').onclick=()=>{closePop();location.hash='warehouses'};pop.querySelector('[data-gt]').onclick=()=>{closePop();toast('Opens Settings')};placePop(b,true)};
+/* add a warehouse from Create shipment without leaving the flow */
+function whQuickModal(onSave){const w={n:'',code:'',ph:'',street:'',dist:'',city:'',prov:'',zip:''};
+  const F=[['n','Warehouse name','e.g. Medan warehouse'],['code','Warehouse code','e.g. MDN-01'],['ph','Contact WhatsApp','812-3456-7890',1],['street','Street address','Street, building, number',0,1],['dist','Kecamatan','e.g. Medan Petisah'],['city','City or regency','e.g. Kota Medan'],['prov','Province','e.g. Sumatera Utara'],['zip','Postcode','20112']];
+  modal.innerHTML=`<div class="mh"><h3>Add a warehouse</h3><button class="ib" data-mclose aria-label="Close">${ic('x',18)}</button></div>
+  <div class="mb whq"><p class="bk-mp">Couriers pick up from here. You can add opening hours and other details later in Settings › Warehouses.</p>
+  <div class="whq-g">${F.map(([k,l,ph,pre,wide])=>`<div class="sx-f${wide?' w2':''}"><label for="wq-${k}">${l}</label>${pre?`<div class="pre"><em>+62</em><input id="wq-${k}" data-wq="${k}" placeholder="${ph}" inputmode="numeric"></div>`:`<input id="wq-${k}" data-wq="${k}" placeholder="${ph}" ${k==='zip'?'inputmode="numeric" maxlength="5"':''}>`}</div>`).join('')}</div>
+  <p class="wh-err" id="wq-err" hidden></p></div>
+  <div class="mf"><button class="btn btn-o" data-mclose>Cancel</button><button class="btn btn-p" id="wq-go" disabled>Add warehouse</button></div>`;
+  mscrim.classList.add('open');const go=document.getElementById('wq-go'),err=document.getElementById('wq-err');
+  const check=()=>{const taken=WH.some(x=>x.code.toUpperCase()===w.code.toUpperCase());const ok=Object.values(w).every(v=>v.trim())&&/^\d{5}$/.test(w.zip)&&w.ph.replace(/\D/g,'').length>=9&&!taken;
+    err.hidden=!taken;err.textContent=taken?`${w.code.toUpperCase()} is already used by another warehouse.`:'';go.disabled=!ok};
+  modal.oninput=e=>{const k=e.target.dataset.wq;if(!k)return;if(k==='code')e.target.value=e.target.value.toUpperCase();w[k]=e.target.value;check()};
+  go.onclick=()=>{const nw={code:w.code.trim().toUpperCase(),ext:'',n:w.n.trim(),pic:{first:'',last:'',email:'',phone:w.ph.trim()},prov:w.prov.trim(),city:w.city.trim(),dist:w.dist.trim(),zip:w.zip,street:w.street.trim(),note:'',days:whHrs('08:00','17:00',['Mon','Tue','Wed','Thu','Fri','Sat']),pickup:true,active:true,def:false};
+    WH.push(nw);whSync();modal.oninput=null;closeModal();onSave(nw)};
+  setTimeout(()=>document.getElementById('wq-n').focus(),0)}
+/* ===== Risky shoppers: decide before shipping. Ship anyway, remove, ask the shopper to confirm on WhatsApp, or send a payment link on WhatsApp.
+   The last two wait for the shopper and ship later as their own batch. ===== */
+const RK_ACT={ship:'Ship anyway',remove:'Remove order',wa:'Confirm on WhatsApp',pay:'Payment link on WhatsApp'};
+/* every flagged COD order (Risky or Fair) goes through the dialog; flagged Non-COD orders are only shown as information */
+const riskyList=()=>X.ships.map((s,i)=>[s,i,health(s)]).filter(x=>x[2].band!=='ok'&&isCod(x[0])).sort((a,b)=>a[2].sc-b[2].sc);
+const cityOf=s=>s.addr?(s.addr.city.split(', ').slice(-2,-1)[0]||s.addr.city):'';
+function waPreview(kind,s){const first=(s.name||'there').split(' ')[0],amt=rp(codVal(s)||0);
+  const t=kind==='pay'?`Hi ${first}, your order from Aruna Studio is ready: ${s.items}. Pay ${amt} so we can ship it to ${cityOf(s)}. This link works for 24 hours.`
+    :`Hi ${first}, this is Aruna Studio. Please confirm your order: ${s.items}${isCod(s)?`, ${amt} cash on delivery`:''}, going to ${cityOf(s)}. We ship it as soon as you confirm.`;
+  return`<div class="wa-b"><div class="wa-h"><span class="wa-av">AS</span><b>Aruna Studio</b><span class="wa-v">${ic('check',11,2.6)}</span></div><p>${t}</p><span class="wa-t">10:47</span>
+    <div class="wa-btns">${kind==='pay'?`<span>${ic('ext',14,2)}Pay now</span>`:`<span>${ic('check',14,2)}Confirm order</span><span>Cancel order</span>`}</div></div>`}
+function riskyModal(L,go){const fmt=x=>x.toLocaleString('id-ID'),act={};let pv='wa';
+  L.forEach(([s,i])=>act[i]=X.bulk&&X.bulk[i]&&X.bulk[i].rkShip?'ship':'wa');
+  const opts=s=>Object.keys(RK_ACT).filter(k=>k!=='pay'||isCod(s));
+  const draw=()=>{const cnt={ship:0,remove:0,wa:0,pay:0};L.forEach(([s,i])=>cnt[act[i]]++);const now=X.ships.length-cnt.remove-cnt.wa-cnt.pay,sample=(L.find(([s,i])=>act[i]===pv)||L.find(([s])=>pv!=='pay'||isCod(s))||L[0])[0];
+    const keep=modal.querySelector('.sp-wrap')?.scrollTop||0;
+    modal.innerHTML=`<div class="mh"><h3>${fmt(L.length)} COD ${L.length===1?'order needs':'orders need'} a check before shipping</h3><button class="ib" data-mclose aria-label="Close">${ic('x',18)}</button></div>
+    <div class="mb"><p class="bk-mp">These numbers have failed deliveries before, or go to areas where fewer COD parcels are accepted. A COD parcel that comes back costs you shipping both ways. Choose what happens to each order. Orders you ask to confirm or pay wait for the shopper on WhatsApp. Each one is its own batch and ships as soon as that shopper replies.</p>
+    <div class="rk-grid"><div class="rk-main"><div class="tbl-wrap sp-wrap"><table class="sp-tbl rk2"><thead><tr class="rk-allrow"><td colspan="3"><b>All ${fmt(L.length)} orders</b><span class="src">Apply one action to every order in this list</span></td><td class="sel"><div class="sp-sw"><select id="rk-all" aria-label="Action for all orders">${(()=>{const same=L.every(([s,i])=>act[i]===act[L[0][1]])?act[L[0][1]]:'';return`${same?'':'<option value="" hidden selected>Mixed actions</option>'}${Object.keys(RK_ACT).map(k=>`<option value="${k}" ${same===k?'selected':''}>${RK_ACT[k]}</option>`).join('')}`})()}</select></div></td></tr><tr><th>Shopper</th><th>Health score</th><th>Payment</th><th>Action</th></tr></thead><tbody>${L.map(([s,i,h])=>`<tr><td><b>${s.name}</b><span class="src">+62 ${s.phone}</span></td><td><span class="rk-sc ${h.band}" tabindex="0" data-tip="${h.why.join('. ')}."><b class="num">${h.sc}</b>${HB[h.band]}</span></td><td>${isCod(s)?`<span class="st pu">COD</span><span class="src num">${rp(codVal(s))}</span>`:'<span class="st gr">Non-COD</span>'}</td><td class="sel"><div class="sp-sw"><select data-rka="${i}" aria-label="Action for ${s.name}">${opts(s).map(k=>`<option value="${k}" ${act[i]===k?'selected':''}>${RK_ACT[k]}</option>`).join('')}</select></div></td></tr>`).join('')}</tbody></table></div>
+</div>
+    <aside class="rk-pv"><div class="rk-pv-h"><b>What the shopper gets on WhatsApp</b><div class="seg" role="tablist"><button role="tab" class="${pv==='wa'?'on':''}" data-rkpv="wa">Confirmation</button><button role="tab" class="${pv==='pay'?'on':''}" data-rkpv="pay">Payment link</button></div></div>${waPreview(pv,sample)}<p class="hint">Sent from FLIK's verified WhatsApp account under your business name. You'll see replies on the Shipments page.</p></aside></div></div>
+    <div class="mf"><button class="btn btn-o" data-mclose>Cancel</button><span class="sp"></span><button class="btn btn-p" id="rk-go" ${now||cnt.wa||cnt.pay?'':'disabled'}>${now?`Continue with ${fmt(now)} ${now===1?'order':'orders'}`:cnt.wa||cnt.pay?`Send ${fmt(cnt.wa+cnt.pay)} on WhatsApp and finish`:'No orders left to ship'}</button></div>`;
+    modal.querySelector('.sp-wrap').scrollTop=keep;
+    modal.querySelectorAll('[data-rka]').forEach(el=>el.onchange=()=>{act[el.dataset.rka]=el.value;if(el.value==='wa'||el.value==='pay')pv=el.value;draw()});
+    document.getElementById('rk-all').onchange=e=>{const v=e.target.value;if(!v)return;L.forEach(([s,i])=>act[i]=v==='pay'&&!isCod(s)?'wa':v);if(v==='wa'||v==='pay')pv=v;draw()};
+    modal.querySelectorAll('[data-rkpv]').forEach(b=>b.onclick=()=>{pv=b.dataset.rkpv;draw()});
+    document.getElementById('rk-go').onclick=()=>{const rm=new Set(),held=[];L.forEach(([s,i])=>{if(X.bulk&&X.bulk[i])X.bulk[i].rkShip=act[i]==='ship';if(act[i]==='remove')rm.add(i);if(act[i]==='wa'||act[i]==='pay'){rm.add(i);held.push({s,kind:act[i]})}});
+      X.held=(X.held||[]).concat(held);X.halt={};X.ships=X.ships.filter((s,i)=>!rm.has(i));if(X.bulk){X.bulk=X.bulk.filter((r,i)=>!rm.has(i));X.bulk.forEach((r,i)=>r.i=i)}
+      X.alt={};X.rkDone=true;closeModal();if(!X.ships.length){finishHeldOnly();toast(`${fmt(held.length)} ${held.length===1?'order':'orders'} sent to the shopper on WhatsApp`);return}go();
+      const nr=[...rm].length-held.length;toast([held.length?`${fmt(held.length)} ${held.length===1?'order waits':'orders wait'} for the shopper`:'',nr?`${fmt(nr)} removed`:''].filter(Boolean).join(' · ')||'Shipping all orders')}};
+  modal.classList.add('wide');draw();mscrim.classList.add('open')}
+function splitModal(pre){const v=X.svc,N=X.ships.length,fmt=x=>x.toLocaleString('id-ID');
+  /* every shipment the main courier can't take; the merchant picks a courier per shipment from those that deliver there */
+  const B=X.ships.map((s,i)=>[s,i]).filter(([s])=>whyBlocked(v,s)).concat((X.held||[]).map((h,k)=>[heldShip(h),'h'+k,h.kind]).filter(([s])=>whyBlocked(v,s))),nNow=B.filter(b=>typeof b[1]==='number').length,nH=B.length-nNow,n=B.length,stay=N-nNow,SH=n===1?'order':'orders';
+  const optsFor=s=>SERVICES.map((x,j)=>j).filter(j=>j!==v&&svcOn(SERVICES[j][0],SERVICES[j][1])&&!whyBlocked(j,s)).sort((a,b)=>SERVICES[a][4]-SERVICES[b][4]);
+  /* starts on the cheapest courier for each shipment; the merchant can change any of them */
+  const pick={};B.forEach(([s,i])=>{const o=optsFor(s),c=pre&&i in pre?pre[i]:typeof i==='string'?(X.halt||{})[i.slice(1)]:X.alt[i];if(c!=null&&o.includes(c))pick[i]=c;else if(!(pre&&i in pre)&&o.length)pick[i]=o[0]});
+  const batches=()=>new Set(X.ships.map((s,i)=>pick[i]??v)).size+(X.held||[]).length;
+  const sel=(s,i)=>{const o=optsFor(s);return o.length?`<select data-spi="${i}" aria-label="Courier for ${s.name}"><option value="">Choose a courier</option>${o.map((j,k)=>`<option value="${j}" ${pick[i]===j?'selected':''}>${svName(j)} · ${rp(SERVICES[j][4]*kgOf(s))} · ${SERVICES[j][3]}${k===0?' · Cheapest':''}</option>`).join('')}</select>`:'<span class="src">No courier delivers here</span>'};
+  modal.innerHTML=`<div class="mh"><h3>${nH&&!nNow?`${fmt(nH)} waiting ${nH===1?'order':'orders'}`:`${fmt(n)} ${SH}`} can't go with ${svName(v)}</h3><button class="ib" data-mclose aria-label="Close">${ic('x',18)}</button></div>
+  <div class="mb"><p class="bk-mp">${stay?`The other ${fmt(stay)} shipping now stay with ${svName(v)}. `:''}We picked the cheapest courier for each order below. Change any of them. Each extra courier is its own batch${nH?'. Waiting orders are always a batch each; these ones just ship with another courier':''}.</p>
+  <p class="sp-cover">${ic('check',14,2.4)}Every courier in these lists delivers to that address${anyCod()?', with no red zone for COD':''}.</p>
+  <div class="tbl-wrap sp-wrap"><table class="sp-tbl"><thead><tr><th>Shipment</th><th>Why</th><th>Payment</th><th>Courier</th></tr></thead><tbody>${B.map(([s,i])=>`<tr><td><b>${s.name}</b><span class="src">${s.addr.city} ${s.addr.zip}</span></td><td>${whyBlocked(v,s)==='cod'?'<span class="st bad">Red zone for COD</span>':'<span class="st warn">Out of coverage</span>'}</td><td>${isCod(s)?'<span class="st pu">COD</span>':'<span class="st gr">Non-COD</span>'}${typeof i==='string'?'<span class="src sp-wait">Waits on WhatsApp</span>':''}</td><td class="sel"><div class="sp-cc"><span class="sp-sw">${sel(s,i)}</span><button class="ib sp-x tt" data-tt="Remove order" data-sprm="${i}" aria-label="Remove ${s.name}'s order">${ic('trash',16)}</button></div></td></tr>`).join('')}</tbody></table></div>
+  <p class="bk-mp" id="sp-sum"></p></div>
+  <div class="mf"><button class="btn btn-o" id="sp-rm" ${stay||(X.held||[]).length>nH?'':'disabled'}>Remove ${fmt(n)} ${SH}</button><span class="sp"></span><button class="btn btn-p" id="sp-go" disabled></button></div>`;
+  const upd=()=>{const left=B.filter(([s,i])=>pick[i]==null).length,go=document.getElementById('sp-go'),by={};
+    B.forEach(([s,i])=>{if(pick[i]!=null)by[pick[i]]=(by[pick[i]]||0)+1});
+    const K=batches();go.disabled=!!left;go.textContent=left?`Choose a courier for ${left} more`:`Split into ${K} ${K===1?'batch':'batches'}`;
+    /* one line per batch: the main courier, each extra courier now, each extra courier for waiting orders */
+    const now=new Map(),wait=new Map();X.ships.forEach((s,i)=>{const c=pick[i]??v;now.set(c,(now.get(c)||0)+1)});(X.held||[]).forEach((h,k)=>{const c=pick['h'+k]??v;wait.set(c,(wait.get(c)||0)+1)});
+    const L=[...[...now].map(([c,m])=>`${svName(c)} · ${fmt(m)} now`),...[...wait].map(([c,m])=>`${fmt(m)} waiting with ${svName(c)} (${m===1?'1 batch':`${fmt(m)} batches, one each`})`)];
+    document.getElementById('sp-sum').innerHTML=left?'':`<b>${K} ${K===1?'batch':'batches'}:</b> ${L.join(', ')}. ${rp(B.reduce((a,[s,i])=>a+SERVICES[pick[i]][4]*kgOf(s),0))} for the ${fmt(n)} moved ${n===1?'order':'orders'}.`};
+  modal.onchange=e=>{const t=e.target;if(t.dataset.spi==null)return;if(t.value==='')delete pick[t.dataset.spi];else pick[t.dataset.spi]=+t.value;upd()};
+  /* remove one shipment: keep the other choices, shift their positions, reopen with what is left */
+  modal.querySelectorAll('[data-sprm]').forEach(b=>b.onclick=()=>{if(b.dataset.sprm[0]==='h'){const k=+b.dataset.sprm.slice(1),nm=X.held[k].s.name;X.held.splice(k,1);const np={};Object.entries(pick).forEach(([a,c])=>{if(a[0]!=='h')np[a]=c;else{const j=+a.slice(1);if(j!==k)np['h'+(j>k?j-1:j)]=c}});const ha={};Object.entries(X.halt||{}).forEach(([a,c])=>{a=+a;if(a!==k)ha[a>k?a-1:a]=c});X.halt=ha;modal.onchange=null;
+      if(!unresolved().length&&!X.ships.some(x=>whyBlocked(v,x))&&!X.held.some(h=>whyBlocked(v,heldShip(h)))){closeModal();drawSx();toast(`${nm}'s order removed`);return}splitModal(np);toast(`${nm}'s order removed`);return}
+    const k=+b.dataset.sprm,nm=X.ships[k].name;X.ships.splice(k,1);if(X.bulk){X.bulk.splice(k,1);X.bulk.forEach((r,j)=>r.i=j)}
+    const sh=o=>{const m={};Object.entries(o).forEach(([a,c])=>{if(a[0]==='h'){m[a]=c;return}a=+a;if(a!==k)m[a>k?a-1:a]=c});return m};X.alt=sh(X.alt);const np=sh(pick);B.forEach(([x,j])=>{if(j!==k&&pick[j]==null)np[j>k?j-1:j]=null});modal.onchange=null;
+    if(!X.ships.some(x=>whyBlocked(v,x))&&!(X.held||[]).some(h=>whyBlocked(v,heldShip(h)))){closeModal();drawSx();toast(`${nm}'s shipment removed`);return}splitModal(np);toast(`${nm}'s shipment removed`)});
+  document.getElementById('sp-go').onclick=()=>{const K=batches();X.alt={};X.halt={};Object.entries(pick).forEach(([a,c])=>{if(a[0]==='h')X.halt[a.slice(1)]=c;else X.alt[a]=c});modal.onchange=null;closeModal();drawSx();toast(`Split into ${K} batches`)};
+  document.getElementById('sp-rm').onclick=()=>{const rm=new Set(B.map(b=>b[1]));X.ships=X.ships.filter((s,i)=>!rm.has(i));if(X.held){X.held=X.held.filter((h,k)=>!rm.has('h'+k));X.halt={}}
+    if(X.bulk){X.bulk=X.bulk.filter((r,i)=>!rm.has(i));X.bulk.forEach((r,i)=>r.i=i)}X.alt={};modal.onchange=null;closeModal();drawSx();toast(`${fmt(n)} ${SH} removed`)};
+  modal.classList.add('wide');mscrim.classList.add('open');upd()}
+/* upload: the file is sent and read first, with a progress bar and a placeholder table, then the check table appears */
+const LD_STEPS=[[0,'Uploading orders.xlsx'],[30,'Reading 500 rows'],[55,'Checking addresses against the area database'],[78,'Checking warehouse codes and delivery history'],[96,'Getting your table ready']];
+function bLoadHtml(){const u=X.uploading,w=[70,85,60,75,55,80,65,90];
+  return`<p class="bk-file">${ic('sheet',15)}<span><b>orders.xlsx</b> · 248 KB</span></p>
+  <div class="bk-ld" role="status" aria-live="polite"><div class="bk-ld-t"><b id="ld-tx">${u.tx}</b><span id="ld-n" class="num">${u.p}%</span></div><div class="bk-ai-bar"><i id="ld-fill" style="width:${u.p}%"></i></div></div>
+  <div class="tbl-wrap bk bk-sk" aria-hidden="true"><table><thead><tr><th></th>${bCols().map(c=>`<th>${c[1]}</th>`).join('')}<th class="iss">Check</th></tr></thead><tbody>${Array.from({length:8},(_,r)=>`<tr><td class="rn"><span class="sk" style="width:16px;animation-delay:${r*.08}s"></span></td>${bCols().map((c,k)=>`<td><span class="sk" style="width:${w[(r+k)%8]}%;animation-delay:${r*.08}s"></span></td>`).join('')}<td class="iss"><span class="sk" style="width:60%;animation-delay:${r*.08}s"></span></td></tr>`).join('')}</tbody></table></div>`}
+const toTable=()=>{const el=sxBody.querySelector('.bk-file');if(el)el.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})};
+function bUpload(){X.uploading={p:0,tx:LD_STEPS[0][1]};drawSx();toTable();
+  const tick=()=>{const u=X.uploading;if(!u||X.how!=='bulk'||X.step!==0){X.uploading=null;return}
+    u.p=Math.min(100,u.p+2+Math.round(Math.random()*3));u.tx=LD_STEPS.filter(s=>u.p>=s[0]).pop()[1];
+    const g=id=>document.getElementById(id);if(g('ld-fill')){g('ld-fill').style.width=u.p+'%';g('ld-n').textContent=u.p+'%';g('ld-tx').textContent=u.tx}
+    if(u.p<100){setTimeout(tick,60);return}
+    setTimeout(()=>{if(!X.uploading)return;X.uploading=null;X.uploaded=true;X.bulk=makeBulk();{const sh=X.bulk;X.orig={file:'orders.xlsx',n:sh.length,rows:bSnap(X.bulk)};X.dv='all'}X.bv='issues';X.bpg=0;drawSx();toTable();toast(`orders.xlsx uploaded: ${X.bulk.length} rows, ${BULK_ISSUES.length} to check`)},250)};
+  setTimeout(tick,120)}
+/* tooltip for longer hints: floats above the element, so scroll areas never clip it */
+const gtip=document.createElement('div');gtip.className='gtip';gtip.setAttribute('role','tooltip');gtip.hidden=true;document.body.appendChild(gtip);
+const tipShow=el=>{gtip.textContent=el.dataset.tip;gtip.hidden=false;const r=el.getBoundingClientRect(),w=gtip.offsetWidth,h=gtip.offsetHeight;let x=Math.min(Math.max(8,r.left+r.width/2-w/2),innerWidth-w-8),y=r.top-h-8;if(y<8)y=r.bottom+8;gtip.style.left=x+'px';gtip.style.top=y+'px'};
+const tipHide=()=>{gtip.hidden=true};
+document.addEventListener('mouseover',e=>{const el=e.target.closest&&e.target.closest('[data-tip]');el?tipShow(el):tipHide()});
+document.addEventListener('focusin',e=>{const el=e.target.closest&&e.target.closest('[data-tip]');el?tipShow(el):tipHide()});
+document.addEventListener('scroll',tipHide,true);
+document.addEventListener('click',e=>{if(typeof X!=='undefined'&&X&&X.whOpen!=null&&e.target.isConnected&&!e.target.closest('.whp')){X.whOpen=null;drawSx()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&typeof X!=='undefined'&&X&&X.whOpen!=null){X.whOpen=null;drawSx()}});
+/* the orders waiting for the shopper become one batch; it ships once they confirm or pay */
+function makeHeld(sv){if(!X.held||!X.held.length)return null;const main=SERVICES.indexOf(sv),by=new Map();
+  /* waiting orders in another courier's red zone get their own batch with that courier */
+  /* each waiting order is its own batch, so one shopper's reply never holds up another */
+  X.held.forEach((h,k)=>by.set(k,[X.halt&&X.halt[k]!=null?X.halt[k]:main,[h]]));
+  const ids=[],list=[];by.forEach(([c,H])=>{const v=SERVICES[c],hid=bid();ids.push(hid);list.push({id:hid,v:c,kind:H[0].kind,name:H[0].s.name});const orders=H.map(({s,kind})=>{const kg=kgOf(s);return{id:bid(),awb:'—',name:s.name,phone:s.phone,addr:s.addr,items:s.items,kg:s.kg||kg,dim:`${s.l||0}×${s.w||0}×${s.h||0}`,cod:isCod(s)?codVal(s):0,val:codVal(s),cost:v[4]*kg,list:(v[5]||v[4])*kg,st:kind==='pay'?'payment':'confirm',src:X.how}});
+    const w=whOf(H[0].s);SHP.unshift({id:hid,st:'hold',svc:v,n:orders.length,cod:orders.filter(o=>o.cod).length,codv:orders.reduce((a,o)=>a+o.cod,0),cost:orders.reduce((a,o)=>a+o.cost,0),wh:{n:w.n,a:w.a},when:'after the shopper replies',orders,created:new Date(NOW.getTime()+60000*SHP.length)})});
+  return{id:ids.length===1?ids[0]:'',nb:ids.length,list,n:X.held.length,wa:X.held.filter(h=>h.kind==='wa').length,pay:X.held.filter(h=>h.kind==='pay').length,svc:sv}}
+/* every order waits for the shopper: no courier or payment now, just the waiting batch (the recommended Regular courier is noted on it) */
+function finishHeldOnly(){const keep=X.ships;X.ships=X.held.map(h=>h.s);const r=recSvc(svcStats(),'reg');X.ships=keep;
+  const sv=SERVICES[r!=null?r:SERVICES.findIndex(v=>v[0]==='ninja'&&v[1]==='Standard')];X.done={heldOnly:true,held:makeHeld(sv)};stab='all';drawSx();sxBody.scrollTop=0}
 function bDoneCheck(){if(!bCounts().left){X.bv='all';X.bpg=0;drawSx();toast(`All ${X.bulk.length} orders are ready`);return true}return false}
 function addrModal(i){const a=X.ships[i].addr||{street:'',city:'',zip:''};
   modal.innerHTML=`<div class="mh"><h3>Customer address</h3><button class="ib" data-mclose aria-label="Close">${ic('x',18)}</button></div>
@@ -2550,8 +3317,8 @@ document.getElementById('bl-monthly').onclick=()=>{drawer.innerHTML=`<div class=
   drawer.classList.add('open');dscrim.classList.add('open');drawer.querySelector('[data-dclose]').onclick=closeDetail};
 
 /* ===== Simple router: #home / #transactions ===== */
-const VIEWS={home:['home','Home'],tx:['transactions','Transactions'],cus:['customers','Customers'],inv:['invoices','Invoices'],shp:['shipments','Shipments'],mca:['merchant-cash-advance','Merchant Cash Advance'],bal:['balances','Balances'],trk:['tracking','Tracking'],wh:['warehouses','Warehouses'],cou:['couriers','Couriers'],prd:['products','Product catalog']};
-const hashView=()=>location.hash==='#invoices/create'?'inv':location.hash==='#shipments/create'?'shp':location.hash==='#warehouses/new'?'wh':location.hash==='#merchant-cash-advance/apply'?'mca':Object.keys(VIEWS).find(k=>'#'+VIEWS[k][0]===location.hash)||'home';
+const VIEWS={home:['home','Home'],tx:['transactions','Transactions'],cus:['customers','Customers'],inv:['invoices','Invoices'],shp:['shipments','Shipments'],mca:['merchant-cash-advance','Merchant Cash Advance'],bal:['balances','Balances'],trk:['tracking','Tracking'],wh:['warehouses','Warehouses'],prd:['products','Product catalog']};
+const hashView=()=>location.hash==='#invoices/create'?'inv':location.hash==='#shipments/create'||/^#shipments\/[0-9A-F]{8}/.test(location.hash)?'shp':location.hash==='#warehouses/new'?'wh':location.hash==='#merchant-cash-advance/apply'?'mca':Object.keys(VIEWS).find(k=>'#'+VIEWS[k][0]===location.hash)||'home';
 function show(view){
   if(location.hash==='#invoices/create'){view='inv';openEditor()}else if(!ie.hidden)closeEditor();
   if(location.hash==='#shipments/create'){view='shp';openShip()}else if(!sx.hidden)closeShip();
@@ -2564,13 +3331,13 @@ function show(view){
   if(home)drawChart();
   if(view==='mca')renderMca();
   if(view==='bal')renderBal();
-  if(view==='shp'){renderShp();nav.querySelector('[data-view="shp"]').closest('.grp').classList.add('open')}
+  if(view==='shp'){shpRoute();nav.querySelector('[data-view=\"shp\"]')?.closest('.grp')?.classList.add('open')}
   if(view==='cus')renderCus();
   if(view==='prd')renderPrd();
-  if(view==='cou'){renderCou();nav.querySelector('[data-view="cou"]').closest('.grp').classList.add('open')}
-  if(view==='wh'){renderWh();nav.querySelector('[data-view="wh"]').closest('.grp').classList.add('open')}
-  if(view==='trk'){nav.querySelector('[data-view="trk"]').closest('.grp').classList.add('open');setTimeout(()=>document.getElementById('trk-q').focus(),0)}
-  if(view==='inv'){renderInv();nav.querySelector('[data-view="inv"]').closest('.grp').classList.add('open')}
+  if(view==='cou'){renderCou();nav.querySelector('[data-view=\"cou\"]')?.closest('.grp')?.classList.add('open')}
+  if(view==='wh'){renderWh();nav.querySelector('[data-view=\"wh\"]')?.closest('.grp')?.classList.add('open')}
+  if(view==='trk'){nav.querySelector('[data-view=\"trk\"]')?.closest('.grp')?.classList.add('open');setTimeout(()=>document.getElementById('trk-q').focus(),0)}
+  if(view==='inv'){renderInv();nav.querySelector('[data-view=\"inv\"]')?.closest('.grp')?.classList.add('open')}
   closeDetail();setSide(false);scrollTo(0,0);
 }
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{location.hash=VIEWS[b.dataset.view][0]});
@@ -2603,7 +3370,7 @@ document.getElementById('baladd').onclick=topupModal;
 <script src="app/data.js"></script>
 <script src="app/home.js"></script>
 <script src="app/shipment.js"></script>
-<script src="app/bulk.js"></script>
+<script src="app/flow.js"></script>
 <script src="app/monitoring.js"></script>
 <script src="app/checkrate.js"></script>
 <script src="app/analytics.js"></script>
