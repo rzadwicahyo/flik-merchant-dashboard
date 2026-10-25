@@ -2595,13 +2595,13 @@ function bOpts(r,k){if(k==='wh')return whCodes();const ok=(f,v)=>ADDR_DB.some(a=
   return[...new Set(rows.map(a=>a[ADDR_I[k]]))].sort()}
 /* row, area, warehouse, values as uploaded, AI fix (null: the merchant fills it in), message */
 const BULK_ISSUES=[
-  [2,0,'BDG-01',{zip:'40153'},{zip:'40135'},'Postcode 40153 doesn’t match Dago. AI suggests 40135.'],
-  [17,4,'JKT-01',{kel:'Sosromendran'},{kel:'Sosromenduran'},'Kelurahan “Sosromendran” not found. AI suggests Sosromenduran.'],
-  [41,9,'SBY-01',{kec:'Wonokrmo'},{kec:'Wonokromo'},'Kecamatan “Wonokrmo” not found. AI suggests Wonokromo.'],
-  [88,3,'JKT-01',{city:'Kota Semarng'},{city:'Kota Semarang'},'City “Kota Semarng” not found. AI suggests Kota Semarang.'],
-  [130,10,'SBY-01',{prov:'Jawa Tmur'},{prov:'Jawa Timur'},'Province “Jawa Tmur” not found. AI suggests Jawa Timur.'],
-  [205,7,'JKT-01',{wh:'JKT01'},{wh:'JKT-01'},'Warehouse “JKT01” doesn’t exist. AI suggests JKT-01.'],
-  [258,1,'BDG-01',{wh:'BDG1',prov:'Jabar'},{wh:'BDG-01',prov:'Jawa Barat'},'“BDG1” and “Jabar” not found. AI suggests BDG-01 and Jawa Barat.'],
+  [2,0,'BDG-01',{zip:'40153'},{zip:'40135'},'Postcode 40153 doesn’t match Dago. Suggested: 40135.'],
+  [17,4,'JKT-01',{kel:'Sosromendran'},{kel:'Sosromenduran'},'Kelurahan “Sosromendran” not found. Suggested: Sosromenduran.'],
+  [41,9,'SBY-01',{kec:'Wonokrmo'},{kec:'Wonokromo'},'Kecamatan “Wonokrmo” not found. Suggested: Wonokromo.'],
+  [88,3,'JKT-01',{city:'Kota Semarng'},{city:'Kota Semarang'},'City “Kota Semarng” not found. Suggested: Kota Semarang.'],
+  [130,10,'SBY-01',{prov:'Jawa Tmur'},{prov:'Jawa Timur'},'Province “Jawa Tmur” not found. Suggested: Jawa Timur.'],
+  [205,7,'JKT-01',{wh:'JKT01'},{wh:'JKT-01'},'Warehouse “JKT01” doesn’t exist. Suggested: JKT-01.'],
+  [258,1,'BDG-01',{wh:'BDG1',prov:'Jabar'},{wh:'BDG-01',prov:'Jawa Barat'},'“BDG1” and “Jabar” not found. Suggested: BDG-01 and Jawa Barat.'],
   [317,5,'',{wh:''},null,'Warehouse is empty. Choose where this order ships from.'],
   [376,8,'JKT-01',{kel:'',zip:''},null,'Kelurahan and postcode are empty. Choose them for Tebet.'],
   [445,6,'',{wh:'',kel:'',zip:''},null,'Warehouse, kelurahan and postcode are empty. Choose all three.']];
@@ -2628,17 +2628,17 @@ const bCols=()=>[['wh','Warehouse'],['street','Full address'],['prov','Province'
 const bCls=(r,k)=>r.fix&&k in r.fix?'sug':r.need&&r.need.includes(k)&&!bFieldOk(r,k)?'err':r.ai&&r.ai.includes(k)?'auto':'';
 function bApply(r){r.ai=Object.keys(r.fix);r.aiTx=r.ai.map(k=>`${r.bad[k]} → ${r.fix[k]}`).join(', ');Object.assign(r,r.fix);r.fix=null}
 function bCheck(r){
-  if(r.fix)return`<div class="is-sm sug">${ic('bolt',13)}AI suggestion</div><div class="is sug full"><span class="msg" title="${r.msg}">${ic('bolt',13)}${r.msg}</span><button class="btn btn-o" data-bacc="${r.i}">Accept</button></div>`;
+  if(r.fix)return`<div class="is-sm sug">${ic('bolt',13)}Suggestion</div><div class="is sug full"><span class="msg" title="${r.msg}">${ic('bolt',13)}${r.msg}</span><button class="btn btn-o" data-bacc="${r.i}">Accept</button></div>`;
   if(bSt(r)==='err')return`<div class="is-sm err">${ic('warn',13)}Needs your input</div><div class="is err full"><span class="msg" title="${r.msg}">${r.msg}</span></div>`;
   const h=hRow(r);
   if(h.band!=='ok'&&r.rkShip)return`<div class="is-sm ok">${ic('check',13,2.4)}Shipping anyway</div><div class="is ok full"><span class="msg"><b>Health score ${h.sc}</b> · you chose to ship this order.</span><button class="btn btn-o" data-brk="${r.i}">Change</button></div>`;
   /* flagged COD orders are handled in the risky orders dialog; flagged Non-COD orders are already paid, so the flag is information only */
   if(h.band!=='ok')return`<div class="is-sm rk ${h.band}">${ic('warn',13)}${h.band==='bad'?'Risky number':'Check number'} · ${h.sc}</div><div class="is rk ${h.band} full"><span class="msg"><b>Health score ${h.sc}</b> · ${h.why.join('. ')}.${isCod(bShip(r))?'':' Paid up front, so it ships as normal.'}</span>${isCod(bShip(r))?`<button class="btn btn-o" data-brk="${r.i}">Take action</button>`:''}</div>`;
-  const note=r.ai?`Fixed by AI: ${r.aiTx}`:r.need||r.you?'Chosen by you':'';
+  const note=r.ai?`Fixed for you: ${r.aiTx}`:r.need||r.you?'Chosen by you':'';
   return`<div class="is-sm ok">${ic('check',13,2.4)}Ready</div>${note?`<div class="is ok full"><span class="msg" title="${note}"><b>${ic('check',13,2.4)}Ready</b> · ${note}</span></div>`:''}`}
 function bCell(r,k,lab){const cls=bCls(r,k),need=r.need&&r.need.includes(k);
   if(k in r.bad){const o=bOpts(r,k),cur=o.includes(r[k]),sg=r.fix&&r.fix[k];
-    return`<td data-c="${k}" class="${cls} sel"><select data-br="${r.i}" data-bk="${k}" aria-label="Row ${r.i+1} ${lab}">${cur?'':`<option value="${r[k]}" selected>${r[k]||'Choose'}</option>`}${o.map(v=>`<option value="${v}" ${r[k]===v?'selected':''}>${v}${sg===v?' · AI suggestion':''}</option>`).join('')}</select></td>`}
+    return`<td data-c="${k}" class="${cls} sel"><select data-br="${r.i}" data-bk="${k}" aria-label="Row ${r.i+1} ${lab}">${cur?'':`<option value="${r[k]}" selected>${r[k]||'Choose'}</option>`}${o.map(v=>`<option value="${v}" ${r[k]===v?'selected':''}>${v}${sg===v?' · Suggested':''}</option>`).join('')}</select></td>`}
   return`<td data-c="${k}" class="${cls}"><input data-br="${r.i}" data-bk="${k}" value="${k==='val'?Number(r.val).toLocaleString('id-ID'):r[k]}" ${need?'placeholder="Required"':''} ${k==='zip'||k==='val'?'inputmode="numeric"':''} aria-label="Row ${r.i+1} ${lab}"></td>`}
 const bTx=(r,k)=>{if(k==='pay')return`<td data-c="pay" class="tx">${r.pay==='cod'?`<span class="st pu">COD</span> <span class="num">${rp(r.val)}</span>`:'<span class="st gr">Non-COD</span>'}</td>`;if(k==='phone'){const h=hRow(r);return`<td data-c="phone" class="tx${h.band!=='ok'?' rk-'+h.band:''}"><span class="rk-ph">${r.phone}${h.band!=='ok'?riskTag(h):''}</span></td>`}return`<td data-c="${k}" class="tx${k==='val'||k==='kg'?' num':''}">${k==='val'?rp(r.val):r[k]}</td>`};
 const bTr=(r,check,cour)=>`<tr data-br="${r.i}"><td class="rn">${r.ro}</td>${cour?`<td data-c="svc" class="tx">${svName(svcFor(r.i))}</td>`:''}${(()=>{const h=check&&!r.flag?hRow(r):null;return bCols().map(([k,l])=>check&&r.flag&&k!=='pay'?bCell(r,k,l):h&&h.band!=='ok'&&(k==='name'||k==='phone')?rkEdit(r,k,h):bTx(r,k)).join('')})()}${check?`<td class="iss" tabindex="0">${bCheck(r)}</td>`:''}</tr>`;
@@ -2649,13 +2649,13 @@ function bPick(el){const r=X.bulk[el.dataset.br],k=el.dataset.bk;r[k]=el.value;i
 const BPG=50;
 const bPager=()=>{const n=X.bulk.length;return`<div class="foot"><span>Showing <b>${X.bpg*BPG+1}–${Math.min(n,X.bpg*BPG+BPG)}</b> of <b>${n}</b></span><div class="pager"><button class="btn btn-o" data-bpg="-1" ${X.bpg?'':'disabled'}>Previous</button><button class="btn btn-o" data-bpg="1" ${(X.bpg+1)*BPG<n?'':'disabled'}>Next</button></div></div>`};
 function bSumHtml(){const c=bCounts();
-  return`<span class="st ok">${c.ok} ready</span>${c.sug?`<span class="st pu">${c.sug} AI ${c.sug===1?'suggestion':'suggestions'}</span>`:''}${c.err?`<span class="st bad">${c.err} need your input</span>`:''}${c.risk?`<span class="st warn">${c.risk} to double-check</span>`:''}<span class="sp"></span>
+  return`<span class="st ok">${c.ok} ready</span>${c.sug?`<span class="st pu">${c.sug} ${c.sug===1?'suggestion':'suggestions'}</span>`:''}${c.err?`<span class="st bad">${c.err} need your input</span>`:''}${c.risk?`<span class="st warn">${c.risk} to double-check</span>`:''}<span class="sp"></span>
   <div class="seg" role="tablist" aria-label="Rows"><button class="${X.bv==='issues'?'on':''}" data-bv="issues" role="tab" ${X.bfix?'disabled':''}>Flagged · ${c.flag}</button>${c.risk?`<button class="${X.bv==='risk'?'on':''}" data-bv="risk" role="tab" ${X.bfix?'disabled':''}>Risky numbers · ${c.risk}</button>`:''}<button class="${X.bv==='all'?'on':''}" data-bv="all" role="tab" ${X.bfix?'disabled':''}>All rows · ${X.bulk.length}</button></div>
-  ${X.bfix?`<button class="btn btn-p ai-busy" disabled>${aiDots}Fixing ${Math.min(X.bfix.done+1,X.bfix.n)} of ${X.bfix.n}</button>`:c.sug?`<button class="btn btn-p" data-bfix>${ic('bolt',15)}Fix all with AI</button>`:''}`}
+  ${X.bfix?`<button class="btn btn-p ai-busy" disabled>${aiDots}Fixing ${Math.min(X.bfix.done+1,X.bfix.n)} of ${X.bfix.n}</button>`:c.sug?`<button class="btn btn-p" data-bfix>${ic('bolt',15)}Fix all</button>`:''}`}
 function bulkHtml(){const R=X.bulk,c=bCounts();if(X.bv==='risk'&&!c.risk)X.bv='all';const rows=X.bv==='issues'?R.filter(r=>r.flag):X.bv==='risk'?R.filter(r=>hRow(r).band!=='ok').sort((a,b)=>hRow(a).sc-hRow(b).sc):R.slice(X.bpg*BPG,X.bpg*BPG+BPG);
   return`<p class="bk-file">${ic('sheet',15)}<span><b>orders.xlsx</b> · ${R.length} rows (${R.filter(r=>r.pay==='cod').length} COD, ${R.filter(r=>r.pay!=='cod').length} Non-COD) from ${new Set(R.map(r=>r.wh).filter(c=>whCodes().includes(c))).size} warehouses</span><button class="lnk" data-reset>Replace file</button></p>
-  ${c.left?`<p class="sx-lead" style="margin:0 0 14px">${c.flag} rows need a look. AI can fix the typos; empty cells need you. There's no need to upload again.</p>`:`<div class="sx-note ok">${ic('check',16,2.4)}All ${R.length} orders are ready to ship. Check the list, then continue.</div>`}
-  ${X.bfix?`<div class="bk-ai" id="bk-ai" role="status" aria-live="polite"><span class="bk-ai-ic">${ic('bolt',16)}</span><div><b>AI is fixing your rows</b><span id="bk-ai-tx">${X.bfix.tx}</span></div><span class="bk-ai-n" id="bk-ai-n">${X.bfix.done}/${X.bfix.n}</span><div class="bk-ai-bar"><i id="bk-ai-fill"></i></div></div>`:''}
+  ${c.left?`<p class="sx-lead" style="margin:0 0 14px">${c.flag} rows need a look. Typos can be fixed for you; empty cells need you. There's no need to upload again.</p>`:`<div class="sx-note ok">${ic('check',16,2.4)}All ${R.length} orders are ready to ship. Check the list, then continue.</div>`}
+  ${X.bfix?`<div class="bk-ai" id="bk-ai" role="status" aria-live="polite"><span class="bk-ai-ic">${ic('bolt',16)}</span><div><b>Fixing your rows</b><span id="bk-ai-tx">${X.bfix.tx}</span></div><span class="bk-ai-n" id="bk-ai-n">${X.bfix.done}/${X.bfix.n}</span><div class="bk-ai-bar"><i id="bk-ai-fill"></i></div></div>`:''}
   <div class="bk-sum" id="bk-sum">${bSumHtml()}</div>${X.bv==='risk'?`<p class="bk-mp rk-lead">These numbers failed deliveries before, or go to areas where fewer deliveries succeed. The score runs from 0 to 100: higher means less risk. Keep the ones you trust, or remove them.</p>`:''}${bTable(rows,true)}${X.bv==='all'?bPager():''}`}
 /* Review: every difference between the uploaded file and what ships now, row by row */
 const D_LBL={name:'Customer name',phone:'WhatsApp',street:'Street',kel:'Kelurahan',kec:'Kecamatan',city:'City',prov:'Province',zip:'Postcode',wh:'Warehouse',items:'Contents',kg:'Weight',val:'COD amount',pay:'Payment'};
@@ -2665,7 +2665,7 @@ function bDiff(){const o=X.orig;if(!o)return[];const held=new Map((X.held||[]).m
     if(held.has(ro)){L.push({t:'wait',ro,name:r0.name,what:'Moved to a WhatsApp batch',a:'In this batch',b:held.get(ro)==='pay'?'Waits for payment':'Waits for confirmation'});return}
     if(!now.has(ro)){L.push({t:'rm',ro,name:r0.name,what:'Removed',a:'In this batch',b:'Not shipped'});return}
     const [r,i]=now.get(ro);
-    Object.keys(D_LBL).forEach(k=>{if(String(r0[k])!==String(r[k]))L.push({t:'edit',ro,name:r.name,what:`${D_LBL[k]} · ${r.ai&&r.ai.includes(k)&&!r.you?'fixed by AI':'edited by you'}`,a:dVal(k,r0[k]),b:dVal(k,r[k])})});
+    Object.keys(D_LBL).forEach(k=>{if(String(r0[k])!==String(r[k]))L.push({t:'edit',ro,name:r.name,what:`${D_LBL[k]} · ${r.ai&&r.ai.includes(k)&&!r.you?'fixed for you':'edited by you'}`,a:dVal(k,r0[k]),b:dVal(k,r[k])})});
     if(X.step>=1&&X.svc!=null&&X.alt&&X.alt[i]!=null&&X.alt[i]!==X.svc)L.push({t:'cour',ro,name:r.name,what:'Courier · split',a:svName(X.svc),b:svName(X.alt[i])})});
   return L}
 function bCompare(){const o=X.orig;if(!o)return'';const f=x=>x.toLocaleString('id-ID'),L=bDiff(),dv=X.dv||'all';
@@ -2682,21 +2682,21 @@ const bShip=r=>({ro:r.ro,whk:r.wh,pay:r.pay,phone:r.phone,name:r.name,addr:{stre
 function bRefresh(i,whole){const r=X.bulk[i],tr=sxBody.querySelector(`tr[data-br="${i}"]`);
   if(tr&&whole)tr.outerHTML=bTr(r,true);else if(tr){tr.querySelector('.iss').innerHTML=bCheck(r);tr.querySelectorAll('td[data-c]').forEach(td=>td.className=bCls(r,td.dataset.c)+(td.querySelector('select')?' sel':''))}
   document.getElementById('bk-sum').innerHTML=bSumHtml();document.getElementById('sx-next').disabled=!stepOk()}
-/* Fix all with AI: confirm first, then fix row by row so the merchant sees what changes */
+/* Fix all: confirm first, then fix row by row so the merchant sees what changes */
 const B_LBL={zip:'Postcode',kel:'Kelurahan',kec:'Kecamatan',city:'City',prov:'Province',wh:'Warehouse'};
 const aiDots='<span class="ai-dots" aria-hidden="true"><i></i><i></i><i></i></span>';
 function bFixConfirm(){const rows=X.bulk.filter(r=>r.fix),n=rows.length,left=bCounts().err,rw=n===1?'row':'rows';
-  modal.innerHTML=`<div class="mh"><h3>Fix ${n} ${rw} with AI?</h3><button class="ib" data-mclose aria-label="Close">${ic('x',18)}</button></div>
-  <div class="mb"><p class="bk-mp">AI will fix every flagged row using its suggestions from your address and warehouse data. You can still change any cell afterwards.</p>
-  <div class="tbl-wrap sp-wrap fx-wrap"><table class="sp-tbl fx-tbl"><thead><tr><th>Row</th><th>Field</th><th>In your file</th><th>AI fix</th></tr></thead><tbody>${rows.flatMap(r=>Object.keys(r.fix).map(k=>`<tr><td>${r.ro}</td><td>${B_LBL[k]}</td><td class="fx-old">${r.bad[k]}</td><td class="fx-new">${ic('bolt',13)}${r.fix[k]}</td></tr>`)).join('')}</tbody></table></div>
-  ${left?`<p class="bk-mp">${left} ${left===1?'row has':'rows have'} empty cells. AI can't guess those, so you'll choose them yourself.</p>`:''}</div>
+  modal.innerHTML=`<div class="mh"><h3>Fix ${n} ${rw} ?</h3><button class="ib" data-mclose aria-label="Close">${ic('x',18)}</button></div>
+  <div class="mb"><p class="bk-mp">Every flagged row will be fixed using the suggestions from your address and warehouse data. You can still change any cell afterwards.</p>
+  <div class="tbl-wrap sp-wrap fx-wrap"><table class="sp-tbl fx-tbl"><thead><tr><th>Row</th><th>Field</th><th>In your file</th><th>Suggested fix</th></tr></thead><tbody>${rows.flatMap(r=>Object.keys(r.fix).map(k=>`<tr><td>${r.ro}</td><td>${B_LBL[k]}</td><td class="fx-old">${r.bad[k]}</td><td class="fx-new">${ic('bolt',13)}${r.fix[k]}</td></tr>`)).join('')}</tbody></table></div>
+  ${left?`<p class="bk-mp">${left} ${left===1?'row has':'rows have'} empty cells. Those can't be guessed, so you'll choose them yourself.</p>`:''}</div>
   <div class="mf"><button class="btn btn-o" data-mclose>Cancel</button><button class="btn btn-p" id="bk-go">${ic('bolt',15)}Fix ${n} ${rw}</button></div>`;
   modal.classList.add('md');mscrim.classList.add('open');document.getElementById('bk-go').onclick=()=>{closeModal();bFixRun()};setTimeout(()=>document.getElementById('bk-go').focus(),0)}
 function bFixRun(){const rows=X.bulk.filter(r=>r.fix),n=rows.length;let k=0;
   X.bv='issues';X.bfix={done:0,n,tx:`Reading ${n} suggestions…`};drawSx();
   const g=id=>document.getElementById(id);
   const upd=()=>{const f=X.bfix;if(!g('bk-ai'))return;g('bk-ai-tx').textContent=f.tx;g('bk-ai-n').textContent=`${f.done}/${f.n}`;g('bk-ai-fill').style.width=`${f.done/f.n*100}%`;g('bk-sum').innerHTML=bSumHtml()};
-  const finish=()=>{if(!X.bfix)return;X.bfix=null;if(bDoneCheck())return;drawSx();const left=bCounts().err;toast(`AI fixed ${n} ${n===1?'row':'rows'}. ${left} still ${left===1?'needs':'need'} your input.`)};
+  const finish=()=>{if(!X.bfix)return;X.bfix=null;if(bDoneCheck())return;drawSx();const left=bCounts().err;toast(`Fixed ${n} ${n===1?'row':'rows'}. ${left} still ${left===1?'needs':'need'} your input.`)};
   const step=()=>{if(!X.bfix||!g('bk-ai'))return;if(k>=n){X.bfix.tx='All suggestions applied';upd();setTimeout(finish,500);return}
     const r=rows[k],tr=sxBody.querySelector(`tr[data-br="${r.i}"]`);
     X.bfix.tx=`Matching the ${Object.keys(r.fix).map(f=>B_LBL[f].toLowerCase()).join(' and ')} in row ${r.i+1}`;upd();

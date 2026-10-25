@@ -66,11 +66,11 @@ waPreview=function(kind,s,t){return`<div class="wa-b"><div class="wa-h"><span cl
 riskyModal=function(L,go){const fmt=x=>x.toLocaleString('id-ID'),act={},wa=s=>hasWa(s.phone);let pv='wa',ed=false,draft=TPL.wa;
   L.forEach(([s,i])=>act[i]=X.bulk&&X.bulk[i]&&X.bulk[i].rkShip?'ship':wa(s)?'wa':'');
   track('risky_shoppers_found',{orders:L.length,of:X.ships.length,no_whatsapp:L.filter(([s])=>!wa(s)).length});
-  const opts=s=>Object.keys(RK_ACT).filter(k=>(k!=='pay'||isCod(s))&&(wa(s)||k==='ship'||k==='remove'));
-  const draw=()=>{const cnt={ship:0,remove:0,wa:0,pay:0,'':0};L.forEach(([s,i])=>cnt[act[i]]++);const now=X.ships.length-cnt.remove-cnt.wa-cnt.pay-cnt[''],open=cnt[''],sample=(L.find(([s,i])=>act[i]===pv)||L.find(([s])=>wa(s))||L[0])[0];
+  const opts=s=>Object.keys(RK_ACT).filter(k=>(k!=='pay'||isCod(s))&&(wa(s)||k==='ship'||k==='remove'||k==='later'));
+  const draw=()=>{const cnt={ship:0,remove:0,wa:0,pay:0,later:0,'':0};L.forEach(([s,i])=>cnt[act[i]]++);const now=X.ships.length-cnt.remove-cnt.wa-cnt.pay-cnt.later-cnt[''],open=cnt[''],sample=(L.find(([s,i])=>act[i]===pv)||L.find(([s])=>wa(s))||L[0])[0];
     const miss=TPL_NEED[pv].filter(v=>!(ed?draft:TPL[pv]).includes('{{'+v+'}}')),keep=modal.querySelector('.sp-wrap')?.scrollTop||0;
     modal.innerHTML=`<div class="mh"><h3>${fmt(L.length)} COD ${L.length===1?'order needs':'orders need'} a check before shipping</h3><button class="ib" data-mclose aria-label="Close">${ic('x',18)}</button></div>
-    <div class="mb"><p class="bk-mp">These numbers have failed deliveries before, or go to areas where fewer COD parcels are accepted. A COD parcel that comes back costs you shipping both ways. Choose what happens to each order. Orders you ask to confirm or pay wait for the shopper on WhatsApp. Each one is its own batch and ships as soon as that shopper replies.${L.some(([s])=>!wa(s))?' A number that isn\'t on WhatsApp can\'t be asked, so choose to ship or remove that order.':''}</p>
+    <div class="mb"><p class="bk-mp">These numbers have failed deliveries before, or go to areas where fewer COD parcels are accepted. A COD parcel that comes back costs you shipping both ways. Choose what happens to each order. Orders you ask to confirm or pay wait for the shopper on WhatsApp. Each one is its own batch and ships as soon as that shopper replies. Decide later keeps the order in Monitoring without sending anything.${L.some(([s])=>!wa(s))?' A number that isn\'t on WhatsApp can\'t be asked, so choose to ship or remove that order.':''}</p>
     <div class="rk-grid"><div class="rk-main"><div class="tbl-wrap sp-wrap"><table class="sp-tbl rk2"><thead><tr class="rk-allrow"><td colspan="3"><b>All ${fmt(L.length)} orders</b><span class="src">Apply one action to every order in this list</span></td><td class="sel"><div class="sp-sw"><select id="rk-all" aria-label="Action for all orders">${(()=>{const same=L.every(([s,i])=>act[i]===act[L[0][1]])?act[L[0][1]]:'';return`${same?'':'<option value="" hidden selected>Mixed actions</option>'}${Object.keys(RK_ACT).map(k=>`<option value="${k}" ${same===k?'selected':''}>${RK_ACT[k]}</option>`).join('')}`})()}</select></div></td></tr><tr><th>Shopper</th><th>Health score</th><th>Payment</th><th>Action</th></tr></thead><tbody>${L.map(([s,i,h])=>`<tr><td><b>${s.name}</b><span class="src">+62 ${s.phone}</span>${wa(s)?'':'<span class="st gr rk-nowa">No WhatsApp</span>'}</td><td><span class="rk-sc ${h.band}" tabindex="0" data-tip="${h.why.join('. ')}."><b class="num">${h.sc}</b>${HB[h.band]}</span></td><td>${isCod(s)?`<span class="st pu">COD</span><span class="src num">${rp(codVal(s))}</span>`:'<span class="st gr">Non-COD</span>'}</td><td class="sel"><div class="sp-sw${act[i]?'':' need'}"><select data-rka="${i}" aria-label="Action for ${s.name}">${act[i]?'':'<option value="" selected>Choose an action</option>'}${opts(s).map(k=>`<option value="${k}" ${act[i]===k?'selected':''}>${RK_ACT[k]}</option>`).join('')}</select></div></td></tr>`).join('')}</tbody></table></div>
 </div>
     <aside class="rk-pv"><div class="rk-pv-h"><b>What the shopper gets on WhatsApp</b><div class="seg" role="tablist"><button role="tab" class="${pv==='wa'?'on':''}" data-rkpv="wa">Confirmation</button><button role="tab" class="${pv==='pay'?'on':''}" data-rkpv="pay">Payment link</button></div></div>${waPreview(pv,sample,ed?draft:null)}
@@ -78,7 +78,7 @@ riskyModal=function(L,go){const fmt=x=>x.toLocaleString('id-ID'),act={},wa=s=>ha
         ${miss.length?`<p class="sx-note warn">${ic('warn',13)}<span>Keep ${miss.map(v=>'{{'+v+'}}').join(', ')} in the message.</span></p>`:''}<div class="sx-row rk-tpl-f"><button class="lnk" data-tpl="reset">Use FLIK's wording</button><span class="sp"></span><button class="btn btn-o" data-tpl="cancel">Cancel</button><button class="btn btn-p" data-tpl="save" ${miss.length?'disabled':''}>Save wording</button></div>`
         :`<button class="lnk rk-edit" data-tpl="edit">${ic('edit',13)}Edit the wording</button>`}
       <p class="hint">Sent from FLIK's WhatsApp number, on behalf of your store. You'll see replies in Monitoring. New wording is checked by WhatsApp before its first use; until then FLIK's wording is sent.</p></aside></div></div>
-    <div class="mf"><button class="btn btn-o" data-mclose>Cancel</button><span class="sp"></span>${open?`<span class="src rk-open">Choose an action for ${fmt(open)} ${open===1?'order':'orders'} without WhatsApp</span>`:''}<button class="btn btn-p" id="rk-go" ${!open&&(now||cnt.wa||cnt.pay)?'':'disabled'}>${now?`Continue with ${fmt(now)} ${now===1?'order':'orders'}`:cnt.wa||cnt.pay?`Send ${fmt(cnt.wa+cnt.pay)} on WhatsApp and finish`:'No orders left to ship'}</button></div>`;
+    <div class="mf"><button class="btn btn-o" data-mclose>Cancel</button><span class="sp"></span>${open?`<span class="src rk-open">Choose an action for ${fmt(open)} ${open===1?'order':'orders'} without WhatsApp</span>`:''}<button class="btn btn-p" id="rk-go" ${!open&&(now||cnt.wa||cnt.pay||cnt.later)?'':'disabled'}>${now?`Continue with ${fmt(now)} ${now===1?'order':'orders'}`:cnt.wa||cnt.pay?`Send ${fmt(cnt.wa+cnt.pay)} on WhatsApp and finish`:cnt.later?'Save for later and finish':'No orders left to ship'}</button></div>`;
     modal.querySelector('.sp-wrap').scrollTop=keep;
     modal.querySelectorAll('[data-rka]').forEach(el=>el.onchange=()=>{act[el.dataset.rka]=el.value;if(el.value==='wa'||el.value==='pay'){pv=el.value;ed=false;draft=TPL[pv]}draw()});
     document.getElementById('rk-all').onchange=e=>{const v=e.target.value;if(!v)return;L.forEach(([s,i])=>{if(opts(s).includes(v))act[i]=v;else if(v==='pay'&&wa(s))act[i]='wa'});if(v==='wa'||v==='pay'){pv=v;ed=false;draft=TPL[pv]}draw()};
@@ -86,11 +86,13 @@ riskyModal=function(L,go){const fmt=x=>x.toLocaleString('id-ID'),act={},wa=s=>ha
     const ta=document.getElementById('rk-tpl');if(ta)ta.oninput=()=>{draft=ta.value;const m=TPL_NEED[pv].filter(v=>!draft.includes('{{'+v+'}}')),sv=modal.querySelector('[data-tpl="save"]');if(sv)sv.disabled=!!m.length;modal.querySelector('.wa-b p').textContent=fillR(draft,sample)};
     modal.querySelectorAll('[data-tv]').forEach(b=>b.onclick=()=>{const t=document.getElementById('rk-tpl'),v='{{'+b.dataset.tv+'}}',a=t.selectionStart||t.value.length;draft=t.value.slice(0,a)+v+t.value.slice(a);draw()});
     modal.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>{const a=b.dataset.tpl;if(a==='edit'){ed=true;draft=TPL[pv]}else if(a==='cancel'){ed=false}else if(a==='reset'){draft=TPL_DEF[pv]}else if(a==='save'){TPL[pv]=draft;ed=false;track('whatsapp_wording_saved',{kind:pv,custom:draft!==TPL_DEF[pv]});toast('Wording saved. WhatsApp checks it before its first use')}draw()});
-    document.getElementById('rk-go').onclick=()=>{const rm=new Set(),held=[];L.forEach(([s,i])=>{track('risky_choice',{choice:act[i],whatsapp:wa(s)});if(X.bulk&&X.bulk[i])X.bulk[i].rkShip=act[i]==='ship';if(act[i]==='remove')rm.add(i);if(act[i]==='wa'||act[i]==='pay'){rm.add(i);held.push({s,kind:act[i]})}});
-      track('risky_resolved',{confirm:cnt.wa,payment_link:cnt.pay,removed:cnt.remove,shipped_anyway:cnt.ship});
+    document.getElementById('rk-go').onclick=()=>{const rm=new Set(),held=[],park=[];L.forEach(([s,i])=>{track('risky_choice',{choice:act[i],whatsapp:wa(s)});if(X.bulk&&X.bulk[i])X.bulk[i].rkShip=act[i]==='ship';if(act[i]==='remove')rm.add(i);if(act[i]==='later'){rm.add(i);park.push(s)}if(act[i]==='wa'||act[i]==='pay'){rm.add(i);held.push({s,kind:act[i]})}});
+      track('risky_resolved',{confirm:cnt.wa,payment_link:cnt.pay,removed:cnt.remove,shipped_anyway:cnt.ship,decide_later:cnt.later});
+      X.later=(X.later||[]).concat(park);park.forEach(s=>addPend(toOurs(s),'later',laterSvc(s)));
       X.held=(X.held||[]).concat(held);X.halt={};X.ships=X.ships.filter((s,i)=>!rm.has(i));if(X.bulk){X.bulk=X.bulk.filter((r,i)=>!rm.has(i));X.bulk.forEach((r,i)=>r.i=i)}
-      X.alt={};X.rkDone=true;closeModal();if(!X.ships.length){finishHeldOnly();toast(`${fmt(held.length)} ${held.length===1?'order':'orders'} sent to the shopper on WhatsApp`);return}go();
-      const nr=[...rm].length-held.length;toast([held.length?`${fmt(held.length)} ${held.length===1?'order waits':'orders wait'} for the shopper`:'',nr?`${fmt(nr)} removed`:''].filter(Boolean).join(' · ')||'Shipping all orders')}};
+      X.alt={};X.rkDone=true;closeModal();
+      if(!X.ships.length){if(X.held.length){finishHeldOnly();toast(`${fmt(held.length)} ${held.length===1?'order':'orders'} sent to the shopper on WhatsApp`)}else{closeShip();MS.tab='summary';go('monitoring');toast(`${fmt(park.length)} ${park.length===1?'order':'orders'} saved in Monitoring to decide later`)}return}go();
+      const nr=[...rm].length-held.length-park.length;toast([held.length?`${fmt(held.length)} ${held.length===1?'order waits':'orders wait'} for the shopper`:'',park.length?`${fmt(park.length)} to decide later in Monitoring`:'',nr?`${fmt(nr)} removed`:''].filter(Boolean).join(' · ')||'Shipping all orders')}};
   modal.classList.add('wide');draw();mscrim.classList.add('open')};
 
 /* --- courier step: orders the chosen courier can't take start on the courier that delivers best there --- */
@@ -127,3 +129,63 @@ pkGroups=function(cost){const by=new Map();groups().forEach(g=>{if(!by.has(g.v))
   return[...by].map(([v,gs])=>{const n=gs.reduce((a,g)=>a+g.ships.length,0),p=gs.reduce((a,g)=>a+gCost(g),0),open=X.pkOpen&&X.pkOpen[v];
     return`<div class="sx-ship pk-g${open?' open':''}"><button class="sx-sh" data-pkg="${v}" aria-expanded="${!!open}">${cLogo(SERVICES[v][0])}<span class="pk-t"><b>${svName(v)}</b><span>${gs.length} ${gs.length===1?'batch':'batches'} · ${parcels(n)} · ${gs.length===1?gs[0].w.n:`one from each of ${gs.length} warehouses`}</span></span>${cost?`<b class="num pk-p">${rp(p)}</b>`:''}<span class="chev">${ic('chev',16)}</span></button>
     <div class="sx-sb">${gs.map(g=>`<div class="pk-w"><div><b>${g.w.n}</b><span>${g.w.a}</span></div><span class="num">${parcels(g.ships.length)}</span>${cost?`<b class="num">${rp(gCost(g))}</b>`:''}</div>`).join('')}</div></div>`}).join('')};
+
+/* ===== AG, 25 Oct ===== */
+
+/* --- manual entry fills itself: the phone looks up the Customers list, the product looks up the Product catalog --- */
+/* size and weight per catalog product (example data; the catalog will carry them) */
+const PDIM={'Linen shirt · White':[30,25,4,.4],'Canvas tote bag':[40,35,3,.3],'Wide-leg trousers':[35,28,5,.5],'Basic tee · Black':[28,22,3,.2],'Voile scarf · Floral':[20,20,2,.1],'Leather sneakers':[33,22,12,1.2],'Batik dress · Indigo':[35,28,5,.5],'Gift wrapping':[10,10,2,.05]};
+const digits=v=>String(v||'').replace(/\D/g,'').replace(/^(62|0)/,'');
+const fmtPh=d=>d.replace(/^(\d{3})(\d{4})(\d+)$/,'$1-$2-$3');
+/* the customer's last address (example data: the Customers list will keep it) */
+const custAddr=c=>{const a=AREA[hsh(c.name)%AREA.length];return{street:`${STREETS[hsh(c.phone)%STREETS.length]} No. ${1+hsh(c.name+c.phone)%120}`,city:`${a.kec}, ${a.city}`,zip:a.zip}};
+function acHtml(i,k,q){q=q.trim();if(!q)return'';
+  if(k==='phone'){const d=digits(q),L=d.length<3&&!/[a-z]/i.test(q)?[]:ICUST.filter(c=>d.length>=3?digits(c.phone).includes(d):c.name.toLowerCase().includes(q.toLowerCase())).slice(0,5);
+    return L.length?`<div class="ac-dd" role="listbox"><h6>${ic('user',13)}From your Customers</h6>${L.map(c=>{const a=custAddr(c);return`<button class="opt" data-acc="${i}" data-ph="${digits(c.phone)}"><b>${esc(c.name)}</b><span>+62 ${fmtPh(digits(c.phone))} · ${esc(a.city)}</span></button>`}).join('')}</div>`:''}
+  const L=CATALOG.filter(p=>p[0].toLowerCase().includes(q.toLowerCase())&&p[0]!==q).slice(0,5);
+  return L.length?`<div class="ac-dd" role="listbox"><h6>${ic('tag',13)}From your Product catalog</h6>${L.map(p=>{const d=PDIM[p[0]]||[0,0,0,.5];return`<button class="opt" data-acp="${i}" data-pn="${esc(p[0])}"><b>${esc(p[0])}</b><span>${rp(p[1])} · ${d[0]}×${d[1]}×${d[2]} cm · ${d[3]} kg</span></button>`}).join('')}</div>`:''}
+sxBody.addEventListener('input',e=>{const t=e.target;if(t.dataset.si==null||!['phone','items'].includes(t.dataset.k))return;
+  const box=t.closest('.sx-f');box.querySelector('.ac-dd')?.remove();box.classList.add('ac');box.insertAdjacentHTML('beforeend',acHtml(+t.dataset.si,t.dataset.k,t.value))});
+sxBody.addEventListener('focusout',e=>{const box=e.target.closest&&e.target.closest('.sx-f.ac');if(box)setTimeout(()=>box.querySelector('.ac-dd')?.remove(),150)});
+sxBody.addEventListener('mousedown',e=>{const b=e.target.closest('[data-acc],[data-acp]');if(!b)return;e.preventDefault();e.stopPropagation();
+  if(b.dataset.acc!=null){const s=X.ships[+b.dataset.acc],c=ICUST.find(x=>digits(x.phone)===b.dataset.ph);s.phone=fmtPh(b.dataset.ph);s.name=c.name;s.addr=custAddr(c);track('customer_autofilled',{});toast(`${c.name.split(' ')[0]}'s name and last address filled in from Customers`)}
+  else{const s=X.ships[+b.dataset.acp],p=CATALOG.find(x=>x[0]===b.dataset.pn),d=PDIM[p[0]]||[0,0,0,.5];s.items=p[0];[s.l,s.w,s.h]=d.slice(0,3).map(String);s.kg=String(Math.round(d[3]*(s.qty||1)*100)/100);if(!s.cod)s.cod=(p[1]*(s.qty||1)).toLocaleString('id-ID');track('product_autofilled',{});toast('Size, weight and price filled in from Product catalog')}
+  drawSx()},true);
+
+/* --- how the orders split into batches, and why: one warehouse and one courier service per batch; each waiting order is its own --- */
+function splitHtml(){const G=groups(),held=X.held||[],by=new Map(),f=x=>x.toLocaleString('id-ID');G.forEach(g=>{if(!by.has(g.v))by.set(g.v,[]);by.get(g.v).push(g)});
+  const K=G.length+held.length,park=(X.later||[]).length,L=[];
+  [...by].sort((a,b)=>a[0]===X.svc?-1:b[0]===X.svc?1:0).forEach(([v,gs])=>{const n=gs.reduce((a,g)=>a+g.ships.length,0),why=v!==X.svc&&X.svc!=null?` ${svName(X.svc)} can't deliver to ${n===1?'this address':'these addresses'}, so ${n===1?'it goes':'they go'} with ${svName(v)}.`:'';
+    L.push([gs.length,`<b>${svName(v)}</b> · ${f(n)} ${n===1?'order':'orders'}`,gs.length>1?`${gs.length} batches because they ship from ${gs.length} warehouses: ${gs.map(g=>`${g.w.n} (${f(g.ships.length)})`).join(', ')}. A courier picks up one warehouse at a time.${why}`:`1 batch from ${gs[0].w.n}.${why}`,cLogo(SERVICES[v][0])])});
+  if(held.length)L.push([held.length,`<b>${f(held.length)} risky ${held.length===1?'shopper':'shoppers'}</b> waiting on WhatsApp`,`${held.length===1?'This order is its own batch':'Each of these orders is its own batch'}, so it ships the moment that shopper confirms.`,`<span class="cr-ic">${ic('chat',15)}</span>`]);
+  return`<div class="split"><div class="split-h"><b>${f(K)} ${K===1?'batch':'batches'}</b><span>${L.map(l=>f(l[0])).join(' + ')}${L.length>1?` = ${f(K)}`:''}</span></div>
+    <p>One batch is one warehouse with one courier service.</p>
+    ${L.map(l=>`<div class="split-r">${l[3]}<div><span>${l[1]}</span><small>${l[2]}</small></div><em class="num">${f(l[0])}</em></div>`).join('')}
+    ${park?`<div class="split-r muted"><span class="cr-ic">${ic('clock',15)}</span><div><span><b>${f(park)}</b> ${park===1?'order':'orders'} to decide later</span><small>Not in any batch. ${park===1?'It waits':'They wait'} in Monitoring for you to ship or cancel.</small></div><em class="num">0</em></div>`:''}</div>`}
+/* the side panel on the courier step leads with the split */
+const _crSide=crSide;
+crSide=function(ST,rec){const h=_crSide(ST,rec);if(X.svc==null)return h;
+  const d=document.createElement('div');d.innerHTML=h;const first=d.querySelector('.cr-side-c');const tip=first.querySelector('.cr-sum-tip');first.innerHTML=splitHtml()+(tip?tip.outerHTML:'');return d.innerHTML};
+
+/* --- the final file: the orders exactly as they will be sent, after every fix, in FLIK's template --- */
+const FINAL_HEAD=['Order','Status','Batch plan','Warehouse','Recipient name','Phone','Street','Kecamatan, city','Postcode','Product','Qty','Length (cm)','Width (cm)','Height (cm)','Weight (kg)','Payment','COD amount / item value','Courier','Service'];
+function finalRows(){const rows=[],G=groups(),bOf=new Map();G.forEach((g,j)=>g.ships.forEach(i=>bOf.set(i,j+1)));
+  const r=(s,st,b,v)=>[s.ref||'',st,b,whOf(s).k,s.name,'+62 '+s.phone,s.addr?s.addr.street:'',s.addr?s.addr.city:'',s.addr?s.addr.zip:'',s.items,s.qty||1,s.l||'',s.w||'',s.h||'',kgOf(s),isCod(s)?'COD':'Non-COD',codVal(s)||'',v==null?'':cName(SERVICES[v][0]),v==null?'':SERVICES[v][1]];
+  X.ships.forEach((s,i)=>rows.push(r(s,'Ships now',`Batch ${bOf.get(i)} of ${G.length}`,svcFor(i))));
+  (X.held||[]).forEach((h,k)=>rows.push(r(h.s,h.kind==='pay'?'Waits for payment on WhatsApp':'Waits for WhatsApp confirmation','Own batch',heldSvc(k))));
+  (X.later||[]).forEach(s=>rows.push(r(s,'Decide later','Not booked',null)));
+  rows.forEach((x,i)=>{if(!x[0])x[0]=i+1});return rows}
+DL['sx-final']=()=>['flik-final-orders',FINAL_HEAD,finalRows()];
+const finalCard=()=>`<section class="sx-card fin"><span class="ic">${ic('sheet',18)}</span><div><b>Final file</b><span>Your orders exactly as they will be sent: every fix applied, the courier and batch for each, and orders that wait or that you'll decide later. Keep this one, not the file you uploaded.</span></div>${dlBtn('sx-final','Download final file')}</section>`;
+
+/* steps 2 and 3 show the split under the lead; Summary and the done screen offer the final file */
+const _drawSx2=drawSx;
+drawSx=function(){_drawSx2();if(!X)return;const lead=sxBody.querySelector('.sx-main > .sx-lead');
+  if(!X.done&&(X.step===2||X.step===3)&&lead)lead.insertAdjacentHTML('afterend',splitHtml());
+  if(!X.done&&X.step===3&&lead)sxBody.querySelector('.split').insertAdjacentHTML('afterend',finalCard());
+  if(X.done&&!X.done.heldOnly){const m=sxBody.querySelector('.sx-done');if(m)m.insertAdjacentHTML('beforeend',finalCard())}};
+
+/* --- risky shoppers: "Decide later" parks the order in Monitoring without sending anything --- */
+RK_ACT.later='Decide later';
+/* the courier a parked order would use: the regular service that delivers best to that address */
+const laterSvc=s=>{const o=toOurs(s),q=parcel(o);const v=bestFor({area:q.area,pay:q.pay,origin:q.origin},'reg');return v==null?SERVICES.findIndex(x=>x[2]==='reg'):v};

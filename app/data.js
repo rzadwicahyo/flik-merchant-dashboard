@@ -85,22 +85,42 @@ const STREETS=['Jl. Melati','Jl. Kenanga','Jl. Mawar','Jl. Anggrek','Jl. Cempaka
 const AWBP={spx:'SPXID0',jnt:'JP',jne:'JNE0',ninja:'NLIDAP',lion:'99LP',sicepat:'0045',anteraja:'1000'};
 let awbSeq=0;const mkAwb=k=>AWBP[k]+String(4100000000+(++awbSeq)*7919);
 const ageOf=s=>(NOW-s.created)/DAY;
-/* monitoring status from the shipment status and how long it has been quiet */
-function monOf(s){const q=(NOW-s.upd)/HOUR;
+/* SLA: the courier's promised days for this route (from the warehouse to the shopper's area). Waiting for pickup has its own SLA of 1 day */
+const PICKUP_SLA=1;
+const slaOf=s=>{if(s.st==='pickup')return PICKUP_SLA;const w=whByCode(s.wh),n=String(etaOf(SERVICES[s.svc],w?zoneMul(whArea(w),s.area):1)).match(/\d+/g);return n?+n[n.length-1]:1};
+/* age: days since pickup (since booking while it waits for pickup); the clock stops when the parcel is delivered, returned or lost */
+const pickAt=s=>new Date(s.created.getTime()+.3*DAY);
+const DONE3=new Set(['delivered','returned','lost']);
+const ageDays=s=>s.st==='pickup'?(NOW-s.created)/DAY:Math.max(0,((DONE3.has(s.st)?s.upd:NOW)-pickAt(s))/DAY);
+const overSla=s=>ageDays(s)>slaOf(s);
+const ageTx=d=>d<1?`${Math.max(1,Math.round(d*24))} h`:`${Math.floor(d)} d ${Math.round((d%1)*24)} h`;
+/* why a delivery failed or came back (example data) */
+const WHY={notfound:'address not found',nothome:'shopper not at home',rejected:'shopper rejected the parcel',notordered:"shopper says they didn't order"};
+/* monitoring status (AG, 25 Oct):
+   Safe: delivered, or returned with your confirmation · On track: on the way within SLA · Delayed: on the way past SLA
+   At risk: delivery failed, address not found, shopper rejected or didn't order · Problem: lost or damaged, returned without your confirmation */
+function monOf(s){
+  if(s.st==='lost'||s.dmg||(s.st==='returned'&&s.noConf))return'problem';
   if(s.st==='delivered'||s.st==='returned')return'safe';
-  if(s.st==='lost'||(s.st==='failed'&&s.tries>=2))return'problem';
   if(s.st==='failed'||s.st==='returning')return'risk';
-  if(s.st==='pickup')return ageOf(s)>1.2?'delayed':'ontrack';
-  if(q>=96)return'risk';if(q>=48||ageOf(s)>etaMax(SERVICES[s.svc])+1)return'delayed';return'ontrack'}
-/* what the issue is and what to do about it */
+  return overSla(s)?'delayed':'ontrack'}
+/* what the issue is, in the merchant's words, and the action that fits */
 function issueOf(s){const m=monOf(s);if(m==='safe'||m==='ontrack')return null;
-  if(s.st==='lost')return{t:'Lost or damaged',act:'claim',next:'File a claim with the courier. FLIK handles it.'};
-  if(s.st==='failed')return{t:s.tries>=2?`Delivery failed ${s.tries} times`:'Delivery attempt failed',act:'customer',next:'Confirm the address and a good time with the shopper.'};
-  if(s.st==='returning')return{t:'Returning to you',act:'customer',next:'Contact the shopper to save the order.'};
-  if(s.st==='pickup')return{t:'Pickup missed',act:'support',next:'Ask FLIK support to reschedule the pickup.'};
-  const q=(NOW-s.upd)/HOUR;return q>=96?{t:`No update for ${Math.floor(q/24)} days`,act:'support',next:'Ask FLIK support to chase the courier.'}:{t:q>=48?'No update for 48 hours':'Past the delivery estimate',act:'support',next:'Ask FLIK support to follow up with the courier.'}}
-/* Open → Acknowledged (an action was taken) → Resolved (the monitoring status is Safe again) */
-const rstate=s=>{const m=monOf(s);if(s.tk&&m!=='safe')return'ack';if((s.tk||s.had)&&m==='safe')return'resolved';return m==='delayed'||m==='risk'||m==='problem'?'open':null};
+  if(s.st==='lost')return{t:'Lost by the courier',act:'claim',next:'File a claim. FLIK handles it with the courier.'};
+  if(s.dmg)return{t:'Delivered damaged',act:'claim',next:'File a claim with photos of the parcel.'};
+  if(s.st==='returned')return{t:'Returned without your confirmation',act:'claim',next:'Claim the shipping both ways back.'};
+  if(s.st==='failed'){const w=s.why||'nothome',n=s.tries>=2?` (attempt ${s.tries})`:'';
+    return w==='notordered'?{t:`Shopper says they didn't order${n}`,act:'support',next:'Check the order, then ask FLIK to return it or try again.'}
+      :w==='rejected'?{t:`Shopper rejected the parcel${n}`,act:'customer',next:'Ask the shopper why before the next attempt.'}
+      :w==='notfound'?{t:`Delivery failed: address not found${n}`,act:'customer',next:'Get the house number or a landmark from the shopper.'}
+      :{t:`Delivery failed: shopper not at home${n}`,act:'customer',next:'Agree a good time with the shopper.'}}
+  if(s.st==='returning')return{t:`Returning: ${WHY[s.why]||WHY.rejected}`,act:'customer',next:'Contact the shopper to save the order.'};
+  const over=ageDays(s)-slaOf(s);
+  if(s.st==='pickup')return{t:`Pickup late by ${ageTx(over)}`,act:'support',next:'Ask FLIK support to reschedule the pickup.'};
+  return{t:`Past SLA by ${ageTx(over)}`,act:'support',next:'Ask FLIK support to chase the courier.'}}
+/* needs resolving: not Safe or On track, and no ticket yet. Taking an action creates a ticket and moves it to Tickets */
+const needsAct=s=>!!issueOf(s)&&!s.tk;
+const rstate=s=>{const m=monOf(s);if(needsAct(s))return'open';if(s.tk&&m!=='safe')return'ack';if((s.tk||s.had)&&m==='safe')return'resolved';return null};
 
 function genActive(){const R=mkRng(4242),pk=a=>a[Math.floor(R()*a.length)];SH.length=0;BATCH.length=0;TK.length=0;CL.length=0;PEND.length=0;VERIFIED.clear();awbSeq=0;clSeq=0;
   const codes=['JKT-01','JKT-01','BDG-01','SBY-01'],mix=['spx','spx','jnt','jnt','jne','jne','ninja','ninja','sicepat','lion','anteraja'];
@@ -124,11 +144,14 @@ function genActive(){const R=mkRng(4242),pk=a=>a[Math.floor(R()*a.length)];SH.le
       else{s.st='delivered';s.upd=new Date(s.created.getTime()+(Math.max(1,eta-1)+R()*1.6)*DAY)}
       if(s.upd>NOW)s.upd=new Date(NOW-HOUR*(1+R()*3));
       s.awb=s.st==='pickup'&&R()<.3?null:mkAwb(k);SH.push(s)}}
-  /* a few quiet parcels, so Monitoring has delays to show */
-  SH.filter(s=>s.st==='transit').slice(0,22).forEach((s,i)=>{s.upd=new Date(NOW-(i%3===0?4.3:2.2+(i%4)*.3)*DAY)});
+  /* why a delivery failed or came back, and which returns you never agreed to */
+  SH.forEach(s=>{if(s.st==='failed')s.why=['nothome','notfound','rejected','notordered'][hsh(s.id)%4];if(s.st==='returning'||s.st==='returned')s.why=hsh(s.id)%3?'rejected':'notordered';if(s.st==='returned'&&hsh(s.id)%7===0)s.noConf=true});
+  /* parcels still on the way: most within the SLA for their route, some past it, so Monitoring has delays to show */
+  SH.filter(s=>s.st==='delivered'&&ageOf(s)<10).forEach((s,i)=>{const late=ageOf(s)-.3>slaOf({...s,st:'transit'});if(late&&i%3)return;
+    s.st=i%4===0?'ofd':'transit';s.upd=new Date(NOW-(1+hsh(s.id)%30)*HOUR)});
   SH.filter(s=>s.st==='pickup').slice(0,2).forEach(s=>{s.created=new Date(NOW-1.6*DAY);s.upd=s.created});
   /* some issues already handled: tickets in progress, and earlier delays that ended well */
-  const iss=SH.filter(s=>issueOf(s));iss.filter((s,i)=>i%4===1).forEach((s,i)=>{const t=addTicket(s,issueOf(s).act,'Merchant',new Date(NOW-(3+i*5)*HOUR));
+  const iss=SH.filter(s=>issueOf(s)&&issueOf(s).act!=='claim');iss.filter((s,i)=>i%4===1).forEach((s,i)=>{const t=addTicket(s,issueOf(s).act,'Merchant',new Date(NOW-(3+i*5)*HOUR));
     if(i%2===0){t.st='progress';t.log.unshift(['FLIK support picked it up',new Date(t.created.getTime()+30*60000),'progress']);agentSay(t,'flik',`Hi, Dewi from FLIK support. I have asked ${cName(s.k)} for an update on this parcel.`,new Date(t.created.getTime()+30*60000))}});
   SH.filter(s=>s.st==='delivered'||s.st==='returned').filter((s,i)=>i%41===3).slice(0,14).forEach((s,i)=>{s.had={t:i%3?'No update for 48 hours':'Delivery attempt failed',act:i%3?'support':'customer'};
     const t=addTicket(s,s.had.act,'Merchant',new Date(s.upd.getTime()-2*DAY));t.st='resolved';
@@ -138,30 +161,34 @@ function genActive(){const R=mkRng(4242),pk=a=>a[Math.floor(R()*a.length)];SH.le
     agentSay(t,'3pl',s.st==='delivered'?'Our hub found the parcel. It is out for delivery today.':'The shopper refused the parcel at the door, so we are sending it back to the warehouse.',t2);
     agentSay(t,'sys',s.st==='delivered'?'Delivered. Ticket closed':'Returned to sender. Ticket closed',s.upd)});
   /* a few fresh failed deliveries, so the failed-delivery queue has both kinds */
-  SH.filter(s=>s.st==='delivered'&&!s.tk&&!s.had&&ageOf(s)>2&&ageOf(s)<8).slice(0,5).forEach((s,j)=>{s.st='failed';s.tries=j<3?1:2;s.upd=new Date(NOW-(3+j*4)*HOUR)});
+  SH.filter(s=>s.st==='delivered'&&!s.tk&&!s.had&&ageOf(s)>2&&ageOf(s)<8).slice(0,10).forEach((s,j)=>{s.st='failed';s.tries=j%3===2?2:1;s.why=['nothome','notfound','rejected','nothome','notordered'][j%5];s.upd=new Date(NOW-(3+j*4)*HOUR)});
   SH.sort((a,b)=>b.created-a.created);seedClaims();seedPend(R,pk)}
 
-/* ===== Tickets: claims, follow-ups with FLIK support, contacting the shopper (WhatsApp through Qontak) ===== */
-const TKT={claim:['Claim','File a claim','FLIK claims team'],support:['Follow-up','Contact support','FLIK support'],customer:['Contact shopper','Contact customer','WhatsApp via Qontak']};
+/* ===== Tickets: claims, follow-ups with FLIK support, contacting the shopper on WhatsApp from FLIK =====
+ * A ticket's category is the monitoring status when it was opened: Delayed, At risk or Problem. Claims are the Problem tickets. */
+const TKT={claim:['Claim','File a claim','FLIK claims team'],support:['Follow-up','Contact support','FLIK support'],customer:['Contact shopper','Contact shopper','WhatsApp from FLIK']};
 const TKST={open:['Open','warn'],progress:['In progress','pu'],resolved:['Resolved','ok']};
 let tkSeq=4180;
-function addTicket(s,type,by='Merchant',at=NOW,note=''){const t={id:'TK-'+(++tkSeq),type,sid:s.id,awb:s.awb,created:at,st:type==='customer'?'progress':'open',ch:TKT[type][2],note,
-  log:[[type==='customer'?'WhatsApp sent to the shopper through Qontak':type==='claim'?'Claim filed with '+cName(s.k):'Sent to FLIK support',at,type==='customer'?'progress':'open']]};
+const TKCAT=['problem','risk','delayed'];
+const catOf=s=>{const m=monOf(s);return TKCAT.includes(m)?m:s.had&&s.had.act==='customer'?'risk':'delayed'};
+function addTicket(s,type,by='Merchant',at=NOW,note='',cat=catOf(s)){const t={id:'TK-'+(++tkSeq),type,cat,sid:s.id,awb:s.awb,created:at,st:type==='customer'?'progress':'open',ch:TKT[type][2],note,
+  log:[[type==='customer'?'WhatsApp sent to the shopper from FLIK':type==='claim'?'Claim filed with '+cName(s.k):'Sent to FLIK support',at,type==='customer'?'progress':'open']]};
   /* the ticket is a conversation: the merchant on one side, FLIK support and the courier's team on the other (they reply from FLIK's ticketing platform) */
   t.chat=[{from:'me',text:note||(type==='claim'?'I want to file a claim for this parcel.':type==='support'?'Can you check on this parcel?'+(issueOf(s)?' '+issueOf(s).t+'.':''):'Please help me reach the shopper about this parcel.'),at}];
-  if(type==='customer')t.chat.push({from:'sys',text:'WhatsApp sent to '+s.name.split(' ')[0]+' through Qontak',at});
+  if(type==='customer')t.chat.push({from:'sys',text:'WhatsApp sent to '+s.name.split(' ')[0]+' from FLIK',at});
   TK.unshift(t);s.tk=t.id;return t}
 const AGENT={flik:['Dewi','FLIK support'],k:k=>[({jne:'Rudi',jnt:'Hendra',spx:'Wulan',ninja:'Sinta',lion:'Arif',sicepat:'Yudi',anteraja:'Lina'})[k]||'Agent',cName(k)+' team']};
 function agentSay(t,who,text,at=NOW){t.chat.push({from:who,text,at});return t}
 
-/* ===== Orders waiting for a Risky COD shopper (WhatsApp from FLIK's Qontak number) =====
+/* ===== Orders waiting for a Risky COD shopper (WhatsApp from FLIK's number) =====
  * When a Risky shopper is found, the merchant picks per order: confirm on WhatsApp, send a payment link (the order becomes
  * non-COD), remove it, or ship it anyway. Shoppers without WhatsApp skip the check: the merchant ships or removes them.
  * An order sent a check waits as its own batch (one warehouse, one courier service, one order). When the shopper confirms
- * or pays, FLIK books it automatically with the courier the merchant chose. BATAL or no answer in 24 hours cancels it, free.
+ * or pays, FLIK books it automatically and the AWB is created. BATAL cancels the order, free. With no answer it stays in Monitoring
+ * until the merchant ships it anyway or cancels it (AG, 25 Oct). "Decide later" parks the order here without sending anything.
  */
-const DRK={wa:['Confirm on WhatsApp','chat2'],pay:['Payment link','wallet']};
-const DRST={sent:[p=>p.kind==='pay'?'Waiting for payment':'Waiting for confirmation','warn'],booked:[p=>p.kind==='pay'?'Paid · shipped':'Confirmed · shipped','ok'],shipped:[()=>'Shipped without waiting','pu'],declined:[()=>'Shopper declined','bad'],expired:[()=>'No answer · cancelled','gr'],cancelled:[()=>'Cancelled by you','gr']};
+const DRK={wa:['Confirm on WhatsApp','chat2'],pay:['Payment link','wallet'],later:['Decide later','clock']};
+const DRST={later:[()=>'Waiting for your decision','gr'],sent:[p=>p.kind==='pay'?'Waiting for payment':'Waiting for confirmation','warn'],booked:[p=>p.kind==='pay'?'Paid · shipped':'Confirmed · shipped','ok'],shipped:[()=>'Shipped without waiting','pu'],declined:[()=>'Shopper declined','bad'],expired:[()=>'No answer · cancelled','gr'],cancelled:[()=>'Cancelled by you','gr']};
 const drLab=p=>DRST[p.st][0](p);
 const WA_HOURS=24;let pendSeq=0;
 const MERCHANT='Aruna Studio';
@@ -179,8 +206,8 @@ const waText=p=>fillTpl(p.tpl||TPL[p.kind],p.ship,p.id);
 /* shoppers whose number isn't on WhatsApp skip the check (example data) */
 const hasWa=p=>hsh(normPhone(p))%5!==0;
 const draftId=at=>`W-${String(at.getFullYear()).slice(2)}${String(at.getMonth()+1).padStart(2,'0')}${String(at.getDate()).padStart(2,'0')}-${String(5100+(++pendSeq)).slice(1)}`;
-function addPend(ship,kind,svc,at=NOW){const p={id:draftId(at),ship:{...ship,addr:{...ship.addr},open:false},kind,svc,tpl:TPL[kind],sent:at,exp:new Date(at.getTime()+WA_HOURS*HOUR),st:'sent',
-  log:[[kind==='pay'?'Payment link sent on WhatsApp from FLIK':'Confirmation sent on WhatsApp from FLIK',at],[`Waiting as its own batch: ${cName(SERVICES[svc][0])} ${SERVICES[svc][1]} from ${ship.wh}`,at]]};PEND.unshift(p);return p}
+function addPend(ship,kind,svc,at=NOW){const p={id:draftId(at),ship:{...ship,addr:{...ship.addr},open:false},kind,svc,tpl:TPL[kind]||'',sent:at,exp:new Date(at.getTime()+WA_HOURS*HOUR),st:kind==='later'?'later':'sent',
+  log:[[kind==='later'?'You chose to decide later. Nothing was sent to the shopper':kind==='pay'?'Payment link sent on WhatsApp from FLIK':'Confirmation sent on WhatsApp from FLIK',at],[`Waiting as its own batch: ${cName(SERVICES[svc][0])} ${SERVICES[svc][1]} from ${ship.wh}`,at]]};PEND.unshift(p);return p}
 /* book the waiting order with the courier the merchant chose; the batch keeps the waiting ID */
 function sendPend(p,at=NOW,anyway=false){const s=p.ship,svc=p.svc,k=SERVICES[svc][0],b={id:p.id,created:at,k,svc,wh:s.wh,auto:!anyway};BATCH.unshift(b);
   const q={area:s.addr.area,kg:Math.max(1,Math.ceil(+s.kg||1)),val:+String(s.val).replace(/\D/g,'')},r=rateOf(svc,whArea(whByCode(s.wh)),q.area,q.kg);
@@ -194,18 +221,17 @@ function riskyPhone(seed){for(let i=0;i<5000;i++){const ph='628'+(1+(seed+i)%8)+
 function seedPend(R,pk){pendSeq=0;
   const mk=(i)=>{const p=pk(PRODUCTS),a=AREA[(i*5+3)%AREA.length];return{phone:riskyPhone(i*31+7),name:pk(FN)+' '+pk(LN),addr:{street:`${pk(STREETS)} No. ${1+Math.floor(R()*120)}`,area:a},wh:i%2?'BDG-01':'JKT-01',pay:'cod',items:p[0],qty:1,kg:String(Math.max(.1,p[2])),l:'',w:'',h:'',val:String(p[1])}};
   const svc=SERVICES.findIndex(v=>v[0]==='jnt'&&v[2]==='reg');
-  [[30,'wa','expired'],[20,'wa','booked'],[9,'wa','declined'],[6,'pay','booked'],[3.2,'pay','sent'],[1.4,'wa','sent'],[.6,'wa','sent']].forEach(([h,kind,st],i)=>{const p=addPend(mk(i),kind,svc,new Date(NOW-h*HOUR));
+  [[30,'wa','sent'],[20,'wa','booked'],[9,'wa','declined'],[6,'pay','booked'],[5,'later','later'],[3.2,'pay','sent'],[1.4,'wa','sent'],[.6,'wa','sent']].forEach(([h,kind,st],i)=>{const p=addPend(mk(i),kind,svc,new Date(NOW-h*HOUR));
     if(st==='booked')confirmPend(p,new Date(p.sent.getTime()+1.5*HOUR));
     else if(st==='declined'){p.st='declined';p.log.unshift(['Shopper replied BATAL. Order cancelled, nothing charged',new Date(p.sent.getTime()+40*60000)])}
-    else if(st==='expired'){p.st='expired';p.log.unshift([`No answer in ${WA_HOURS} hours. Order cancelled, nothing charged`,p.exp])}})}
+  })}
 
 /* ===== Claims: what the merchant is owed by the courier ===== */
-const CLCAT={lost:['Lost or damaged','Courier pays the goods value'],ret:['Returned without confirmation','The courier returned it without asking you first; shipping both ways is refunded'],
-  sla:['Over SLA','Delivered later than the courier promised; shipping is refunded. AnterAja only for now']};
+/* claims are the Problem tickets: lost or damaged, and returned without your confirmation */
+const CLCAT={lost:['Lost or damaged','Courier pays the goods value'],ret:['Returned without confirmation','The courier returned it without asking you first; shipping both ways is refunded']};
 const CLST={submitted:['Submitted','warn'],review:['In review','pu'],approved:['Approved','ok'],paid:['Paid out','ok'],rejected:['Rejected','bad']};
 const CL_FLOW=['submitted','review','approved','paid'];
-const slaOver=s=>s.k==='anteraja'&&s.st==='delivered'&&(s.upd-s.created)/DAY>etaMax(SERVICES[s.svc])+1;
-const clAmount=(s,cat)=>cat==='lost'?s.val:cat==='ret'?s.cost*2:s.cost;
+const clAmount=(s,cat)=>cat==='lost'?s.val:s.cost*2;
 let clSeq=0;
 function addClaim(s,cat,at=NOW,st='submitted',by='Merchant'){
   const c={id:'CL-'+String(24100+(++clSeq)),sid:s.id,awb:s.awb,k:s.k,cat,st,filed:at,amount:clAmount(s,cat),by,log:[['Claim filed by '+by.toLowerCase(),at,'submitted']]};
@@ -213,16 +239,17 @@ function addClaim(s,cat,at=NOW,st='submitted',by='Merchant'){
   const stop=st==='rejected'?1:CL_FLOW.indexOf(st);let t=at.getTime();
   for(let i=1;i<=stop;i++){t+=(1+hsh(c.id+i)%2)*DAY;if(t>NOW.getTime())break;c.log.unshift([({review:cName(s.k)+' is reviewing the claim',approved:'Approved by '+cName(s.k),paid:'Paid out to your FLIK balance'})[CL_FLOW[i]],new Date(t),CL_FLOW[i]])}
   if(st==='rejected'){t+=2*DAY;c.log.unshift([cName(s.k)+' rejected it: the photo does not show the damage',new Date(Math.min(t,NOW.getTime()-HOUR)),'rejected'])}
-  c.st=c.log[0][2];CL.unshift(c);return c}
+  c.st=c.log[0][2];CL.unshift(c);
+  /* every claim is also a ticket in the Problem category; its status follows the claim */
+  if(s.st==='delivered')s.dmg=true;const tk=addTicket(s,'claim',by,at,'','problem');tk.claim=c.id;c.tk=tk.id;return c}
+const CL2TK={submitted:'open',review:'progress',approved:'progress',paid:'resolved',rejected:'resolved'};
+const tkSt=t=>t.claim?CL2TK[(CL.find(c=>c.id===t.claim)||{}).st]||t.st:t.st;
 function seedClaims(){
-  /* AnterAja is the only courier with an SLA FLIK can claim on today: make a few of its parcels late */
-  SH.filter(s=>s.k==='anteraja'&&s.st==='delivered').filter((s,i)=>i%2===0).slice(0,12).forEach(s=>{const late=new Date(s.created.getTime()+(etaMax(SERVICES[s.svc])+2.5)*DAY);if(late<NOW)s.upd=late});
   /* a claim older than ten days has been settled one way or the other */
-  const pick=(l,f,cat)=>l.forEach((s,i)=>{let st=f(i,s);const at=new Date(s.upd.getTime()+6*HOUR);if((NOW-at)/DAY>10&&st!=='rejected')st='paid';addClaim(s,cat,at,st)});
+  const pick=(l,f,cat)=>l.filter(s=>!CL.some(c=>c.sid===s.id)).forEach((s,i)=>{let st=f(i,s);const at=new Date(Math.min(s.upd.getTime()+6*HOUR,NOW.getTime()-2*HOUR));if((NOW-at)/DAY>10&&st!=='rejected')st='paid';addClaim(s,cat,at,st)});
   pick(SH.filter(s=>s.st==='lost').slice(1),i=>['review','approved','submitted','paid'][i%4],'lost');
   pick(SH.filter(s=>s.st==='delivered'&&hsh(s.id)%53===0).slice(0,5),i=>['paid','rejected','review','approved','paid'][i%5],'lost');
-  pick(SH.filter(s=>s.st==='returned'&&hsh(s.id)%4===0).slice(0,9),i=>['paid','approved','review','submitted','paid','rejected','approved','paid','review'][i%9],'ret');
-  pick(SH.filter(slaOver).slice(1),i=>['paid','approved','review','submitted','paid','approved','paid','submitted'][i%8],'sla');
+  pick(SH.filter(s=>s.st==='returned'&&s.noConf).slice(0,9),i=>['paid','approved','review','submitted','paid','rejected','approved','paid','review'][i%9],'ret');
   CL.sort((a,b)=>b.filed-a.filed)}
 
 /* ===== Example answers for FLIK.api (app/api.js) ===== */
@@ -236,4 +263,4 @@ FLIK.mock('createShipments',q=>({batches:q.batches.map(b=>({id:b.ref,awbs:b.ship
 FLIK.mock('createTicket',q=>({id:'TK-'+(tkSeq+1),status:'open'}));
 FLIK.mock('geocode',q=>{const t=String(q.query||'').toLowerCase();return AREA.filter(a=>[a.kel,a.kec,a.city,a.zip].join(' ').toLowerCase().includes(t)).slice(0,8)});
 FLIK.mock('shipments',()=>SH);
-FLIK.mock('verifyShopper',q=>({id:q.draft,status:'sent',kind:q.kind,channel:'whatsapp',provider:'qontak',expires_in_hours:WA_HOURS,payment_url:q.kind==='payment_link'?'https://flik.id/p/…':null}));
+FLIK.mock('verifyShopper',q=>({id:q.draft,status:'sent',kind:q.kind,channel:'whatsapp',expires_in_hours:WA_HOURS,payment_url:q.kind==='payment_link'?'https://flik.id/p/…':null}));

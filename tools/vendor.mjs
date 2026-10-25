@@ -47,6 +47,15 @@ rep("Delivery rates come from FLIK shipments to the same kecamatan in the last 9
 rep("${pct(ST[rec].rate)} delivered in your shoppers' areas, with none of your parcels in its red zone.",
   "Delivers best where your orders are going: ${pct(ST[rec].rate)} of its parcels there arrived in the last 90 days, and it can take every order.");
 
+// 4c. Suggestions keep the bolt icon but don't say they come from AI (AG, 25 Oct): the engine is deterministic first
+const repAll = (a, b) => { if (!src.includes(a)) { console.error('Patch target missing:\n' + a); process.exit(1); } src = src.split(a).join(b); };
+[[". AI suggests ", ". Suggested: "], ["}AI suggestion</div>", "}Suggestion</div>"], ["' · AI suggestion'", "' · Suggested'"],
+ ["`Fixed by AI: ${r.aiTx}`", "`Fixed for you: ${r.aiTx}`"], ["${c.sug} AI ${c.sug===1?", "${c.sug} ${c.sug===1?"], ["Fix all with AI", "Fix all"],
+ ["AI can fix the typos; empty cells need you.", "Typos can be fixed for you; empty cells need you."], ["<b>AI is fixing your rows</b>", "<b>Fixing your rows</b>"],
+ ["'fixed by AI'", "'fixed for you'"], ["with AI?</h3>", "?</h3>"], ["AI will fix every flagged row using its suggestions", "Every flagged row will be fixed using the suggestions"],
+ ["<th>AI fix</th>", "<th>Suggested fix</th>"], ["empty cells. AI can't guess those,", "empty cells. Those can't be guessed,"], ["toast(`AI fixed ${n}", "toast(`Fixed ${n}"]
+].forEach(([a, b]) => repAll(a, b));
+
 // 4. Prototype styles and scripts
 rep('</style>\n</head>', '</style>\n<link rel="stylesheet" href="app/app.css">\n</head>');
 const APP = ['config.js', 'app/api.js', 'app/core.js', 'app/data.js', 'app/home.js', 'app/shipment.js', 'app/flow.js', 'app/monitoring.js', 'app/checkrate.js', 'app/analytics.js', 'app/boot.js'];

@@ -1,4 +1,11 @@
 /* ===== Shipping › Analytics: how the merchant's shipments perform, to learn from (Monitoring is for action) ===== */
+/* "What to learn" is the only part written by an LLM. To keep the token cost down it is written once a day per period, the first
+   time the merchant opens Analytics that day, and kept until the next day. The prototype computes the text and keeps it the same way. */
+function learnCache(per,fresh){const day=new Date().toISOString().slice(0,10),key='flik-learn-'+per;let c=null;
+  try{c=JSON.parse(localStorage.getItem(key)||'null')}catch(e){}
+  if(c&&c.day===day)return{...c,fresh:false};
+  c={day,at:new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}),ins:fresh.slice()};
+  try{localStorage.setItem(key,JSON.stringify(c))}catch(e){}track('learn_generated',{period:per,items:c.ins.length});return{...c,fresh:true}}
 document.querySelector('.main').insertAdjacentHTML('beforeend','<main class="content" id="view-ana" hidden></main>');
 const AN={per:'month',m:'ships'};
 const ANP=[['month','This month'],['lmonth','Last month'],['30','Last 30 days'],['90','Last 90 days'],['180','Last 180 days']],anTx=k=>ANP.find(p=>p[0]===k)[1];
@@ -28,7 +35,7 @@ function renderAna(){const el=document.getElementById('view-ana');
   if(tops[0]){const t=tops[0];ins.push(['route',`Use ${cName(t.bestK.k)} for ${t.c}`,`${cName(t.used[0])} delivered ${fpct(srL(t.used[1])||0)} of your ${t.used[1].length} parcels there. ${cName(t.bestK.k)} delivers ${fpct(srOf(t.bestK.k,t.area).sr)} in ${t.c} across FLIK. The courier step recommends it automatically.`])}
   if(cod.n&&non.n)ins.push(['coins','COD comes back more often',`${fpct(cod.ret)} of COD parcels were returned, against ${fpct(non.ret)} for non-COD. Each return costs you the shipping there and back.`]);
   const rk=bands[2],sf=bands[0];if(rk[2].length>=5)ins.push(['shield','Shopper score predicts returns',`COD shoppers scored Risky were returned ${fpct(rk[3].ret)} of the time, against ${fpct(sf[3].ret)} for Safe ones. Ask Risky shoppers to pay first, or confirm on WhatsApp before you ship.`]);
-  if(rr[0])ins.push(['chat2',`${rr[0][0]}: the top return reason`,`${fpct(pct(rr[0][1].length,rets.length))} of returns. A WhatsApp confirmation before delivery, through Qontak, saves many of them.`]);
+  if(rr[0])ins.push(['chat2',`${rr[0][0]}: the top return reason`,`${fpct(pct(rr[0][1].length,rets.length))} of returns. A WhatsApp confirmation before delivery saves many of them.`]);
   DL['ana-report']=()=>['flik-shipping-report',SHIP_HEAD.concat(['Return reason','Shopper score']),L.map(s=>shipRow(s).concat([s.st==='returned'||s.st==='returning'?reasonOf(s):'',shopperScore(s.phone,s.area).score]))];
   DL['ana-courier']=()=>['flik-courier-scorecard',['Courier','Shipments','Share %','Delivery success %','Return rate %','Avg days','Avg cost'],cour.map(([c,l,s])=>[c.n,l.length,pct(l.length,L.length),s.sr,s.ret,Math.round(s.days*10)/10,Math.round(s.cost)])];
   DL['ana-whc']=()=>['flik-warehouse-courier',['Warehouse','Courier','Shipments','Delivery success %','Return rate %','Avg days','Avg cost'],whc.flatMap(([w,l,ws,cs])=>cs.map(([k,m,st])=>[whN(w),cName(k),m.length,st.sr,st.ret,Math.round(st.days*10)/10,Math.round(st.cost)]))];
@@ -41,7 +48,7 @@ function renderAna(){const el=document.getElementById('view-ana');
   <div class="an-g">
     <section class="an-w s2">${wh('Trend','',`<div class="seg sm">${Object.entries(ANM).map(([k,m])=>`<button class="${AN.m===k?'on':''}" data-anm="${k}">${m[0]}</button>`).join('')}</div>`)}
       <div class="chart" id="anchart"></div><div class="w-leg an-leg"><i class="ln"></i>This period <i class="ln dash"></i>Previous period</div></section>
-    <section class="an-w">${wh('What to learn','')}${ins.length?`<div class="ins-l">${ins.map(i=>`<div class="ins-i"><span class="qic">${ic(i[0],15,1.6)}</span><div><b>${i[1]}</b><p>${i[2]}</p></div></div>`).join('')}</div>`:'<p class="sec-sub">Nothing stands out in this period.</p>'}</section>
+    <section class="an-w">${(()=>{const c=learnCache(AN.per,ins);ins.length=0;ins.push(...c.ins);return`<div class="an-h"><h3 class="ai-h">${ic('bolt',15)}What to learn</h3></div><p class="ai-note">Written by AI from your shipments, ${c.fresh?'just now':`today at ${c.at}`}. It updates once a day, the first time you open Analytics.</p>`})()}${ins.length?`<div class="ins-l">${ins.map(i=>`<div class="ins-i"><span class="qic">${ic(i[0],15,1.6)}</span><div><b>${i[1]}</b><p>${i[2]}</p></div></div>`).join('')}</div>`:'<p class="sec-sub">Nothing stands out in this period.</p>'}</section>
     <section class="an-w">${wh('COD and non-COD','')}<table class="mt cmp"><thead><tr><th></th><th class="r"><i class="sw" style="background:#6A4BFF"></i>COD</th><th class="r"><i class="sw" style="background:#14A38B"></i>Non-COD</th></tr></thead><tbody>
       <tr class="nohover"><td>Shipments</td><td class="r num">${cod.n.toLocaleString('id-ID')}</td><td class="r num">${non.n.toLocaleString('id-ID')}</td></tr>
       <tr class="nohover"><td>Delivery success</td><td class="r num">${fpct(cod.sr)}</td><td class="r num">${fpct(non.sr)}</td></tr>
