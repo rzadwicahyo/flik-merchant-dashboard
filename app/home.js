@@ -136,3 +136,38 @@ document.addEventListener('click',e=>{
     pop.innerHTML=`<div class="menu" style="width:220px"><h6>${D[0]}</h6>${['',...D[1]()].map(v=>`<button class="opt" data-v="${esc(v)}"><span class="rdo${S.f[k]===v?' on':''}"></span>${v?esc(v):`All ${D[0].toLowerCase()}s`}</button>`).join('')}</div>`;
     pop.querySelectorAll('[data-v]').forEach(o=>o.onclick=()=>{S.f[k]=o.dataset.v;closePop();track('home_filter_changed',{widget:w,filter:k});renderHomeExtra()});placePop(f,true)}});
 addEventListener('resize',()=>{if(!document.getElementById('view-home').hidden){drawShipChart();if(document.getElementById('paychart'))drawChart()}});
+
+/* ===== Today and yesterday, in words (AG, 25 Oct): a merchant skips a plain chart, so Home leads with what to do today and
+   what happened yesterday. Written from rules over the same data, no AI, so it costs nothing to show. ===== */
+document.querySelector('.home-g').insertAdjacentHTML('beforebegin','<div id="home-brief"></div>');
+const dayAt=o=>{const d=new Date(NOW);d.setHours(0,0,0,0);return new Date(d-o*DAY)};
+function todoList(){const T=[],n=x=>x.toLocaleString('id-ID');
+  if(has('ship')&&SH.length){
+    const later=PEND.filter(p=>p.st==='later').length,quiet=PEND.filter(p=>p.st==='sent'&&NOW-p.sent>=WA_HOURS*HOUR).length,need=SH.filter(needsAct),by=m=>need.filter(s=>monOf(s)===m);
+    const fail=need.filter(s=>s.st==='failed'),prob=by('problem'),late=by('delayed'),pick=SH.filter(s=>s.st==='pickup'&&s.awb),pb=new Set(pick.map(s=>s.batch)).size;
+    if(fail.length)T.push(['bad','truck',`Answer ${n(fail.length)} failed ${fail.length===1?'delivery':'deliveries'}`,'Tell the courier how to try again before the next attempt.','monitoring']);
+    if(later)T.push(['warn','clock',`Decide on ${n(later)} risky ${later===1?'order':'orders'}`,'Ship anyway or cancel. They are not in any batch yet.','monitoring']);
+    if(quiet)T.push(['warn','chat2',`${n(quiet)} ${quiet===1?'shopper hasn\'t':'shoppers haven\'t'} answered for ${WA_HOURS} hours`,'Ship without waiting, or cancel the order.','monitoring']);
+    if(prob.length)T.push(['bad','shield',`Claim ${n(prob.length)} lost or returned ${prob.length===1?'parcel':'parcels'}`,'Lost, damaged, or returned without your confirmation.','monitoring']);
+    if(late.length)T.push(['warn','clock',`Chase ${n(late.length)} late ${late.length===1?'shipment':'shipments'}`,'Past the courier\'s SLA for the route. Ask FLIK support to follow up.','monitoring']);
+    if(pick.length)T.push(['','print',`Print labels for ${n(pick.length)} ${pick.length===1?'parcel':'parcels'}`,`${plural(pb,'batch is','batches are')} waiting for pickup.`,'monitoring','list'])}
+  if(has('pay')&&PS.mode!=='new'){const pend=PAY.filter(p=>p.status==='pending').length;if(pend)T.push(['','wallet',`Follow up ${n(pend)} pending ${pend===1?'payment':'payments'}`,'Shoppers who haven\'t paid yet.','transactions'])}
+  return T}
+function yesterdayLines(){const a=dayAt(1),b=dayAt(0),c=dayAt(2),L=[],inY=d=>d>=a&&d<b,inP=d=>d>=c&&d<a,n=x=>x.toLocaleString('id-ID');
+  const cmp=(v,p,u='')=>p?` (${v>=p?'up':'down'} from ${n(p)}${u} the day before)`:'';
+  if(has('ship')&&SH.length){const made=SH.filter(s=>inY(s.created)),pm=SH.filter(s=>inP(s.created)),del=SH.filter(s=>s.st==='delivered'&&inY(s.upd)),ret=SH.filter(s=>s.st==='returned'&&inY(s.upd)),fl=SH.filter(s=>s.st==='failed'&&inY(s.upd));
+    const cod=sum(del.filter(s=>s.pay==='cod'),s=>s.val),bs=new Set(made.map(s=>s.batch)).size;
+    L.push(made.length?`You shipped <b>${plural(made.length,'parcel')}</b> in ${plural(bs,'batch','batches')}${cmp(made.length,pm.length)}.`:'You shipped nothing yesterday.');
+    if(del.length||ret.length)L.push(`<b>${n(del.length)} delivered</b>${ret.length?` and ${n(ret.length)} came back`:''}${cod?`, bringing in <b>${rp(cod)}</b> of COD`:''}.`);
+    if(fl.length)L.push(`${plural(fl.length,'delivery','deliveries')} failed, so ${fl.length===1?'it needs':'they need'} an answer today.`);
+    const best=COURIERS.map(c=>[c,del.filter(s=>s.k===c.k).length]).sort((x,y)=>y[1]-x[1])[0];if(best&&best[1]>1)L.push(`${best[0].n} delivered the most for you (${n(best[1])}).`)}
+  if(has('pay')&&PS.mode!=='new'){const ok=PAY.filter(p=>p.status==='succeeded'),y=ok.filter(p=>inY(p.created)),p=ok.filter(p=>inP(p.created));
+    L.push(y.length?`You were paid <b>${rp(sum(y,x=>x.amount))}</b> in ${plural(y.length,'transaction')}${cmp(y.length,p.length)}.`:'No payments came in yesterday.')}
+  return L}
+function briefHtml(){if(PS.mode==='new'&&!SH.length)return'';const T=todoList(),Y=yesterdayLines(),d=dayAt(1);
+  return`<div class="brief"><section class="card br-t"><div class="br-h"><h2 class="sec">Today</h2><span class="src">${plural(T.length,'thing','things')} to do</span></div>
+    ${T.length?`<ul class="br-l">${T.map(t=>`<li><button data-goto="${t[4]}"${t[4]==='monitoring'?` data-mtab="${t[5]||'summary'}"`:''}><span class="br-i ${t[0]}">${ic(t[1],15)}</span><span class="br-x"><b>${t[2]}</b><span>${t[3]}</span></span>${ic('chev',14)}</button></li>`).join('')}</ul>`:`<p class="br-ok">${ic('check',15,2.4)}Nothing needs you today.</p>`}</section>
+  <section class="card br-y"><div class="br-h"><h2 class="sec">Yesterday</h2><span class="src">${fday(d)}</span></div>${Y.map(l=>`<p>${l}</p>`).join('')}</section></div>`}
+const _renderHomeExtra=renderHomeExtra;
+renderHomeExtra=function(){_renderHomeExtra();document.getElementById('home-brief').innerHTML=briefHtml()};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-mtab]');if(b){MS.tab=b.dataset.mtab;track('home_todo_clicked',{tab:b.dataset.mtab})}},true);
