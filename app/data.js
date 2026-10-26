@@ -100,15 +100,16 @@ const WHY={notfound:'address not found',nothome:'shopper not at home',rejected:'
    Safe: delivered, or returned with your confirmation · On track: on the way within SLA · Delayed: on the way past SLA
    At risk: delivery failed, address not found, shopper rejected or didn't order · Problem: lost or damaged, returned without your confirmation */
 function monOf(s){
-  if(s.st==='lost'||s.dmg||(s.st==='returned'&&s.noConf))return'problem';
+  if(s.st==='lost'||s.dmg||s.rtLost||(s.st==='returned'&&s.noConf))return'problem';
   if(s.st==='delivered'||s.st==='returned')return'safe';
   if(s.st==='failed'||s.st==='returning')return'risk';
   return overSla(s)?'delayed':'ontrack'}
 /* what the issue is, in the merchant's words, and the action that fits */
 function issueOf(s){const m=monOf(s);if(m==='safe'||m==='ontrack')return null;
-  if(s.st==='lost')return{t:'Lost by the courier',act:'claim',next:'File a claim. FLIK handles it with the courier.'};
-  if(s.dmg)return{t:'Delivered damaged',act:'claim',next:'File a claim with photos of the parcel.'};
-  if(s.st==='returned')return{t:'Returned without your confirmation',act:'claim',next:'Claim the shipping both ways back.'};
+  if(s.st==='lost')return{t:'Lost by the courier',act:'claim',next:'Report it as lost. FLIK files the claim with the courier.'};
+  if(s.rtLost)return{t:`Return stuck in transit for ${ageTx((NOW-s.retSince)/DAY)}`,act:'claim',next:'FLIK opened a Lost case. Add the invoice so the claim can be filed.'};
+  if(s.dmg)return{t:'Delivered damaged',act:'claim',next:'Report it as damaged, with photos and the unboxing video.'};
+  if(s.st==='returned')return{t:'Returned without your confirmation',act:'support',next:'Ask FLIK support to waive the return fee.'};
   if(s.st==='failed'){const w=s.why||'nothome',n=s.tries>=2?` (attempt ${s.tries})`:'';
     return w==='notordered'?{t:`Shopper says they didn't order${n}`,act:'support',next:'Check the order, then ask FLIK to return it or try again.'}
       :w==='rejected'?{t:`Shopper rejected the parcel${n}`,act:'customer',next:'Ask the shopper why before the next attempt.'}
@@ -166,15 +167,15 @@ function genActive(){const R=mkRng(4242),pk=a=>a[Math.floor(R()*a.length)];SH.le
 
 /* ===== Tickets: claims, follow-ups with FLIK support, contacting the shopper on WhatsApp from FLIK =====
  * A ticket's category is the monitoring status when it was opened: Delayed, At risk or Problem. Claims are the Problem tickets. */
-const TKT={claim:['Claim','File a claim','FLIK claims team'],support:['Follow-up','Contact support','FLIK support'],customer:['Contact shopper','Contact shopper','WhatsApp from FLIK']};
+const TKT={claim:['Claim','Report lost or damaged','FLIK claims team'],support:['Follow-up','Contact support','FLIK support'],customer:['Contact shopper','Contact shopper','WhatsApp from FLIK']};
 const TKST={open:['Open','warn'],progress:['In progress','pu'],resolved:['Resolved','ok']};
 let tkSeq=4180;
 const TKCAT=['problem','risk','delayed'];
 const catOf=s=>{const m=monOf(s);return TKCAT.includes(m)?m:s.had&&s.had.act==='customer'?'risk':'delayed'};
 function addTicket(s,type,by='Merchant',at=NOW,note='',cat=catOf(s)){const t={id:'TK-'+(++tkSeq),type,cat,sid:s.id,awb:s.awb,created:at,st:type==='customer'?'progress':'open',ch:TKT[type][2],note,
-  log:[[type==='customer'?'WhatsApp sent to the shopper from FLIK':type==='claim'?'Claim filed with '+cName(s.k):'Sent to FLIK support',at,type==='customer'?'progress':'open']]};
+  log:[[type==='customer'?'WhatsApp sent to the shopper from FLIK':type==='claim'?(by==='FLIK'?'Lost case opened by FLIK':'Lost or damaged case raised'):'Sent to FLIK support',at,type==='customer'?'progress':'open']]};
   /* the ticket is a conversation: the merchant on one side, FLIK support and the courier's team on the other (they reply from FLIK's ticketing platform) */
-  t.chat=[{from:'me',text:note||(type==='claim'?'I want to file a claim for this parcel.':type==='support'?'Can you check on this parcel?'+(issueOf(s)?' '+issueOf(s).t+'.':''):'Please help me reach the shopper about this parcel.'),at}];
+  t.chat=[{from:'me',text:note||(type==='claim'?'This parcel is lost or damaged.':type==='support'?'Can you check on this parcel?'+(issueOf(s)?' '+issueOf(s).t+'.':''):'Please help me reach the shopper about this parcel.'),at}];
   if(type==='customer')t.chat.push({from:'sys',text:'WhatsApp sent to '+s.name.split(' ')[0]+' from FLIK',at});
   TK.unshift(t);s.tk=t.id;return t}
 const AGENT={flik:['Dewi','FLIK support'],k:k=>[({jne:'Rudi',jnt:'Hendra',spx:'Wulan',ninja:'Sinta',lion:'Arif',sicepat:'Yudi',anteraja:'Lina'})[k]||'Agent',cName(k)+' team']};
@@ -226,31 +227,61 @@ function seedPend(R,pk){pendSeq=0;
     else if(st==='declined'){p.st='declined';p.log.unshift(['Shopper replied BATAL. Order cancelled, nothing charged',new Date(p.sent.getTime()+40*60000)])}
   })}
 
-/* ===== Claims: what the merchant is owed by the courier ===== */
-/* claims are the Problem tickets: lost or damaged, and returned without your confirmation */
-const CLCAT={lost:['Lost or damaged','Courier pays the goods value'],ret:['Returned without confirmation','The courier returned it without asking you first; shipping both ways is refunded']};
-const CLST={submitted:['Submitted','warn'],review:['In review','pu'],approved:['Approved','ok'],paid:['Paid out','ok'],rejected:['Rejected','bad']};
-const CL_FLOW=['submitted','review','approved','paid'];
-const clAmount=(s,cat)=>cat==='lost'?s.val:s.cost*2;
+/* ===== Claims on lost or damaged parcels (AG's case workspace spec, 24 and 26 Oct) =====
+   The merchant raises a Lost or Damaged case; FLIK ops files the claim with the courier and tracks it;
+   the ledger credits the merchant only after the courier actually pays. Return-fee waivers are not claims. */
+const CLCAT={lost:['Lost','The courier lost the parcel'],dmg:['Damaged','The parcel arrived damaged']};
+const CLST={evidence:['Collecting evidence','warn'],filed:['Filed','pu'],accepted:['Accepted','ok'],partial:['Partly accepted','ok'],rejected:['Rejected','bad'],paid:['Paid','ok']};
+const CL_FLOW=['evidence','filed','accepted','paid'];
+/* per-courier claim terms: days to file after the loss is known, claim cap as a multiple of FLIK's fee, days to pay */
+const CLCFG={jne:{days:7},jnt:{days:3},sicepat:{days:3},anteraja:{days:5},ninja:{days:4},spx:{days:2},lion:{days:5},idexpress:{days:3},tiki:{days:7,mult:8},sap:{days:5},rpx:{days:7},wahana:{days:4}};
+const clCfg=k=>({days:5,mult:10,pay:30,...(CLCFG[k]||{})});
+/* the fee FLIK paid the courier for the AWB is internal: merchants only ever see the capped amount */
+const flikFee=s=>Math.round(s.cost*.8/100)*100,clCap=s=>clCfg(s.k).mult*flikFee(s);
+const clAmount=s=>Math.min(s.val,clCap(s)),clCapped=s=>s.val>clCap(s);
+const clDue=c=>new Date(c.known.getTime()+clCfg(c.k).days*DAY);
+const CLDOCS={inv:'Invoice or order value',photo:'Photos of the parcel and item',video:'Unboxing video'};
+const clNeed=cat=>cat==='dmg'?['inv','photo','video']:['inv'];
+const clDocsDone=c=>clNeed(c.cat).every(d=>c.docs[d]);
+const CLWHY=['the photos don\'t show damage from shipping','the parcel was signed for without a note of damage','the goods value isn\'t supported by the invoice'];
 let clSeq=0;
-function addClaim(s,cat,at=NOW,st='submitted',by='Merchant'){
-  const c={id:'CL-'+String(24100+(++clSeq)),sid:s.id,awb:s.awb,k:s.k,cat,st,filed:at,amount:clAmount(s,cat),by,log:[['Claim filed by '+by.toLowerCase(),at,'submitted']]};
-  /* walk the claim through its steps up to its status, a day or two apart */
-  const stop=st==='rejected'?1:CL_FLOW.indexOf(st);let t=at.getTime();
-  for(let i=1;i<=stop;i++){t+=(1+hsh(c.id+i)%2)*DAY;if(t>NOW.getTime())break;c.log.unshift([({review:cName(s.k)+' is reviewing the claim',approved:'Approved by '+cName(s.k),paid:'Paid out to your FLIK balance'})[CL_FLOW[i]],new Date(t),CL_FLOW[i]])}
-  if(st==='rejected'){t+=2*DAY;c.log.unshift([cName(s.k)+' rejected it: the photo does not show the damage',new Date(Math.min(t,NOW.getTime()-HOUR)),'rejected'])}
-  c.st=c.log[0][2];CL.unshift(c);
-  /* every claim is also a ticket in the Problem category; its status follows the claim */
-  if(s.st==='delivered')s.dmg=true;const tk=addTicket(s,'claim',by,at,'','problem');tk.claim=c.id;c.tk=tk.id;return c}
-const CL2TK={submitted:'open',review:'progress',approved:'progress',paid:'resolved',rejected:'resolved'};
+function addClaim(s,cat,at=NOW,st='evidence',by='Merchant',docs){
+  const known=new Date(Math.min(at.getTime(),s.st==='lost'?s.upd.getTime():at.getTime())),id='CLM-'+String(123+(++clSeq)).padStart(6,'0');
+  const c={id,sid:s.id,awb:s.awb,k:s.k,cat,st:'evidence',known,amount:clAmount(s),capped:clCapped(s),by,docs:docs||{},log:[]};
+  const L=(tx,t,k)=>c.log.unshift([tx,new Date(Math.min(t,NOW.getTime()-HOUR)),k]);
+  L(by==='FLIK'?`FLIK opened a Lost case: the return has been in transit past its SLA`:`${CLCAT[cat][0]} case raised by you`,at.getTime(),'evidence');
+  if(st!=='evidence'){clNeed(cat).forEach(d=>c.docs[d]=true);let t=at.getTime()+(.4+hsh(id)%5/10)*DAY;
+    c.ref=String(cName(s.k)).replace(/[^A-Z]/gi,'').slice(0,3).toUpperCase()+'-CLM-'+(70000+hsh(id)%29999);L(`Claim filed with ${cName(s.k)} · ${c.ref}`,t,'filed');c.st='filed';
+    if(st!=='filed'){t+=(3+hsh(id+'a')%4)*DAY;
+      if(st==='rejected'){c.why=CLWHY[hsh(id)%3];if(t<NOW){L(`${cName(s.k)} rejected the claim: ${c.why}`,t,'rejected');c.st='rejected'}}
+      else if(t<NOW){c.acc=st==='partial'?Math.round(c.amount*.6/1000)*1000:c.amount;c.st=st==='partial'?'partial':'accepted';
+        L(c.st==='partial'?`Claim partly accepted: ${rp(c.acc)} of ${rp(c.amount)}`:`Claim accepted: ${rp(c.acc)}`,t,c.st);
+        if(st==='paid'){t+=(6+hsh(id+'p')%12)*DAY;if(t<NOW){c.paid=c.acc;c.paidAt=new Date(t);c.st='paid';L(`${rp(c.paid)} added to your FLIK balance`,t,'paid')}}}}}
+  CL.unshift(c);
+  /* each claim sits on a Problem case (ticket); the case resolves as "Claim filed" once FLIK files it */
+  if(cat==='dmg')s.dmg=true;const tk=addTicket(s,'claim',by,at,'','problem');tk.claim=c.id;c.tk=tk.id;return c}
+/* what the merchant reads about a claim, on the claim and on the shipment */
+function clLine(c){const cn=cName(c.k);
+  return c.st==='evidence'?(clDocsDone(c)?`Documents received. FLIK files the claim with ${cn} before ${fdate(clDue(c))}.`:`Add ${clNeed(c.cat).filter(d=>!c.docs[d]).map(d=>CLDOCS[d].toLowerCase()).join(', ').replace(/, ([^,]*)$/,' and $1')} by ${fdate(clDue(c))}. ${cn} only accepts claims filed by then.`)
+    :c.st==='filed'?`Claim filed with ${cn}.`
+    :c.st==='accepted'?`Claim accepted: ${rp(c.acc)}. Paid to your balance when ${cn} pays.`
+    :c.st==='partial'?`Claim partly accepted: ${rp(c.acc)} of ${rp(c.amount)}. Paid to your balance when ${cn} pays.`
+    :c.st==='rejected'?`${cn} rejected the claim: ${c.why}.`
+    :`${rp(c.paid)} added to your balance on ${fdateY(c.paidAt)}.`}
+const CL2TK={evidence:'open',filed:'resolved',accepted:'resolved',partial:'resolved',rejected:'resolved',paid:'resolved'};
 const tkSt=t=>t.claim?CL2TK[(CL.find(c=>c.id===t.claim)||{}).st]||t.st:t.st;
+const clOf=s=>CL.find(c=>c.sid===s.id);
 function seedClaims(){
-  /* a claim older than ten days has been settled one way or the other */
-  const pick=(l,f,cat)=>l.filter(s=>!CL.some(c=>c.sid===s.id)).forEach((s,i)=>{let st=f(i,s);const at=new Date(Math.min(s.upd.getTime()+6*HOUR,NOW.getTime()-2*HOUR));if((NOW-at)/DAY>10&&st!=='rejected')st='paid';addClaim(s,cat,at,st)});
-  pick(SH.filter(s=>s.st==='lost').slice(1),i=>['review','approved','submitted','paid'][i%4],'lost');
-  pick(SH.filter(s=>s.st==='delivered'&&hsh(s.id)%53===0).slice(0,5),i=>['paid','rejected','review','approved','paid'][i%5],'lost');
-  pick(SH.filter(s=>s.st==='returned'&&s.noConf).slice(0,9),i=>['paid','approved','review','submitted','paid','rejected','approved','paid','review'][i%9],'ret');
-  CL.sort((a,b)=>b.filed-a.filed)}
+  /* a return stuck in transit past the route's SLA + 3 days becomes a Lost case automatically */
+  SH.filter(s=>s.st==='returned'&&!s.noConf).slice(3,5).forEach((s,i)=>{s.st='returning';const sla=slaOf(s),since=new Date(NOW-(sla+4+i)*DAY);s.retSince=since;s.upd=since;s.rtLost=true;
+    if(s.created>since)s.created=new Date(since-2*DAY);addClaim(s,'lost',new Date(since.getTime()+(sla+3)*DAY),'evidence','FLIK')});
+  const pick=(l,f,cat)=>l.filter(s=>!clOf(s)).forEach((s,i)=>{let st=f(i,s);if(st==='evidence')s.upd=new Date(NOW-(8+i*5)*HOUR);const at=new Date(Math.min(s.upd.getTime()+6*HOUR,NOW.getTime()-2*HOUR));
+    if(st==='evidence'&&(NOW-at)/DAY>1.5)st='filed';addClaim(s,cat,at,st,'Merchant',st==='evidence'&&i%2?{inv:true}:undefined)});
+  {const f=SH.find(s=>s.st==='lost');if(f)f.upd=new Date(NOW-5*HOUR)}
+  pick(SH.filter(s=>s.st==='lost').slice(1),i=>['filed','accepted','evidence','paid','partial','paid'][i%6],'lost');
+  pick(SH.filter(s=>s.st==='delivered'&&hsh(s.id)%53===0).slice(0,5),i=>['paid','rejected','paid','accepted','partial'][i%5],'dmg');
+  pick(SH.filter(s=>s.st==='delivered'&&NOW-s.created<28*DAY).filter((s,i)=>i%17===5).slice(0,7),i=>['paid','filed','evidence','accepted','paid','partial','filed'][i%7],'dmg');
+  CL.sort((a,b)=>b.log.at(-1)[1]-a.log.at(-1)[1])}
 
 /* ===== Example answers for FLIK.api (app/api.js) ===== */
 FLIK.mock('merchant',()=>({id:FLIK.config.merchantId,name:'Aruna Studio',products:FLAGS[PS.flags].w,verified:PS.verified}));

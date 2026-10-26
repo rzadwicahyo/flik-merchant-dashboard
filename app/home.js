@@ -148,7 +148,9 @@ function todoList(){const T=[],n=x=>x.toLocaleString('id-ID');
     if(fail.length)T.push(['bad','truck',`Answer ${n(fail.length)} failed ${fail.length===1?'delivery':'deliveries'}`,'Tell the courier how to try again before the next attempt.','monitoring']);
     if(later)T.push(['warn','clock',`Decide on ${n(later)} risky ${later===1?'order':'orders'}`,'Ship anyway or cancel. They are not in any batch yet.','monitoring']);
     if(quiet)T.push(['warn','chat2',`${n(quiet)} ${quiet===1?'shopper hasn\'t':'shoppers haven\'t'} answered for ${WA_HOURS} hours`,'Ship without waiting, or cancel the order.','monitoring']);
-    if(prob.length)T.push(['bad','shield',`Claim ${n(prob.length)} lost or returned ${prob.length===1?'parcel':'parcels'}`,'Lost, damaged, or returned without your confirmation.','monitoring']);
+    const docs=CL.filter(clNeeds),due=docs.length?docs.reduce((a,c)=>clDue(c)<a?clDue(c):a,clDue(docs[0])):null;
+    if(docs.length)T.push(['bad','shield',`Add documents to ${plural(docs.length,'claim')}`,`The courier only accepts claims filed in time. The first deadline is ${fdate(due)}.`,'monitoring','claims']);
+    if(prob.length)T.push(['bad','shield',`Sort out ${n(prob.length)} lost, damaged or returned ${prob.length===1?'parcel':'parcels'}`,'Report lost or damaged parcels, or ask FLIK to waive a return fee.','monitoring']);
     if(late.length)T.push(['warn','clock',`Chase ${n(late.length)} late ${late.length===1?'shipment':'shipments'}`,'Past the courier\'s SLA for the route. Ask FLIK support to follow up.','monitoring']);
     if(pick.length)T.push(['','print',`Print labels for ${n(pick.length)} ${pick.length===1?'parcel':'parcels'}`,`${plural(pb,'batch is','batches are')} waiting for pickup.`,'monitoring','list'])}
   if(has('pay')&&PS.mode!=='new'){const pend=PAY.filter(p=>p.status==='pending').length;if(pend)T.push(['','wallet',`Follow up ${n(pend)} pending ${pend===1?'payment':'payments'}`,'Shoppers who haven\'t paid yet.','transactions'])}

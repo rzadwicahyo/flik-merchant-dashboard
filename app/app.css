@@ -464,3 +464,12 @@ td.age.over b,td.age.over span{color:var(--bad-tx)}
 .nx .boost{display:inline-flex;align-items:center;gap:4px;margin-top:4px}
 .br-l button>svg:last-child{transform:rotate(-90deg)}
 .rk-vip span{color:var(--text)}
+/* claims (v3.8) */
+.cl-t td.cl-ln{white-space:normal;min-width:260px;max-width:380px;color:var(--text);font-size:12.5px;line-height:1.4}
+.cl-t td.cl-ln.due{color:var(--ink);font-weight:500}
+.cl-docs{display:flex;flex-direction:column;gap:8px}
+.cl-docs .vf-up{justify-content:flex-start}
+.d-iss.calm{background:var(--hover);border-color:var(--line)}
+.d-cl{display:flex;flex-direction:column;gap:6px;margin-top:16px;padding:12px 14px;border-radius:10px;border:1px solid var(--line);font-size:13.5px}
+.d-cl .kind{display:flex;align-items:center;gap:8px;color:var(--ink)}
+.d-cl .lnk{align-self:flex-start}

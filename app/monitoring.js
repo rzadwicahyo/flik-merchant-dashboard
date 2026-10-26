@@ -155,76 +155,84 @@ function monList(base){const rows=listRows(base),L=MS.l,pages=Math.max(1,Math.ce
 
 function printLabels(L,scope){if(!L.length)return;track('labels_printed',{scope,labels:L.length});toast(`Printing ${plural(L.length,'label')} (PDF, 10×10 cm, one per parcel)`)}
 
-/* ---- Claims: what couriers owe the merchant ---- */
-const clOpen=c=>c.st==='submitted'||c.st==='review';
-function monClaims(base){const ids=new Set(base.map(x=>x.id)),all=CL.filter(c=>ids.has(c.sid)),F=MS.cl,rows=all.filter(c=>(!F.st||(F.st==='open'?clOpen(c):c.st===F.st))&&(!F.cat||c.cat===F.cat));
-  DL['m-claims']=()=>['flik-claims',['Claim ID','Ticket','AWB','Courier','Claim category','Claim status','Filed','Claim value','Last update'],rows.map(c=>[c.id,c.tk||'',c.awb||'',cName(c.k),CLCAT[c.cat][0],CLST[c.st][0],fdateY(c.filed),c.amount,fdateY(c.log[0][1])])];
-  const done=all.filter(c=>c.st==='paid'),settle=done.length?sum(done,c=>(c.log[0][1]-c.filed)/DAY)/done.length:0;
-  const T=[['Claims',all.length.toLocaleString('id-ID'),compact(sum(all,c=>c.amount))+' claimed'],['Open',all.filter(clOpen).length,compact(sum(all.filter(clOpen),c=>c.amount))+' waiting',all.filter(clOpen).length?'':''],
-    ['Approved',all.filter(c=>c.st==='approved').length,compact(sum(all.filter(c=>c.st==='approved'),c=>c.amount))+' to be paid'],['Paid out',done.length,compact(sum(done,c=>c.amount))+' to your balance','ok'],
-    ['Rejected',all.filter(c=>c.st==='rejected').length,compact(sum(all.filter(c=>c.st==='rejected'),c=>c.amount))+' not paid',all.filter(c=>c.st==='rejected').length?'bad':''],['Days to pay out',done.length?(Math.round(settle*10)/10).toLocaleString('id-ID'):'—','From filing to balance']];
+/* ---- Claims: lost or damaged parcels the courier owes the merchant for ---- */
+const clOpen=c=>c.st==='evidence'||c.st==='filed',clOwed=c=>c.st==='accepted'||c.st==='partial',clNeeds=c=>c.st==='evidence'&&!clDocsDone(c);
+const CLTABS=[['','All'],['evidence','Collecting evidence'],['filed','Filed'],['owed','Accepted'],['paid','Paid'],['rejected','Rejected']];
+const clIn=(c,f)=>!f||(f==='owed'?clOwed(c):c.st===f);
+function monClaims(base){const ids=new Set(base.map(x=>x.id)),all=CL.filter(c=>ids.has(c.sid)),F=MS.cl,rows=all.filter(c=>clIn(c,F.st)&&(!F.cat||c.cat===F.cat));
+  DL['m-claims']=()=>['flik-claims',['Claim ID','Case','AWB','Courier','Type','Claim status','Courier reference','Claimed','Accepted','Paid','Loss known','Last update'],rows.map(c=>[c.id,c.tk||'',c.awb||'',cName(c.k),CLCAT[c.cat][0],CLST[c.st][0],c.ref||'',c.amount,c.acc||'',c.paid||'',fdateY(c.known),fdateY(c.log[0][1])])];
+  const need=all.filter(clNeeds),owed=all.filter(clOwed),paid=all.filter(c=>c.st==='paid'),rej=all.filter(c=>c.st==='rejected');
+  const T=[['Claims',all.length.toLocaleString('id-ID'),compact(sum(all,c=>c.amount))+' claimed'],['Needs your documents',need.length,need.length?'Add them before the courier\'s deadline':'Nothing to add',need.length?'warn':''],
+    ['Filed with the courier',all.filter(c=>c.st==='filed').length,compact(sum(all.filter(c=>c.st==='filed'),c=>c.amount))+' waiting for an answer'],['Accepted, not paid yet',owed.length,compact(sum(owed,c=>c.acc))+' paid when the courier pays'],
+    ['Paid to your balance',paid.length,compact(sum(paid,c=>c.paid))+' received','ok'],['Rejected',rej.length,compact(sum(rej,c=>c.amount))+' not paid',rej.length?'bad':'']];
   const cats=Object.entries(CLCAT).map(([k,v])=>{const l=all.filter(c=>c.cat===k);return`<button class="cl-c${F.cat===k?' on':''}" data-clcat="${k}"><span>${v[0]}</span><b class="num">${l.length}</b><small>${compact(sum(l,c=>c.amount))} · ${l.filter(clOpen).length} open</small><em>${v[1]}</em></button>`}).join('');
-  const ST=[['','All'],['open','Open'],['approved','Approved'],['paid','Paid out'],['rejected','Rejected']];
-  return`<div class="sx-row cl-top"><p class="sec-sub">Claims are your Problem tickets: parcels lost or damaged, or returned without your confirmation. Each claim has a ticket in Tickets too.</p><button class="btn btn-p" data-clnew>${ic('plus',15,2)}File a claim</button></div><div class="kp">${T.map(t=>`<div class="kp-t${t[3]?' '+t[3]:''}"><span>${t[0]}</span><b class="num">${t[1]}</b><small>${t[2]}</small></div>`).join('')}</div>
-  ${secH('By category','Pick one to filter the list.','')}<div class="cl-g">${cats}</div>
+  return`<div class="sx-row cl-top"><p class="sec-sub">When a parcel is lost or damaged, FLIK files the claim with the courier for you. The money reaches your balance once the courier pays.</p><button class="btn btn-p" data-clnew>${ic('plus',15,2)}Report lost or damaged</button></div><div class="kp">${T.map(t=>`<div class="kp-t${t[3]?' '+t[3]:''}"><span>${t[0]}</span><b class="num">${t[1]}</b><small>${t[2]}</small></div>`).join('')}</div>
+  ${secH('By type','Pick one to filter the list.','')}<div class="cl-g">${cats}</div>
   ${secH('All claims',`${plural(rows.length,'claim')}${F.cat?` · ${CLCAT[F.cat][0]} <button class="lnk" data-clcat="">Clear</button>`:''}`,'m-claims')}
-  <div class="tabs sm" role="tablist">${ST.map(t=>`<button class="tab${F.st===t[0]?' on':''}" data-clst="${t[0]}">${t[1]}<span class="ct">${t[0]?all.filter(c=>t[0]==='open'?clOpen(c):c.st===t[0]).length:all.length}</span></button>`).join('')}</div>
-  <div class="tbl-wrap"><table class="mt"><thead><tr><th>Claim ID</th><th>Ticket</th><th>AWB</th><th>Courier</th><th>Claim category</th><th>Claim status</th><th>Filed</th><th class="r">Claim value</th><th>Last update</th></tr></thead><tbody>
-  ${rows.length?rows.map(c=>`<tr data-cl="${c.id}"><td class="mono">${c.id}</td><td class="mono">${c.tk||'—'}</td><td class="mono">${c.awb||'—'}</td>${cTd(c)}<td>${CLCAT[c.cat][0]}</td><td><span class="st ${CLST[c.st][1]} sm">${CLST[c.st][0]}</span></td><td class="date">${fdate(c.filed)}</td><td class="r num">${rp(c.amount)}</td><td class="upd">${ago(c.log[0][1])}</td></tr>`).join('')
-    :`<tr><td colspan="9" style="height:auto;border:0;cursor:default"><div class="empty"><b>No claims here</b>File a claim from Needs resolving when a parcel is lost, damaged, or returned without your confirmation.</div></td></tr>`}</tbody></table></div>`}
+  <div class="tabs sm" role="tablist">${CLTABS.map(t=>`<button class="tab${F.st===t[0]?' on':''}" data-clst="${t[0]}">${t[1]}<span class="ct">${all.filter(c=>clIn(c,t[0])).length}</span></button>`).join('')}</div>
+  <div class="tbl-wrap"><table class="mt cl-t"><thead><tr><th>Claim ID</th><th>AWB</th><th>Courier</th><th>Type</th><th>Claim status</th><th>What's happening</th><th class="r">Claimed</th><th>Last update</th></tr></thead><tbody>
+  ${rows.length?rows.map(c=>`<tr data-cl="${c.id}"><td class="mono">${c.id}</td><td class="mono">${c.awb||'—'}</td>${cTd(c)}<td>${CLCAT[c.cat][0]}</td><td><span class="st ${CLST[c.st][1]} sm">${CLST[c.st][0]}</span></td><td class="cl-ln${clNeeds(c)?' due':''}">${esc(clLine(c))}</td><td class="r num">${rp(c.amount)}</td><td class="upd">${ago(c.log[0][1])}</td></tr>`).join('')
+    :`<tr><td colspan="8" style="height:auto;border:0;cursor:default"><div class="empty"><b>No claims here</b>Report a parcel from Needs resolving when it's lost or damaged.</div></td></tr>`}</tbody></table></div>`}
 function stepper(flow,lab,cur,bad){const at=flow.indexOf(cur);return`<div class="tstp">${flow.map((k,i)=>`<div class="stp-i ${i<at||(i===at&&!bad)?'done':''}${i===at?' cur':''}${i===at&&bad?' bad':''}"><i>${i<at||(i===at&&!bad)?ic('check',10,3):''}</i>${lab[k][0]}</div>`).join('')}</div>`}
 const logTl=(log,LAB)=>`<div class="tl">${log.map((l,i)=>{const cl=l[2]&&LAB[l[2]]?LAB[l[2]][1]:'';return`<div class="tli ${i===0?(cl==='ok'?'ok':cl==='bad'?'bad':''):''}"><i>${i===0&&cl==='ok'?ic('check',11,3):''}</i><div><b>${esc(l[0])}</b><span>${l[2]&&LAB[l[2]]?`<em class="st ${LAB[l[2]][1]} sm">${LAB[l[2]][0]}</em> `:''}${fdateY(l[1])}</span></div></div>`}).join('')}</div>`;
-/* ---- Filing a claim: which cases this shipment can be claimed for, and why not ---- */
-function claimCases(s){const dup=cat=>CL.find(c=>c.sid===s.id&&c.cat===cat&&c.st!=='rejected'),days=(s.upd-s.created)/DAY,eta=etaMax(SERVICES[s.svc]),since=(NOW-s.upd)/DAY;
-  const out=[];
-  {let ok=false,why,need='Photos of the parcel and the item, and the order invoice';
-    if(s.st==='lost'){ok=true;why=`${cName(s.k)} reported the parcel lost.`;need='The order invoice'}
-    else if(s.st==='delivered'&&since<=2){ok=true;why='Delivered less than 2 days ago, so damage can still be reported.'}
-    else if(s.st==='delivered'){why=`Damage has to be reported within 2 days of delivery. This one was delivered ${Math.floor(since)} days ago.`}
-    else if(['transit','picked','ofd'].includes(s.st)&&since>=7){ok=true;why='No tracking update for 7 days, so it counts as lost.';need='The order invoice'}
-    else if(['transit','picked','ofd','pickup'].includes(s.st)){why=`The parcel is still on its way. It can be claimed as lost after 7 days with no update (last update ${ago(s.upd)}).`}
-    else why='Only lost parcels, or parcels damaged on delivery, can be claimed.';
-    out.push({cat:'lost',ok,why,need})}
-  {let ok=false,why,need='';
-    if(s.st!=='returned'&&s.st!=='returning')why='The parcel was not returned.';
-    else if(!s.noConf){why='You agreed to this return, so it was not without confirmation.'}
-    else{ok=true;why=`${cName(s.k)} returned it without asking you first.`}
-    out.push({cat:'ret',ok,why,need})}
-  out.forEach(c=>{const d=dup(c.cat);if(d&&c.ok){c.ok=false;c.why=`Already claimed in ${d.id} (${CLST[d.st][0].toLowerCase()}).`}});return out}
-function claimExamples(){const f=(fn)=>SH.find(fn);return[['Lost parcel',f(s=>s.st==='lost'&&!CL.some(c=>c.sid===s.id))],['Returned, not asked',f(s=>s.st==='returned'&&!s.tk&&!CL.some(c=>c.sid===s.id))],
-  ['Just delivered',f(s=>s.st==='delivered'&&(NOW-s.upd)/DAY<=2)],['Delivered on time, J&T',f(s=>s.st==='delivered'&&s.k==='jnt'&&(NOW-s.upd)/DAY>3)],['Still on the way',f(s=>['transit','picked','ofd'].includes(s.st))]].filter(x=>x[1])}
-function claimModal(sid){const C={sid:sid||null,cat:null,proof:false,q:''};modal.classList.add('nw');
+/* ---- Reporting a lost or damaged parcel: which type fits this shipment, and why not ---- */
+function claimCases(s){const dup=clOf(s),since=(NOW-s.upd)/DAY,out=[];
+  {let ok=false,why;
+    const late=new Date(s.upd.getTime()+clCfg(s.k).days*DAY);
+    if(s.st==='lost'&&late<NOW)why=`${cName(s.k)} reported it lost on ${fdate(s.upd)} and only accepts claims filed within ${plural(clCfg(s.k).days,'day')}. FLIK support can still check it with the courier.`;
+    else if(s.st==='lost'){ok=true;why=`${cName(s.k)} reported the parcel lost.`}
+    else if(s.rtLost){ok=true;why=`The return has been in transit past its SLA + 3 days, so it counts as lost.`}
+    else if(['transit','picked','ofd'].includes(s.st)&&since>=7){ok=true;why='No tracking update for 7 days, so it counts as lost.'}
+    else if(['transit','picked','ofd','pickup'].includes(s.st)){why=`The parcel is still on its way. It counts as lost after 7 days with no update (last update ${ago(s.upd)}).`}
+    else why='Only parcels the courier lost can be reported as lost.';
+    out.push({cat:'lost',ok,why})}
+  {let ok=false,why;
+    if(s.st==='delivered'&&since<=2){ok=true;why='Delivered less than 2 days ago, so damage can still be reported.'}
+    else if(s.st==='delivered')why=`Damage has to be reported within 2 days of delivery. This one was delivered ${Math.floor(since)} days ago.`;
+    else why='Only delivered parcels can be reported as damaged.';
+    out.push({cat:'dmg',ok,why})}
+  if(dup)out.forEach(c=>{if(c.ok){c.ok=false;c.why=`Already claimed in ${dup.id} (${CLST[dup.st][0].toLowerCase()}).`}});return out}
+function claimExamples(){const f=fn=>SH.find(fn);return[['Lost parcel',f(s=>s.st==='lost'&&!clOf(s))],['Just delivered',f(s=>s.st==='delivered'&&(NOW-s.upd)/DAY<=2&&!clOf(s))],
+  ['Delivered last week',f(s=>s.st==='delivered'&&(NOW-s.upd)/DAY>5)],['Still on the way',f(s=>['transit','picked','ofd'].includes(s.st))]].filter(x=>x[1])}
+const docBtns=(cat,docs,attr)=>clNeed(cat).map(d=>`<button class="vf-up${docs[d]?' done':''}" ${attr}="${d}">${ic(docs[d]?'check':'upload',16)}${CLDOCS[d]}${docs[d]?' · added':''}</button>`).join('');
+const capNote=s=>clCapped(s)?`<span class="src">The goods value is ${rp(s.val)}. ${cName(s.k)} pays up to ${rp(clAmount(s))} for this parcel.</span>`:'<span class="src">The goods value on the shipment</span>';
+function claimModal(sid){const C={sid:sid||null,cat:null,docs:{},q:''};modal.classList.add('nw');
   const draw=()=>{const s=C.sid&&SH.find(x=>x.id===C.sid),cases=s?claimCases(s):[];if(s&&(!C.cat||!cases.find(c=>c.cat===C.cat&&c.ok)))C.cat=(cases.find(c=>c.ok)||{}).cat||null;
-    const cur=cases.find(c=>c.cat===C.cat),amt=s&&C.cat?clAmount(s,C.cat):0,can=s&&cur&&cur.ok&&(!cur.need||C.proof);
-    modal.innerHTML=`<div class="mh"><h3>File a claim</h3><button class="ib" data-mclose aria-label="Close">${ic('x',18)}</button></div>
+    const cur=cases.find(c=>c.cat===C.cat),can=s&&cur&&cur.ok,days=s?clCfg(s.k).days:0;
+    modal.innerHTML=`<div class="mh"><h3>Report a lost or damaged parcel</h3><button class="ib" data-mclose aria-label="Close">${ic('x',18)}</button></div>
     <div class="mb">${s?`<div class="tk-s">${cLogo(s.k)}<span><b class="mono">${s.awb||'—'}</b> · ${cName(s.k)} ${SERVICES[s.svc][1]} · ${esc(s.area.city)}</span>${stPill3(s.st)}${sid?'':'<button class="lnk" id="cl-chg">Change</button>'}</div>
-      <div class="fld"><label>What happened</label><div class="cl-cases">${cases.map(c=>`<button class="cl-case${c.cat===C.cat?' on':''}" data-cc="${c.cat}" ${c.ok?'':'disabled'}><span class="rdo${c.cat===C.cat?' on':''}"></span><div><b>${CLCAT[c.cat][0]}</b><span>${esc(c.why)}</span>${c.ok?`<em>${CLCAT[c.cat][1]}</em>`:''}</div>${c.ok?'<span class="st ok sm">Can claim</span>':'<span class="st gr sm">Not eligible</span>'}</button>`).join('')}</div></div>
-      ${cur&&cur.ok?`<div class="fld"><label>Claim value</label><div class="cl-amt"><b class="num">${rp(amt)}</b><span class="src">${C.cat==='lost'?'The goods value on the shipment':C.cat==='ret'?'Shipping both ways':'The shipping cost'}</span></div></div>
-      ${cur.need?`<div class="fld"><label>Proof · ${cur.need}</label><button class="vf-up${C.proof?' done':''}" id="cl-proof">${ic(C.proof?'check':'upload',16)}${C.proof?'3 files added':'Add files'}</button></div>`:''}
-      <div class="fld"><label for="cl-n">Note</label><input id="cl-n" placeholder="Optional"></div>`:cases.length&&!cases.some(c=>c.ok)?`<div class="sx-note">${ic('bulb',16)}<span>This shipment can't be claimed right now. If something else went wrong, contact FLIK support from the shipment.</span></div>`:''}`
+      <div class="fld"><label>What happened</label><div class="cl-cases">${cases.map(c=>`<button class="cl-case${c.cat===C.cat?' on':''}" data-cc="${c.cat}" ${c.ok?'':'disabled'}><span class="rdo${c.cat===C.cat?' on':''}"></span><div><b>${CLCAT[c.cat][0]}</b><span>${esc(c.why)}</span></div>${c.ok?'<span class="st ok sm">Can claim</span>':'<span class="st gr sm">Not eligible</span>'}</button>`).join('')}</div></div>
+      ${can?`<div class="fld"><label>Claim amount</label><div class="cl-amt"><b class="num">${rp(clAmount(s))}</b>${capNote(s)}</div></div>
+      <div class="fld"><label>Documents</label><div class="cl-docs">${docBtns(C.cat,C.docs,'data-cdoc')}</div><span class="src" style="margin-top:6px">${cName(s.k)} only accepts claims filed within ${plural(days,'day')} of the loss. Add what you have now; you can add the rest from the claim.</span></div>
+      <div class="fld"><label for="cl-n">Note</label><input id="cl-n" placeholder="Optional"></div>`:cases.length?`<div class="sx-note">${ic('bulb',16)}<span>This shipment can't be claimed right now. If something else went wrong, contact FLIK support from the shipment.</span></div>`:''}`
     :`<div class="fld"><label for="cl-q">Tracking number (AWB)</label><input id="cl-q" placeholder="Type or paste an AWB" value="${esc(C.q)}" autocomplete="off"></div><div id="cl-res">${clRes(C.q)}</div>
       <div class="fld"><label>Try a case</label><div class="cl-ex">${claimExamples().map(([l,x])=>`<button class="chip" data-clpick="${x.id}">${l}</button>`).join('')}</div></div>`}</div>
-    <div class="mf"><button class="btn btn-o" data-mclose>Cancel</button><button class="btn btn-p" id="cl-go" ${can?'':'disabled'}>Submit claim${amt&&can?` · ${rp(amt)}`:''}</button></div>`;
+    <div class="mf"><button class="btn btn-o" data-mclose>Cancel</button><button class="btn btn-p" id="cl-go" ${can?'':'disabled'}>Report to FLIK</button></div>`;
     mscrim.classList.add('open');
     const q=document.getElementById('cl-q');if(q){q.focus();q.setSelectionRange(q.value.length,q.value.length);q.oninput=()=>{C.q=q.value;document.getElementById('cl-res').innerHTML=clRes(C.q)}}}
   const clRes=v=>{v=v.trim().toUpperCase();if(v.length<4)return'';const l=SH.filter(s=>s.awb&&s.awb.includes(v)).slice(0,5);
     return l.length?`<div class="cl-res">${l.map(s=>`<button class="opt" data-clpick="${s.id}">${cLogo(s.k)}<span class="mono">${s.awb}</span><span class="src">${esc(s.area.city)}</span>${stPill3(s.st)}</button>`).join('')}</div>`:'<p class="sec-sub">No shipment with that AWB.</p>'};
   modal.onclick=e=>{const t=e.target.closest('button');if(!t)return;
-    if(t.dataset.clpick){C.sid=t.dataset.clpick;C.cat=null;C.proof=false;draw();return}
+    if(t.dataset.clpick){C.sid=t.dataset.clpick;C.cat=null;C.docs={};draw();return}
     if(t.id==='cl-chg'){C.sid=null;draw();return}
-    if(t.dataset.cc){C.cat=t.dataset.cc;C.proof=false;draw();return}
-    if(t.id==='cl-proof'){C.proof=true;draw();return}
+    if(t.dataset.cc){C.cat=t.dataset.cc;C.docs={};draw();return}
+    if(t.dataset.cdoc){C.docs[t.dataset.cdoc]=true;draw();return}
     if(t.id==='cl-go'){const s=SH.find(x=>x.id===C.sid),n=(document.getElementById('cl-n')||{}).value||'';
-      FLIK.api.createTicket({awb:s.awb,type:'claim',reason:CLCAT[C.cat][0],note:n});const c=addClaim(s,C.cat);track('claim_filed',{category:C.cat,courier:s.k});
-      closeModal();closeDetail();MS.tab='claims';MS.cl={st:'',cat:''};renderMon();toast(`${c.id} submitted to ${cName(s.k)}`);claimDrawer(c.id)}};
+      FLIK.api.createTicket({awb:s.awb,type:'claim',reason:CLCAT[C.cat][0],note:n});const c=addClaim(s,C.cat,NOW,'evidence','Merchant',{...C.docs});track('claim_reported',{type:C.cat,courier:s.k,docs:Object.keys(C.docs).length});
+      closeModal();closeDetail();MS.tab='claims';MS.cl={st:'',cat:''};renderMon();toast(clDocsDone(c)?`${c.id} reported. FLIK files it with ${cName(s.k)}`:`${c.id} reported. Add the rest of the documents by ${fdate(clDue(c))}`);claimDrawer(c.id)}};
   draw()}
-function claimDrawer(id){drawer.classList.remove('chat');const c=CL.find(x=>x.id===id),s=SH.find(x=>x.id===c.sid);
+function claimDrawer(id){drawer.classList.remove('chat');const c=CL.find(x=>x.id===id),s=SH.find(x=>x.id===c.sid),bad=c.st==='rejected',flow=bad?['evidence','filed','rejected']:c.st==='partial'?['evidence','filed','partial','paid']:CL_FLOW;
+  const left=Math.ceil((clDue(c)-NOW)/DAY);
   drawer.innerHTML=`<div class="dh"><span class="kind">${ic('shield',15)}Claim</span><button class="ib" data-dclose aria-label="Close">${ic('x',18)}</button></div>
   <div class="db"><div class="d-hd"><b class="mono">${c.id}</b><div class="pills"><span class="st ${CLST[c.st][1]} sm">${CLST[c.st][0]}</span></div></div>
-  ${stepper(c.st==='rejected'?['submitted','review','rejected']:CL_FLOW,CLST,c.st,c.st==='rejected')}
-  <div class="dsec"><dl class="kv"><dt>Category</dt><dd>${CLCAT[c.cat][0]}<span class="src">${CLCAT[c.cat][1]}</span></dd><dt>Courier</dt><dd><div class="sx-cl">${cLogo(c.k)}<span>${cName(c.k)}</span></div></dd><dt>Shipment</dt><dd><button class="lnk mono" data-sid2="${s.id}">${c.awb||s.id}</button></dd><dt>Claim value</dt><dd class="num">${rp(c.amount)}</dd><dt>Filed</dt><dd>${fdateY(c.filed)}</dd></dl></div>
+  ${stepper(flow,CLST,c.st,bad)}
+  <div class="d-iss${clNeeds(c)?'':' calm'}"><b>${esc(clLine(c))}</b>${clNeeds(c)?`<span>${left>0?`${plural(left,'day')} left to add them.`:'Add them today.'}</span>`:''}</div>
+  ${c.st==='evidence'?`<div class="dsec"><h5>Documents</h5><div class="cl-docs">${docBtns(c.cat,c.docs,'data-cldoc="'+c.id+'" data-doc')}</div></div>`:''}
+  <div class="dsec"><dl class="kv"><dt>Type</dt><dd>${CLCAT[c.cat][0]}<span class="src">${CLCAT[c.cat][1]}</span></dd><dt>Courier</dt><dd><div class="sx-cl">${cLogo(c.k)}<span>${cName(c.k)}</span></div></dd><dt>Shipment</dt><dd><button class="lnk mono" data-sid2="${s.id}">${c.awb||s.id}</button></dd>
+    <dt>Claimed</dt><dd class="num">${rp(c.amount)}${c.capped?`<span class="src">${cName(c.k)}'s limit for this parcel. The goods value is ${rp(s.val)}.</span>`:''}</dd>${c.acc?`<dt>Accepted</dt><dd class="num">${rp(c.acc)}</dd>`:''}${c.paid?`<dt>Paid</dt><dd class="num">${rp(c.paid)} · ${fdateY(c.paidAt)}</dd>`:''}
+    ${c.ref?`<dt>Courier reference</dt><dd class="mono">${c.ref}</dd>`:''}<dt>Loss known</dt><dd>${fdateY(c.known)}</dd>${c.st==='evidence'?`<dt>File by</dt><dd>${fdateY(clDue(c))}</dd>`:''}<dt>Case</dt><dd><span class="mono">${c.tk}</span>${c.st!=='evidence'?'<span class="src">Resolved: claim filed</span>':''}</dd></dl></div>
   <div class="dsec"><h5>Status log</h5>${logTl(c.log,CLST)}</div></div>`;
-  openDrawer();track('claim_opened',{category:c.cat,status:c.st})}
+  openDrawer();track('claim_opened',{type:c.cat,status:c.st})}
 
 /* ---- Tickets ---- */
 const tkSubj=t=>{const s=SH.find(x=>x.id===t.sid),is=s&&(issueOf(s)||s.had);return is?is.t:TKT[t.type][0]};
@@ -246,10 +254,11 @@ function timeline(s){const sv=SERVICES[s.svc],w=whByCode(s.wh),at=f=>new Date(s.
   if(s.st==='returning'||s.st==='returned')ev.push(['Delivery attempt 2 failed: shopper refused the parcel',to,at(.88),'warn'],['Return started',to,at(.92),'warn']);
   if(s.st==='returned')ev.push(['Returned to sender',from,s.upd,'bad']);if(s.st==='lost')ev.push(['Reported lost at the sorting hub',to,s.upd,'bad']);
   return ev.reverse()}
-function openShipment(id){drawer.classList.remove('chat');const s=SH.find(x=>x.id===id);if(!s)return;const is=issueOf(s),m=monOf(s),t=s.tk&&TK.find(k=>k.id===s.tk);
+function openShipment(id){drawer.classList.remove('chat');const s=SH.find(x=>x.id===id);if(!s)return;const is=issueOf(s),m=monOf(s),t=s.tk&&TK.find(k=>k.id===s.tk),cl=clOf(s);
   drawer.innerHTML=`<div class="dh"><span class="kind">${ic('truck',15)}Shipment</span><button class="ib" data-dclose aria-label="Close">${ic('x',18)}</button></div>
   <div class="db"><div class="d-hd"><b class="mono">${s.awb||'AWB after pickup'}</b><div class="pills">${stPill3(s.st)} ${monPill(m)}</div></div>
   ${is&&rstate(s)==='open'?`<div class="d-iss"><b>${is.t}</b><span>${is.next}</span><div class="d-acts">${['claim','support','customer'].map(a=>`<button class="btn ${a===is.act?'btn-p':'btn-o'}" data-act="${s.id}" data-a="${a}">${TKT[a][1]}</button>`).join('')}</div></div>`:''}
+  ${cl?`<div class="d-cl"><span class="kind">${ic('shield',15)}<b class="mono">${cl.id}</b><span class="st ${CLST[cl.st][1]} sm">${CLST[cl.st][0]}</span></span><span>${esc(clLine(cl))}</span><button class="lnk" data-cl="${cl.id}">Open claim</button></div>`:''}
   ${t?`<div class="d-tk">${ic('ticket',16)}<span><b>${t.id}</b> · ${TKT[t.type][0]} · ${MON3[t.cat][0]}</span><span class="st ${TKST[tkSt(t)][1]} sm">${TKST[tkSt(t)][0]}</span><button class="lnk" data-tk="${t.id}">Open</button></div>`:''}
   <div class="dsec"><h5>Details</h5><dl class="kv"><dt>Courier</dt><dd><div class="sx-cl">${cLogo(s.k)}<span>${cName(s.k)} ${SERVICES[s.svc][1]}</span></div></dd><dt>Batch</dt><dd class="mono">${s.batch}</dd><dt>Pickup from</dt><dd>${esc((whByCode(s.wh)||{}).n||s.wh)} · ${s.wh}</dd><dt>Created</dt><dd>${fdateY(s.created)}</dd>
     <dt>Shopper</dt><dd>${esc(s.name)}<span class="src">${fphone(s.phone)}</span></dd><dt>Address</dt><dd>${esc(s.street)}, ${esc(areaTx(s.area))}, ${esc(s.area.prov)} ${s.area.zip}</dd>
@@ -363,4 +372,7 @@ document.getElementById('view-mon').addEventListener('click',e=>{const t=e.targe
   if(d.sid){openShipment(d.sid)}});
 document.getElementById('view-mon').addEventListener('change',e=>{const k=e.target.dataset.lf;if(k){MS.l[k]=e.target.value;MS.l.pg=0;renderMon()}});
 let msT;document.getElementById('view-mon').addEventListener('input',e=>{if(e.target.id!=='ms-q')return;MS.l.q=e.target.value;MS.l.pg=0;clearTimeout(msT);msT=setTimeout(()=>{renderMon();const q=document.getElementById('ms-q');q.focus();q.setSelectionRange(q.value.length,q.value.length)},250)});
-drawer.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(a){actionModal(a.dataset.act,a.dataset.a);return}const k=e.target.closest('[data-tk]');if(k){ticketDrawer(k.dataset.tk);return}const s=e.target.closest('[data-sid2]');if(s)openShipment(s.dataset.sid2)});
+drawer.addEventListener('click',e=>{const dc=e.target.closest('[data-cldoc]');if(dc){const c=CL.find(x=>x.id===dc.dataset.cldoc);if(!c.docs[dc.dataset.doc]){c.docs[dc.dataset.doc]=true;c.log.unshift([CLDOCS[dc.dataset.doc]+' added',NOW,'']);track('claim_doc_added',{doc:dc.dataset.doc});
+    if(clDocsDone(c))toast(`Documents complete. FLIK files ${c.id} with ${cName(c.k)}`);claimDrawer(c.id);if(document.getElementById('view-mon'))renderMon()}return}
+  const o=e.target.closest('.d-cl [data-cl]');if(o){claimDrawer(o.dataset.cl);return}
+  const a=e.target.closest('[data-act]');if(a){actionModal(a.dataset.act,a.dataset.a);return}const k=e.target.closest('[data-tk]');if(k){ticketDrawer(k.dataset.tk);return}const s=e.target.closest('[data-sid2]');if(s)openShipment(s.dataset.sid2)});
