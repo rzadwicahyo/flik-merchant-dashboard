@@ -95,7 +95,15 @@ const ageDays=s=>s.st==='pickup'?(NOW-s.created)/DAY:Math.max(0,((DONE3.has(s.st
 const overSla=s=>ageDays(s)>slaOf(s);
 const ageTx=d=>d<1?`${Math.max(1,Math.round(d*24))} h`:`${Math.floor(d)} d ${Math.round((d%1)*24)} h`;
 /* why a delivery failed or came back (example data) */
-const WHY={notfound:'address not found',nothome:'shopper not at home',rejected:'shopper rejected the parcel',notordered:"shopper says they didn't order"};
+const WHY={notfound:'address not found',nothome:'shopper not at home',rejected:'shopper rejected the parcel',notordered:"shopper says they didn't order",reschedule:'shopper asked for another day',courier:"courier couldn't reach the area"};
+/* issue type = Group / Type (AG, 27 Oct): the group is for grouping, the type says what happened, and each type has one next step.
+   Most come from the courier's status and reason code through a mapping per courier; late pickup, no update and past SLA are FLIK's own clock */
+const ITG={pk:'Pickup',dl:'Delivery delayed',df:'Delivery failed',rt:'Return',pp:'Parcel problem'};
+const ITY={pk_late:['pk','Late'],pk_fail:['pk','Failed'],dl_noupd:['dl','No update'],dl_sla:['dl','Past SLA'],
+  df_away:['df','Customer not available'],df_addr:['df','Address problem'],df_rej:['df','Customer rejected'],df_noorder:["df","Customer didn't order"],df_resched:['df','Customer asked to reschedule'],df_courier:['df','Courier issue'],
+  rt_prog:['rt','In progress'],rt_noconf:['rt','Without confirmation'],rt_stuck:['rt','Stuck'],pp_lost:['pp','Lost'],pp_dmg:['pp','Damaged']};
+const ityTx=ty=>ty&&ITY[ty]?`${ITG[ITY[ty][0]]} / ${ITY[ty][1]}`:'';
+const WHY2TY={notfound:'df_addr',nothome:'df_away',rejected:'df_rej',notordered:'df_noorder',reschedule:'df_resched',courier:'df_courier'};
 /* monitoring status (AG, 25 Oct):
    Safe: delivered, or returned with your confirmation · On track: on the way within SLA · Delayed: on the way past SLA
    At risk: delivery failed, address not found, shopper rejected or didn't order · Problem: lost or damaged, returned without your confirmation */
@@ -106,19 +114,23 @@ function monOf(s){
   return overSla(s)?'delayed':'ontrack'}
 /* what the issue is, in the merchant's words, and the action that fits */
 function issueOf(s){const m=monOf(s);if(m==='safe'||m==='ontrack')return null;
-  if(s.st==='lost')return{t:'Lost by the courier',act:'claim',next:'Report it as lost. FLIK files the claim with the courier.'};
-  if(s.rtLost)return{t:`Return stuck in transit for ${ageTx((NOW-s.retSince)/DAY)}`,act:'claim',next:'FLIK opened a Lost case. Add the invoice so the claim can be filed.'};
-  if(s.dmg)return{t:'Delivered damaged',act:'claim',next:'Report it as damaged, with photos and the unboxing video.'};
-  if(s.st==='returned')return{t:'Returned without your confirmation',act:'support',next:'Ask FLIK support to waive the return fee.'};
+  if(s.st==='lost')return{ty:'pp_lost',t:'Lost by the courier',act:'claim',next:'Report it as lost. FLIK files the claim with the courier.'};
+  if(s.rtLost)return{ty:'rt_stuck',t:`Return stuck in transit for ${ageTx((NOW-s.retSince)/DAY)}`,act:'claim',next:'FLIK opened a Lost case. Add the invoice so the claim can be filed.'};
+  if(s.dmg)return{ty:'pp_dmg',t:'Delivered damaged',act:'claim',next:'Report it as damaged, with photos and the unboxing video.'};
+  if(s.st==='returned')return{ty:'rt_noconf',t:'Returned without your confirmation',act:'support',next:'Ask FLIK support to waive the return fee.'};
   if(s.st==='failed'){const w=s.why||'nothome',n=s.tries>=2?` (attempt ${s.tries})`:'';
-    return w==='notordered'?{t:`Shopper says they didn't order${n}`,act:'support',next:'Check the order, then ask FLIK to return it or try again.'}
+    return{ty:WHY2TY[w],...(w==='notordered'?{t:`Shopper says they didn't order${n}`,act:'support',next:'Check the order, then ask FLIK to return it or try again.'}
       :w==='rejected'?{t:`Shopper rejected the parcel${n}`,act:'customer',next:'Ask the shopper why before the next attempt.'}
       :w==='notfound'?{t:`Delivery failed: address not found${n}`,act:'customer',next:'Get the house number or a landmark from the shopper.'}
-      :{t:`Delivery failed: shopper not at home${n}`,act:'customer',next:'Agree a good time with the shopper.'}}
-  if(s.st==='returning')return{t:`Returning: ${WHY[s.why]||WHY.rejected}`,act:'customer',next:'Contact the shopper to save the order.'};
+      :w==='reschedule'?{t:`Shopper asked to deliver another day${n}`,act:'customer',next:'Confirm the day with the shopper, and that the COD money is ready.'}
+      :w==='courier'?{t:`Courier couldn't reach the area${n}`,act:'support',next:'Ask FLIK support to arrange another attempt or another courier.'}
+      :{t:`Delivery failed: shopper not at home${n}`,act:'customer',next:'Agree a good time with the shopper.'})}}
+  if(s.st==='returning')return{ty:'rt_prog',t:`Returning: ${WHY[s.why]||WHY.rejected}`,act:'customer',next:'Contact the shopper to save the order.'};
   const over=ageDays(s)-slaOf(s);
-  if(s.st==='pickup')return{t:`Pickup late by ${ageTx(over)}`,act:'support',next:'Ask FLIK support to reschedule the pickup.'};
-  return{t:`Past SLA by ${ageTx(over)}`,act:'support',next:'Ask FLIK support to chase the courier.'}}
+  if(s.st==='pickup')return s.pkFail?{ty:'pk_fail',t:'Pickup failed: the courier came but the parcel wasn\'t ready',act:'support',next:'Get the parcel ready, then ask FLIK support to book another pickup.'}
+    :{ty:'pk_late',t:`Pickup late by ${ageTx(over)}`,act:'support',next:'Ask FLIK support to reschedule the pickup.'};
+  if(NOW-s.upd>=2*DAY)return{ty:'dl_noupd',t:`No tracking update for ${ageTx((NOW-s.upd)/DAY)}`,act:'support',next:'Ask FLIK support to find out where the parcel is.'};
+  return{ty:'dl_sla',t:`Past SLA by ${ageTx(over)}`,act:'support',next:'Ask FLIK support to chase the courier.'}}
 /* needs resolving: not Safe or On track, and no ticket yet. Taking an action creates a ticket and moves it to Tickets */
 const needsAct=s=>!!issueOf(s)&&!s.tk;
 const rstate=s=>{const m=monOf(s);if(needsAct(s))return'open';if(s.tk&&m!=='safe')return'ack';if((s.tk||s.had)&&m==='safe')return'resolved';return null};
@@ -146,15 +158,15 @@ function genActive(){const R=mkRng(4242),pk=a=>a[Math.floor(R()*a.length)];SH.le
       if(s.upd>NOW)s.upd=new Date(NOW-HOUR*(1+R()*3));
       s.awb=s.st==='pickup'&&R()<.3?null:mkAwb(k);SH.push(s)}}
   /* why a delivery failed or came back, and which returns you never agreed to */
-  SH.forEach(s=>{if(s.st==='failed')s.why=['nothome','notfound','rejected','notordered'][hsh(s.id)%4];if(s.st==='returning'||s.st==='returned')s.why=hsh(s.id)%3?'rejected':'notordered';if(s.st==='returned'&&hsh(s.id)%7===0)s.noConf=true});
+  SH.forEach(s=>{if(s.st==='failed')s.why=['nothome','notfound','rejected','notordered','reschedule','nothome','courier'][hsh(s.id)%7];if(s.st==='returning'||s.st==='returned')s.why=hsh(s.id)%3?'rejected':'notordered';if(s.st==='returned'&&hsh(s.id)%7===0)s.noConf=true});
   /* parcels still on the way: most within the SLA for their route, some past it, so Monitoring has delays to show */
   SH.filter(s=>s.st==='delivered'&&ageOf(s)<10).forEach((s,i)=>{const late=ageOf(s)-.3>slaOf({...s,st:'transit'});if(late&&i%3)return;
     s.st=i%4===0?'ofd':'transit';s.upd=new Date(NOW-(1+hsh(s.id)%30)*HOUR)});
-  SH.filter(s=>s.st==='pickup').slice(0,2).forEach(s=>{s.created=new Date(NOW-1.6*DAY);s.upd=s.created});
+  SH.filter(s=>s.st==='pickup').slice(0,3).forEach((s,i)=>{s.created=new Date(NOW-1.6*DAY);s.upd=s.created;if(i===2)s.pkFail=true});
   /* some issues already handled: tickets in progress, and earlier delays that ended well */
   const iss=SH.filter(s=>issueOf(s)&&issueOf(s).act!=='claim');iss.filter((s,i)=>i%4===1).forEach((s,i)=>{const t=addTicket(s,issueOf(s).act,'Merchant',new Date(NOW-(3+i*5)*HOUR));
     if(i%2===0){t.st='progress';t.log.unshift(['FLIK support picked it up',new Date(t.created.getTime()+30*60000),'progress']);agentSay(t,'flik',`Hi, Dewi from FLIK support. I have asked ${cName(s.k)} for an update on this parcel.`,new Date(t.created.getTime()+30*60000))}});
-  SH.filter(s=>s.st==='delivered'||s.st==='returned').filter((s,i)=>i%41===3).slice(0,14).forEach((s,i)=>{s.had={t:i%3?'No update for 48 hours':'Delivery attempt failed',act:i%3?'support':'customer'};
+  SH.filter(s=>s.st==='delivered'||s.st==='returned').filter((s,i)=>i%41===3).slice(0,14).forEach((s,i)=>{s.had={ty:i%3?'dl_noupd':'df_away',t:i%3?'No update for 48 hours':'Delivery attempt failed',act:i%3?'support':'customer'};
     const t=addTicket(s,s.had.act,'Merchant',new Date(s.upd.getTime()-2*DAY));t.st='resolved';
     t.log.unshift([s.st==='delivered'?'Delivered. Ticket closed':'Returned to sender. Ticket closed',s.upd,'resolved'],[t.type==='customer'?'Shopper replied on WhatsApp and confirmed the address':'FLIK support is chasing '+cName(s.k),new Date(t.created.getTime()+4*HOUR),'progress']);
     const t1=new Date(t.created.getTime()+25*60000),t2=new Date(t.created.getTime()+4*HOUR);
@@ -162,7 +174,7 @@ function genActive(){const R=mkRng(4242),pk=a=>a[Math.floor(R()*a.length)];SH.le
     agentSay(t,'3pl',s.st==='delivered'?'Our hub found the parcel. It is out for delivery today.':'The shopper refused the parcel at the door, so we are sending it back to the warehouse.',t2);
     agentSay(t,'sys',s.st==='delivered'?'Delivered. Ticket closed':'Returned to sender. Ticket closed',s.upd)});
   /* a few fresh failed deliveries, so the failed-delivery queue has both kinds */
-  SH.filter(s=>s.st==='delivered'&&!s.tk&&!s.had&&ageOf(s)>2&&ageOf(s)<8).slice(0,10).forEach((s,j)=>{s.st='failed';s.tries=j%3===2?2:1;s.why=['nothome','notfound','rejected','nothome','notordered'][j%5];s.upd=new Date(NOW-(3+j*4)*HOUR)});
+  SH.filter(s=>s.st==='delivered'&&!s.tk&&!s.had&&ageOf(s)>2&&ageOf(s)<8).slice(0,10).forEach((s,j)=>{s.st='failed';s.tries=j%3===2?2:1;s.why=['nothome','notfound','rejected','reschedule','notordered','courier','nothome'][j%7];s.upd=new Date(NOW-(3+j*4)*HOUR)});
   SH.sort((a,b)=>b.created-a.created);seedClaims();seedPend(R,pk)}
 
 /* ===== Tickets: claims, follow-ups with FLIK support, contacting the shopper on WhatsApp from FLIK =====
@@ -172,7 +184,7 @@ const TKST={open:['Open','warn'],progress:['In progress','pu'],resolved:['Resolv
 let tkSeq=4180;
 const TKCAT=['problem','risk','delayed'];
 const catOf=s=>{const m=monOf(s);return TKCAT.includes(m)?m:s.had&&s.had.act==='customer'?'risk':'delayed'};
-function addTicket(s,type,by='Merchant',at=NOW,note='',cat=catOf(s)){const t={id:'TK-'+(++tkSeq),type,cat,sid:s.id,awb:s.awb,created:at,st:type==='customer'?'progress':'open',ch:TKT[type][2],note,
+function addTicket(s,type,by='Merchant',at=NOW,note='',cat=catOf(s)){const t={id:'TK-'+(++tkSeq),type,cat,ty:(issueOf(s)||s.had||{}).ty,sid:s.id,awb:s.awb,created:at,st:type==='customer'?'progress':'open',ch:TKT[type][2],note,
   log:[[type==='customer'?'WhatsApp sent to the shopper from FLIK':type==='claim'?(by==='FLIK'?'Lost case opened by FLIK':'Lost or damaged case raised'):'Sent to FLIK support',at,type==='customer'?'progress':'open']]};
   /* the ticket is a conversation: the merchant on one side, FLIK support and the courier's team on the other (they reply from FLIK's ticketing platform) */
   t.chat=[{from:'me',text:note||(type==='claim'?'This parcel is lost or damaged.':type==='support'?'Can you check on this parcel?'+(issueOf(s)?' '+issueOf(s).t+'.':''):'Please help me reach the shopper about this parcel.'),at}];
