@@ -481,3 +481,22 @@ td.ity{white-space:nowrap}td.ity span{display:block;font-size:11.5px;color:var(-
 .d-iss .ity-t{display:block;font-style:normal;font-size:12px;color:var(--text);margin-bottom:2px}
 table.mt.rg td.nx{min-width:250px}table.mt.rg td.ity{min-width:150px;white-space:normal}
 table.mt td.nx span.boost{display:inline-flex;align-items:center;gap:4px;margin-top:6px;width:auto}
+/* tracking drawer (v3.10) */
+.trk-card{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:12px}
+.trk-top{display:flex;gap:12px;align-items:center}.trk-top b{display:block;color:var(--ink);font-weight:600}.trk-top span{font-size:12.5px;color:var(--muted)}
+.trk-st{list-style:none;margin:16px 0 4px;padding:0;display:flex}
+.trk-st li{flex:1;position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);text-align:center}
+.trk-st li::before{content:'';position:absolute;top:9px;right:50%;width:100%;height:2px;background:var(--line);z-index:0}
+.trk-st li:first-child::before{display:none}
+.trk-st li i{width:20px;height:20px;border-radius:50%;border:2px solid var(--line-2);background:#fff;display:flex;align-items:center;justify-content:center;z-index:1;color:#fff}
+.trk-st li.done i{background:var(--primary);border-color:var(--primary)}.trk-st li.done::before,.trk-st li.cur::before,.trk-st li.bad::before{background:var(--primary)}
+.trk-st li.cur i{border-color:var(--primary);box-shadow:0 0 0 4px rgba(99,91,255,.15)}.trk-st li.cur span{color:var(--ink);font-weight:600}
+.trk-st li.bad i{border-color:var(--bad-tx);background:var(--bad-tx)}.trk-st li.bad span{color:var(--bad-tx);font-weight:600}
+.trk-last{display:flex;gap:6px;align-items:flex-start;margin:12px 0 0;font-size:12.5px;color:var(--text)}
+.trk-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.trk-acts .btn{height:32px;font-size:12.5px;gap:6px}
+.pod{display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:start}
+.pod-ph{padding:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;cursor:zoom-in;background:none;line-height:0}
+.pod-img{width:100%;height:auto;display:block}
+.pod-kv{margin:0}.pod-sig{width:140px;height:44px;border:1px dashed var(--line-2);border-radius:6px;background:#fff}
+@media (max-width:520px){.pod{grid-template-columns:1fr}}
+.pod-kv{grid-template-columns:84px 1fr!important}.pod-kv dd{min-width:0;overflow-wrap:anywhere}
