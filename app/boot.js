@@ -17,13 +17,14 @@ function show(){const h=location.hash.replace(/^#/,'');let view=null;
   if(view==='mon')renderMon();
   if(view==='cr')renderCr();
   if(view==='ana')renderAna();
+  if(view==='crm')renderCrm();
   if(view==='mca')renderMca();
   if(view==='bal')renderBal();
   if(view==='cus')renderCus();
   if(view==='prd')renderPrd();
   if(view==='wh')renderWh();
   if(view==='inv')renderInv();
-  ['shp','mon','cr','ana','inv'].forEach(v=>{if(view===v)openGrp(v)});
+  ['shp','mon','cr','ana','inv','crm'].forEach(v=>{if(view===v)openGrp(v)});
   closeDetail();setSide(false);if(sx.hidden)scrollTo(0,0);
   track('page_viewed',{page:VIEWS[view][0]})}
 (async()=>{
