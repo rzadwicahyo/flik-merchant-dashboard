@@ -86,7 +86,8 @@ function guideModal(){
   <li><b>Smart courier:</b> on the Courier step, each courier shows its delivery rate in your shoppers' areas. Pick SPX to see the red zone split.</li>
   <li><b>Monitoring:</b> batches, what needs resolving, health, courier performance, every shipment, claims and tickets. Each section exports to this device.</li>
   <li><b>Check rate:</b> any warehouse to any kecamatan, kelurahan or postcode (try 80113).</li>
-  <li><b>Shipping › Analytics:</b> trends and insights from your shipments, on one screen.</li></ol>
+  <li><b>Shipping › Analytics:</b> trends and insights from your shipments, on one screen.</li>
+  <li><b>Marketing › Growth Engine:</b> who your customers are, a campaign to start this week, and what each campaign brought in against its holdout group.</li></ol>
   <p class="vf-lead">Events lists what the screens track, with no shopper data. API shows each call the page made and whether example data answered it.</p></div>
   <div class="mf"><button class="btn btn-p" data-mclose>Start</button></div>`;
   mscrim.classList.add('open')}
