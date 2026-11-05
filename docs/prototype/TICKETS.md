@@ -43,46 +43,47 @@ Plan (5 working days, 2–4 Claude sessions in parallel, two review windows a da
 ## Lane A: Studio
 
 **Story S1** As a stranger, I land on a page that makes me want to try it. *(BUILD_SPEC 3.1)*
-- [ ] Full-screen `#studio` page (no sidebar), FLIK logo, language switch, Sign in
-- [ ] Hero, upload box, sample row (from D1), category, vibe, product name, logo upload
-- [ ] Before/after examples, How it works, footer
-- [ ] Works at 390 px width
+- [x] Full-screen `#studio` page (no sidebar), FLIK logo, language switch, Sign in
+- [x] Hero, upload box, sample row (from D1), category, vibe, product name, logo upload
+- [x] Before/after examples, How it works, footer
+- [x] Works at 390 px width
 
 **Story S2** As a user, I get 4 good-looking previews in under 10 seconds. *(3.2, 3.4)*
-- [ ] Staged progress with the agreed words; previews appear one by one
-- [ ] Scene selection by category + vibe tags; vibe match score; < 20% → `mockLLM('vibe')` with AI tag
-- [ ] Composer: layer JSON → canvas; product box, contact shadow, safe zones, auto text colour for 4.5:1 contrast
-- [ ] 4 variations differ in scene or layout
-- [ ] Watermark drawn into the 540 px canvas before display; no clean image in the DOM
-- [ ] Upload path: accept any image, oval mask, "Prototype: real cut-out runs on FLIK's servers" note
-- [ ] `studio_previews_shown {ms}` event
+- [x] Staged progress with the agreed words; previews appear one by one
+- [x] Scene selection by category + vibe tags; vibe match score; < 20% → `mockLLM('vibe')` with AI tag
+- [x] Composer: layer JSON → canvas; product box, contact shadow, safe zones, auto text colour for 4.5:1 contrast
+- [x] 4 variations differ in scene or layout
+- [x] Watermark drawn into the 540 px canvas before display; no clean image in the DOM
+- [x] Upload path: accept any image, oval mask, "Prototype: real cut-out runs on FLIK's servers" note
+- [x] `studio_previews_shown {ms}` event
 
 **Story S3** As a user, I can make the design mine. *(3.3)*
-- [ ] Editor layout: tiles left, big preview centre, tabs right (Scene, Text, Format, Brand, Cut-out)
-- [ ] Text: edit, cycle phrase-bank options, tone, ID/EN, promo badge
-- [ ] Copy "doesn't fit" → `mockLLM('copy')` 3 options
-- [ ] Formats 1:1, 4:5, 9:16, marketplace white re-layout the same layers
-- [ ] Brand: logo on/off and position, brand colour
-- [ ] **Show me 4 more** with counter from `LIMITS.regenPerDesign`; at the limit, explain what's next
+- [x] Editor layout: tiles left, big preview centre, tabs right (Scene, Text, Format, Brand, Cut-out)
+- [x] Text: edit, cycle phrase-bank options, tone, ID/EN, promo badge
+- [x] Copy "doesn't fit" → `mockLLM('copy')` 3 options
+- [x] Formats 1:1, 4:5, 9:16, marketplace white re-layout the same layers
+- [x] Brand: logo on/off and position, brand colour
+- [x] **Show me 4 more** with counter from `LIMITS.regenPerDesign`; at the limit, explain what's next
 
 **Story S4** As a stranger, I sign up only when I want to download. *(3.5)*
-- [ ] Sign-up sheet on Download / Use; design visible behind
-- [ ] Fields, validation (`phoneOk`), optional consent, Fill with example data
-- [ ] OTP in fake phone preview; `123456`; wrong code and resend states
-- [ ] Existing owner phone → "Sign in instead" → switches to Active merchant
-- [ ] Account → Lead; events `signup_*`, `otp_*`
+- [x] Sign-up sheet on Download / Use; design visible behind
+- [x] Fields, validation (`phoneOk`), optional consent, Fill with example data
+- [x] OTP in fake phone preview; `123456`; wrong code and resend states
+- [x] Existing owner phone → "Sign in instead" → switches to Active merchant
+- [x] Account → Lead; events `signup_*`, `otp_*`
 
 **Story S5** As a user, I export the files I need and pay the way I want. *(3.6)*
-- [ ] Export sheet: clean full preview, format checkboxes
-- [ ] Real downloads: PNG 1080, cut-out PNG, SVG from layers; PSD shows the production toast
-- [ ] Free quota counter; lead price from `LIMITS.leadExportPrice` (Rp0 → free; > 0 → payment link)
-- [ ] Merchant over quota: FLIK balance (ledger) or Other methods (payment link → Mark as paid)
-- [ ] Free re-download of paid exports; events `export_paid`, `export_downloaded`
+- [x] Export sheet: clean full preview, format checkboxes
+- [x] Real downloads: PNG 1080, cut-out PNG, SVG from layers; PSD shows the production toast
+- [x] Free quota counter; lead price from `LIMITS.leadExportPrice` (Rp0 → free; > 0 → payment link)
+- [x] Merchant over quota: FLIK balance (ledger) or Other methods (payment link → Mark as paid)
+- [x] Free re-download of paid exports; events `export_paid`, `export_downloaded`
 
 **Story S6** As a lead or merchant, Studio lives in my dashboard too.
-- [ ] `#marketing/studio`: same editor + "Your designs" grid (saved variations, re-download)
+- [x] `#marketing/studio`: same editor + "Your designs" grid (saved variations, re-download)
 - [ ] Merchant: saved logo and brand colour reused; **Use in a campaign** opens Growth Engine idea picker
-- [ ] Lead home card: "See what your competitor posts" → Competitors
+- [x] Lead home card: "See what your competitor posts" → Competitors
+- [x] Lead's dashboard: welcome, Lead tag, what's left today and this month, lead-only sidebar, "Become a FLIK merchant"
 
 ---
 
@@ -147,13 +148,13 @@ Plan (5 working days, 2–4 Claude sessions in parallel, two review windows a da
 ## Lane D: Content (example data and copy, with Reza; Yoga reviews via Reza)
 
 **Story D1** As a user, samples and scenes look professional.
-- [ ] 8 sample products as transparent inline SVG: linen shirt, batik dress, tote bag, sneakers (fashion); iced coffee cup, cookie jar (F&B); serum bottle, lip tint (beauty)
-- [ ] ~12 drawn scenes with metadata: category fit, style tags, palette, light side, surface line, safe zones
-- [ ] 3 before/after pairs for the public page
+- [x] 8 sample products as transparent inline SVG: linen shirt, batik dress, tote bag, sneakers (fashion); iced coffee cup, cookie jar (F&B); serum bottle, lip tint (beauty)
+- [x] ~12 drawn scenes with metadata: category fit, style tags, palette, light side, surface line, safe zones
+- [x] 3 before/after pairs for the public page
 
 **Story D2** As a user, copy sounds natural in Bahasa and English.
-- [ ] Phrase bank: headline/sub/CTA × 3 tones × 2 languages × 4 categories (about 15 each)
-- [ ] Vibe dictionary: ID + EN synonyms → style tags (minimalis, hangat, mewah, ceria, lebaran, natal, earthy…)
+- [x] Phrase bank: headline/sub/CTA × 3 tones × 2 languages × 4 categories (about 15 each)
+- [x] Vibe dictionary: ID + EN synonyms → style tags (minimalis, hangat, mewah, ceria, lebaran, natal, earthy…)
 - [ ] 14 WhatsApp template texts × 2 languages (BUILD_SPEC section 7)
 - [ ] `mockLLM` canned answers for vibe, copy, context, classify
 
