@@ -9,6 +9,7 @@ Object.assign(P,{
   rocket:'<path d="M12 15.5 8.5 12c1.5-4.5 4.5-8 11-8.5-.5 6.5-4 9.5-8.5 11z"/><path d="M8.5 12 5 11l2.5-3.5h4M12 15.5l1 3.5 3.5-2.5v-4"/><path d="M6 18c-1 .5-1.5 1.5-1.5 1.5S5.5 19 6 18z"/>',
   clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
   sliders:'<path d="M5 6h14M5 12h14M5 18h14"/><circle cx="9" cy="6" r="1.8"/><circle cx="15" cy="12" r="1.8"/><circle cx="8" cy="18" r="1.8"/>',
+  repeat:'<path d="M17 3.5 20 6.5l-3 3"/><path d="M4 11.5v-1a4 4 0 0 1 4-4h12"/><path d="M7 20.5 4 17.5l3-3"/><path d="M20 12.5v1a4 4 0 0 1-4 4H4"/>',
   store:'<path d="M4 9.5 5.5 4.5h13L20 9.5"/><path d="M4 9.5a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0"/><path d="M5.5 11.5v8h13v-8"/><path d="M10 19.5v-4h4v4"/>'
 });
 
@@ -19,7 +20,7 @@ const geNow=()=>new Date(NOW.getTime()+GS.dayOffset*DAY);
 const geMerchant=()=>['new','active','top'].includes(GS.account);
 const geFdate=d=>d.toLocaleDateString(geLang()==='id'?'id-ID':'en-GB',{day:'numeric',month:'short',year:'numeric'});
 /* Bahasa by default on public pages (Studio, claim), English in the dashboard, unless the bar sets it */
-const geLang=()=>GS.lang||(GS.full&&GX_PUBLIC.includes(GS.full.full)?'id':'en');
+const geLang=()=>GS.lang||(GS.account==='anon'||GS.full&&GX_PUBLIC.includes(GS.full.full)?'id':'en');
 function geT(k,v){const s=(GE_I18N[geLang()]||{})[k]??GE_I18N.en[k]??k;return v?s.replace(/\{(\w+)\}/g,(m,x)=>v[x]??m):s}
 const aiTag=()=>`<span class="ge-ai" title="Written by AI because the ready-made options didn't fit">${ic('sparkle',11)}${geT('ai.tag')}</span>`;
 
@@ -73,14 +74,15 @@ const gx=document.getElementById('gx');
 function geRoute(h){let g=null;const id=h.split('/').pop();
   if(h==='studio')g={view:'stu',full:'studio'};
   else if(h==='studio/edit')g={view:'stu',full:'edit'};
+  else if(h==='studio/new')g={view:'stu',full:'new'};
   else if(h.startsWith('marketing/growth/idea/'))g={view:'gro',full:'idea',id};
   else if(h.startsWith('marketing/growth/campaign/'))g={view:'gro',sub:'campaign',id};
   else if(h.startsWith('claim/'))g={view:'gro',full:'claim',id};
   else if(h==='marketing/growth')g={view:'gro'};
   else if(h==='marketing/studio')g={view:'stu'};
   else if(h==='marketing/competitors')g={view:'cmp'};
-  if(!g)return null;
-  /* a stranger only has the public pages */
+  /* a stranger only has the public pages; a lead only has Studio, Competitors and the Growth Engine upsell */
+  if(!g)return GS.account==='anon'?{redirect:'studio'}:GS.account==='lead'?{redirect:'marketing/studio'}:null;
   if(GS.account==='anon'&&!['studio','edit','claim'].includes(g.full))return{redirect:'studio'};
   return g}
 function geOpen(g){GS.full=g;const r=(GX[g.full]||(()=>({title:'',html:''})))(g),pub=GX_PUBLIC.includes(g.full);
@@ -127,7 +129,7 @@ function geSetAccount(k){GS.account=k;GS.usage={};track('account_switched',{acco
   else if(k!=='anon'&&h==='studio')go('marketing/studio');
   else show()}
 function geBarCounts(){const n=document.getElementById('pt-wa');if(n)n.textContent=GS.outbox.length}
-function geSync(view){const on=['gro','stu','cmp'].includes(view)||!gx.hidden;document.body.classList.toggle('ge-on',on);
+function geSync(view){document.body.classList.toggle('ge-lead',GS.account==='lead');const ab=document.querySelector('.acct b');if(ab)ab.textContent=GS.account==='lead'?(GS.lead||ST_LEAD_EXAMPLE).brand:GE_OWNER.store;const on=['gro','stu','cmp'].includes(view)||!gx.hidden;document.body.classList.toggle('ge-on',on);
   document.getElementById('pt-acv').textContent=geT('acct.'+GS.account);
   document.querySelector('.pbar .pb-lang').innerHTML=geLangSeg();geBarCounts()}
 function geOutbox(){
@@ -171,3 +173,10 @@ function geCashierSoon(){modal.classList.add('nw');
 Object.assign(VIEWS,{gro:['marketing/growth','Growth Engine'],stu:['marketing/studio','Studio'],cmp:['marketing/competitors','Competitors']});
 ['gro','stu','cmp'].forEach(v=>document.querySelector('.main').insertAdjacentHTML('beforeend',`<main class="content" id="view-${v}" hidden></main>`));
 {const mk=NAV.find(n=>n.t==='Marketing');if(mk)mk.sub.unshift({t:'Growth Engine',v:'gro'},{t:'Studio',v:'stu'},{t:'Competitors',v:'cmp'})}
+
+/* A lead's sidebar: only what a lead can use, plus the way to become a merchant */
+{const _rn=renderNav;renderNav=function(){if(GS.account!=='lead')return _rn();
+  nav.innerHTML=`<div class="navh">FLIK</div>${[['studio','stu','nav.studio'],['eye','cmp','nav.competitors'],['rocket','gro','nav.growth']].map(([i,v,k])=>`<button class="ni" data-view="${v}">${ic(i)}${geT(k)}${v==='gro'?`<span class="ge-lock">${geT('lead.merchants')}</span>`:''}</button>`).join('')}
+  <div class="navh">${geT('lead.nav.h')}</div><button class="ni" data-leadup>${ic('store')}${geT('gro.lead.cta')}</button>`;
+  nav.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>go(VIEWS[b.dataset.view][0]));
+  nav.querySelector('[data-leadup]').onclick=()=>{track('merchant_cta_clicked',{from:'sidebar'});toast('Opens FLIK merchant sign-up')}}}

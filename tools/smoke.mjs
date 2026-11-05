@@ -28,7 +28,7 @@ const screens = [
   ['?products=ship#home', '#view-home'], ['?products=all#home', '#view-home'], ['?merchant=new&products=ship#home', '#view-home'],
   // Growth Engine v2 + Studio: every route for each account that can reach it
   ['?account=anon', '#gx'], ['?account=anon#studio', '#gx'], ['?account=anon&lang=en#studio/edit', '#gx'], ['?account=anon#marketing/growth', '#gx'], ['?account=anon#claim/DEMO', '#gx'],
-  ['?account=lead', '#view-stu'], ['?account=lead#marketing/competitors', '#view-cmp'], ['?account=lead#marketing/growth', '#view-gro'], ['?account=lead#studio/edit', '#gx'],
+  ['?account=lead', '#view-stu'], ['?account=lead#marketing/competitors', '#view-cmp'], ['?account=lead#marketing/growth', '#view-gro'], ['?account=lead#studio/edit', '#gx'], ['?account=lead#home', '#view-stu'], ['#studio/new', '#gx'],
   ['?account=new#marketing/growth', '#view-gro'], ['?account=top#marketing/competitors', '#view-cmp'],
   ['#marketing/growth', '#view-gro'], ['#marketing/studio', '#view-stu'], ['#marketing/competitors', '#view-cmp'], ['#studio/edit', '#gx'],
   ['#marketing/growth/idea/demo', '#gx'], ['#marketing/growth/campaign/demo', '#view-gro'], ['?lang=id#marketing/growth', '#view-gro']
@@ -54,6 +54,23 @@ for (const t of ['outbox', 'ledger', 'limits', 'skip', 'end', 'cashier']) { cons
 { const n = errors.length; const r = await page.evaluate(async () => { const a = useLimit('regenPerDesign', 'd1'), b = useLimit('regenPerDesign', 'd1'); const llm = await mockLLM('copy', {}); waSend('campaign_report', 'en', ['Dewi', '11.11', 'Rp6 jt', 'Rp2 jt', 'flik.id/r/1']);
     const d = await ledgerDebit(2000, 'Studio export'); return a.ok && !b.ok && llm.ai && GS.outbox.length > 0 && !!d.ledgerTxnId; });
   if (!r || errors.length > n) { failed++; console.log('FAIL shared helpers (limits, AI fallback, WhatsApp, ledger)'); } }
+
+// Studio: stranger designs, signs up with the WhatsApp code, downloads; then a merchant pays from the balance
+{ const n = errors.length, ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true }), sp = await ctx.newPage(), dl = [];
+  sp.on('pageerror', e => errors.push(e.message)); sp.on('download', d => dl.push(d.suggestedFilename())); await sp.route(/^https?:\/\/(?!localhost)/, r => r.abort());
+  let ok = true; const step = async (name, f) => { if (!ok) return; try { await f(); } catch (e) { ok = false; console.log('FAIL studio: ' + name + '\n     ' + e.message.split('\n')[0]); } };
+  await step('public page', async () => { await sp.goto(url + '?account=anon'); await sp.waitForSelector('[data-smp="cookie-jar"]'); });
+  await step('design', async () => { await sp.click('[data-smp="cookie-jar"]'); await sp.click('#st-go'); await sp.waitForSelector('.st-main img', { timeout: 9000 }); });
+  await step('editor tabs', async () => { for (const t of ['text', 'format', 'brand', 'cut', 'scene']) await sp.click(`[data-stab="${t}"]`); await sp.click('[data-fmt]').catch(() => {}); });
+  await step('show me 4 more', async () => { await sp.click('#st-more'); await sp.waitForSelector('.st-main img', { timeout: 5000 }); });
+  await step('sign-up', async () => { await sp.click('#st-dl'); await sp.click('[data-sufill]'); await sp.click('#su-send'); await sp.fill('#su-code', '123456'); await sp.click('#su-ok'); await sp.waitForSelector('#ex-go'); });
+  await step('download', async () => { await sp.click('#ex-go'); await sp.waitForTimeout(1500); if (dl.length < 3) throw new Error('expected 3 files, got ' + dl.length); });
+  await step('lead dashboard', async () => { await sp.click('#ex-dash'); await sp.waitForSelector('#view-stu .st-card'); });
+  await step('merchant pays from balance', async () => { await sp.goto(url + '#studio/new'); await sp.evaluate(() => { GE_LIMITS.freeExportsPerMonth.active = 0 }); await sp.click('[data-smp="serum-bottle"]'); await sp.click('#st-go');
+    await sp.waitForSelector('.st-main img', { timeout: 9000 }); await sp.click('#st-dl'); await sp.click('#ex-go'); await sp.waitForTimeout(800);
+    if (!(await sp.evaluate(() => GS.balance === GE_BALANCE - GE_LIMITS.exportPrice))) throw new Error('balance not debited'); });
+  if (!ok || errors.length > n) { failed++; if (ok) console.log('FAIL studio flow' + errors.slice(n).map(e => '\n     ' + e).join('')); } else console.log('ok   studio flow: design, sign-up, download, lead dashboard, balance payment');
+  await ctx.close(); }
 
 await browser.close(); srv.kill();
 console.log(failed ? `${failed} check(s) failed` : 'All screens load without errors');
