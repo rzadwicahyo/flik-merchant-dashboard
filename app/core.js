@@ -87,7 +87,7 @@ function guideModal(){
   <li><b>Monitoring:</b> batches, what needs resolving, health, courier performance, every shipment, claims and tickets. Each section exports to this device.</li>
   <li><b>Check rate:</b> any warehouse to any kecamatan, kelurahan or postcode (try 80113).</li>
   <li><b>Shipping › Analytics:</b> trends and insights from your shipments, on one screen.</li>
-  <li><b>Marketing › Growth Engine:</b> who your customers are, a campaign to start this week, and what each campaign brought in against its holdout group.</li></ol>
+  <li><b>Marketing › Growth Engine, Studio, Competitors:</b> v4 is being built ticket by ticket. Open one of them and the Guide shows the demo script.</li></ol>
   <p class="vf-lead">Events lists what the screens track, with no shopper data. API shows each call the page made and whether example data answered it.</p></div>
   <div class="mf"><button class="btn btn-p" data-mclose>Start</button></div>`;
   mscrim.classList.add('open')}

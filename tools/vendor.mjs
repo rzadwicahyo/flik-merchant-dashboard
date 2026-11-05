@@ -58,7 +58,7 @@ const repAll = (a, b) => { if (!src.includes(a)) { console.error('Patch target m
 
 // 4. Prototype styles and scripts
 rep('</style>\n</head>', '</style>\n<link rel="stylesheet" href="app/app.css">\n</head>');
-const APP = ['config.js', 'app/api.js', 'app/core.js', 'app/data.js', 'app/home.js', 'app/shipment.js', 'app/flow.js', 'app/monitoring.js', 'app/checkrate.js', 'app/analytics.js', 'app/crm.js', 'app/boot.js'];
+const APP = ['config.js', 'app/api.js', 'app/core.js', 'app/data.js', 'app/home.js', 'app/shipment.js', 'app/flow.js', 'app/monitoring.js', 'app/checkrate.js', 'app/analytics.js', 'app/ge-i18n.js', 'app/ge-data.js', 'app/ge-core.js', 'app/studio.js', 'app/compete.js', 'app/growth.js', 'app/boot.js'];
 rep('</script>\n</body>', '</script>\n' + APP.map(s => `<script src="${s}"></script>`).join('\n') + '\n</body>');
 
 writeFileSync(join(ROOT, 'index.html'), src);
