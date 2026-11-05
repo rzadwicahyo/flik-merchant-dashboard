@@ -1,0 +1,60 @@
+/* ===== Growth Engine v2 + Studio: user-facing text in Bahasa Indonesia and English =====
+ * Every new screen reads its words through geT('key') (app/ge-core.js). Add both languages together.
+ * {name} placeholders are filled from the second argument of t().
+ */
+const GE_I18N={
+  en:{
+    'nav.growth':'Growth Engine','nav.studio':'Studio','nav.competitors':'Competitors',
+    'acct.anon':'Anonymous','acct.lead':'Lead','acct.new':'New merchant','acct.active':'Active merchant','acct.top':'Top merchant','acct.s.anon':'Anon','acct.s.lead':'Lead','acct.s.new':'New','acct.s.active':'Active','acct.s.top':'Top',
+    'bar.account':'Account','bar.outbox':'Outbox','bar.ledger':'Ledger','bar.limits':'Limits','bar.skip':'Skip 7 days','bar.end':'End campaign','bar.cashier':'Cashier app',
+    'bar.skipped':'Demo clock moved to {date}','bar.noCampaign':'No running campaign to end yet',
+    'outbox.title':'WhatsApp outbox','outbox.sub':'Messages FLIK would send on WhatsApp. In production they go through FLIK\'s approved templates, with the image header picked per send.','outbox.empty':'Nothing sent yet.','outbox.to':'To',
+    'ledger.title':'Balance and ledger','ledger.sub':'FLIK balance pays directly. Other methods go through a FLIK payment link.','ledger.balance':'Balance',
+    'limits.title':'Limits (example values)','limits.sub':'Counters per account status. In production they live in one table FLIK can change without a release. Changes here last until you reload.','limits.topup':'AI top-ups are added by FLIK staff twice a day until prepaid AI is automated.','limits.used':'used','limits.reset':'Reset usage',
+    'limits.regenPerDesign':'Regenerates per design','limits.designsPerDay':'Designs per day','limits.freeExportsPerMonth':'Free exports per month','limits.llmFallbacksPerDay':'AI help per day','limits.ownContextPerWeek':'Own-context ideas per week','limits.competitors':'Competitors tracked',
+    'limits.leadExportPrice':'Lead export price (Rp)','limits.exportPrice':'Extra export price (Rp)','limits.waCost':'WhatsApp message (Rp)',
+    'limit.regenPerDesign':'That was the last new set for this design. Edit the text, scene or format as much as you like, or start a new design.',
+    'limit.designsPerDay':'You\'ve made today\'s designs. Your saved designs are still here, and new ones open again at 00:00.',
+    'limit.freeExportsPerMonth':'Your free exports for this month are used. Extra exports are paid from your balance or a payment link.',
+    'limit.llmFallbacksPerDay':'You\'ve used today\'s AI help. The ready-made options are still here, and AI help resets at 00:00.',
+    'limit.ownContextPerWeek':'You\'ve used this week\'s custom ideas. Pick one of the ready ideas, or try again next week.',
+    'limit.competitors':'You\'re tracking as many competitors as your account allows. Remove one to add another.',
+    'pay.title':'FLIK payment link','pay.sub':'The merchant pays on FLIK\'s page with QRIS, virtual account, e-wallet or card.','pay.methods':'Payment methods','pay.proto':'Prototype: “Mark as paid” stands in for FLIK\'s paid webhook.','pay.mark':'Mark as paid','pay.cancel':'Cancel','pay.paid':'Paid. Unlocked','pay.low':'Your balance is too low. Top up or pick another method.',
+    'ai.tag':'AI',
+    'gx.close':'Close','gx.signin':'Sign in','gx.by':'by FLIK',
+    'soon':'Coming next','soon.sub':'This screen is a placeholder from P0. The tickets below fill it in.',
+    'studio.h':'Studio','studio.sub':'Turn a phone photo into ready-to-post product images, with copy.','studio.open':'Open Studio','studio.designs':'Your designs',
+    'studio.pub.h':'Product photos ready to sell in 10 seconds','studio.pub.sub':'Free to try. No sign-up until you download.','studio.edit.h':'Studio editor',
+    'cmp.h':'Competitors','cmp.sub':'What your competitors post and sell, from Instagram and their own website.','cmp.lead.sub':'A free one-time look at one competitor on Instagram.',
+    'gro.h':'Growth Engine','gro.sub':'Ideas for this week from your competitors, your store and the calendar. Review, adjust and run them, then see what they brought in.',
+    'gro.lead.h':'Campaign ideas are for FLIK merchants','gro.lead.sub':'Become a FLIK merchant to get weekly ideas, track 3 competitors and run WhatsApp, Instagram and offline campaigns with vouchers.','gro.lead.cta':'Become a FLIK merchant',
+    'gro.idea.h':'Review idea','gro.camp.h':'Campaign result','claim.h':'Save your voucher'
+  },
+  id:{
+    'nav.growth':'Growth Engine','nav.studio':'Studio','nav.competitors':'Kompetitor',
+    'acct.anon':'Anonim','acct.lead':'Lead','acct.new':'Merchant baru','acct.active':'Merchant aktif','acct.top':'Merchant top','acct.s.anon':'Anonim','acct.s.lead':'Lead','acct.s.new':'Baru','acct.s.active':'Aktif','acct.s.top':'Top',
+    'bar.account':'Akun','bar.outbox':'Outbox','bar.ledger':'Ledger','bar.limits':'Batas','bar.skip':'Lewati 7 hari','bar.end':'Akhiri kampanye','bar.cashier':'Aplikasi kasir',
+    'bar.skipped':'Jam demo maju ke {date}','bar.noCampaign':'Belum ada kampanye berjalan',
+    'outbox.title':'Outbox WhatsApp','outbox.sub':'Pesan yang akan dikirim FLIK lewat WhatsApp. Di produksi, pesan memakai template FLIK yang sudah disetujui, dengan gambar header dipilih per kiriman.','outbox.empty':'Belum ada pesan terkirim.','outbox.to':'Ke',
+    'ledger.title':'Saldo dan ledger','ledger.sub':'Saldo FLIK langsung terpotong. Metode lain lewat payment link FLIK.','ledger.balance':'Saldo',
+    'limits.title':'Batas (nilai contoh)','limits.sub':'Penghitung per status akun. Di produksi, nilainya ada di satu tabel yang bisa diubah FLIK tanpa rilis. Perubahan di sini berlaku sampai halaman dimuat ulang.','limits.topup':'Top-up AI ditambahkan tim FLIK dua kali sehari sampai AI prabayar otomatis.','limits.used':'terpakai','limits.reset':'Reset pemakaian',
+    'limits.regenPerDesign':'Buat ulang per desain','limits.designsPerDay':'Desain per hari','limits.freeExportsPerMonth':'Ekspor gratis per bulan','limits.llmFallbacksPerDay':'Bantuan AI per hari','limits.ownContextPerWeek':'Ide konteks sendiri per minggu','limits.competitors':'Kompetitor dipantau',
+    'limits.leadExportPrice':'Harga ekspor lead (Rp)','limits.exportPrice':'Harga ekspor tambahan (Rp)','limits.waCost':'Pesan WhatsApp (Rp)',
+    'limit.regenPerDesign':'Itu set baru terakhir untuk desain ini. Ubah teks, latar, atau format sesukamu, atau mulai desain baru.',
+    'limit.designsPerDay':'Jatah desain hari ini sudah terpakai. Desain tersimpan masih ada, dan desain baru dibuka lagi pukul 00.00.',
+    'limit.freeExportsPerMonth':'Ekspor gratis bulan ini sudah terpakai. Ekspor tambahan dibayar dari saldo atau payment link.',
+    'limit.llmFallbacksPerDay':'Bantuan AI hari ini sudah terpakai. Pilihan siap pakai masih ada, dan bantuan AI kembali pukul 00.00.',
+    'limit.ownContextPerWeek':'Ide kustom minggu ini sudah terpakai. Pilih ide yang tersedia, atau coba lagi minggu depan.',
+    'limit.competitors':'Jumlah kompetitor sudah maksimal untuk akunmu. Hapus satu untuk menambah yang lain.',
+    'pay.title':'Payment link FLIK','pay.sub':'Merchant membayar di halaman FLIK dengan QRIS, virtual account, e-wallet, atau kartu.','pay.methods':'Metode pembayaran','pay.proto':'Prototipe: “Tandai lunas” menggantikan webhook pembayaran FLIK.','pay.mark':'Tandai lunas','pay.cancel':'Batal','pay.paid':'Lunas. Sudah terbuka','pay.low':'Saldo tidak cukup. Top up atau pilih metode lain.',
+    'ai.tag':'AI',
+    'gx.close':'Tutup','gx.signin':'Masuk','gx.by':'oleh FLIK',
+    'soon':'Segera hadir','soon.sub':'Layar ini masih placeholder dari P0. Tiket di bawah akan mengisinya.',
+    'studio.h':'Studio','studio.sub':'Ubah foto HP jadi gambar produk siap posting, lengkap dengan caption.','studio.open':'Buka Studio','studio.designs':'Desainmu',
+    'studio.pub.h':'Foto produk jadi siap jual dalam 10 detik','studio.pub.sub':'Gratis dicoba. Daftar hanya saat mau unduh.','studio.edit.h':'Editor Studio',
+    'cmp.h':'Kompetitor','cmp.sub':'Apa yang diposting dan dijual kompetitormu, dari Instagram dan website mereka sendiri.','cmp.lead.sub':'Lihat satu kompetitor di Instagram, gratis, satu kali.',
+    'gro.h':'Growth Engine','gro.sub':'Ide minggu ini dari kompetitor, tokomu, dan kalender. Tinjau, ubah, jalankan, lalu lihat hasilnya.',
+    'gro.lead.h':'Ide kampanye untuk merchant FLIK','gro.lead.sub':'Jadi merchant FLIK untuk dapat ide mingguan, pantau 3 kompetitor, dan jalankan kampanye WhatsApp, Instagram, dan offline dengan voucher.','gro.lead.cta':'Jadi merchant FLIK',
+    'gro.idea.h':'Tinjau ide','gro.camp.h':'Hasil kampanye','claim.h':'Simpan vouchermu'
+  }
+};

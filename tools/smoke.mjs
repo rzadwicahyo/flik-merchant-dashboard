@@ -24,8 +24,14 @@ await page.route(/^https?:\/\/(?!localhost)/, r => r.abort());
 const screens = [
   ['?merchant=new#home', '#view-home'], ['?merchant=new#shipments', '#view-shp'],
   ['#home', '#view-home'], ['#shipments/create', '#sx'], ['#monitoring', '#view-mon'],
-  ['#check-rate', '#view-cr'], ['#marketing/growth', '#view-crm'], ['?merchant=new#marketing/growth', '#view-crm'], ['?products=ship#marketing/growth', '#view-crm'], ['#shipping/analytics', '#view-ana'], ['#warehouses', '#view-wh'],
-  ['?products=ship#home', '#view-home'], ['?products=all#home', '#view-home'], ['?merchant=new&products=ship#home', '#view-home']
+  ['#check-rate', '#view-cr'], ['#shipping/analytics', '#view-ana'], ['#warehouses', '#view-wh'],
+  ['?products=ship#home', '#view-home'], ['?products=all#home', '#view-home'], ['?merchant=new&products=ship#home', '#view-home'],
+  // Growth Engine v2 + Studio: every route for each account that can reach it
+  ['?account=anon', '#gx'], ['?account=anon#studio', '#gx'], ['?account=anon&lang=en#studio/edit', '#gx'], ['?account=anon#marketing/growth', '#gx'], ['?account=anon#claim/DEMO', '#gx'],
+  ['?account=lead', '#view-stu'], ['?account=lead#marketing/competitors', '#view-cmp'], ['?account=lead#marketing/growth', '#view-gro'], ['?account=lead#studio/edit', '#gx'],
+  ['?account=new#marketing/growth', '#view-gro'], ['?account=top#marketing/competitors', '#view-cmp'],
+  ['#marketing/growth', '#view-gro'], ['#marketing/studio', '#view-stu'], ['#marketing/competitors', '#view-cmp'], ['#studio/edit', '#gx'],
+  ['#marketing/growth/idea/demo', '#gx'], ['#marketing/growth/campaign/demo', '#view-gro'], ['?lang=id#marketing/growth', '#view-gro']
 ];
 let failed = 0;
 for (const [path, sel] of screens) {
@@ -39,6 +45,15 @@ for (const [path, sel] of screens) {
 // Monitoring tabs
 await page.goto(url + '#monitoring'); await page.waitForTimeout(400);
 for (const t of ['health', 'perf', 'list', 'tickets', 'summary']) { const n = errors.length; await page.click(`[data-mt="${t}"]`); await page.waitForTimeout(150); if (errors.length > n) { failed++; console.log('FAIL monitoring tab ' + t); } }
+
+// Growth Engine v2 + Studio: prototype bar tools
+await page.goto(url + '#marketing/growth'); await page.waitForTimeout(400);
+for (const t of ['outbox', 'ledger', 'limits', 'skip', 'end', 'cashier']) { const n = errors.length; await page.click(`.pbar [data-ge="${t}"]`); await page.waitForTimeout(150); await page.keyboard.press('Escape'); if (errors.length > n) { failed++; console.log('FAIL prototype bar ' + t + errors.slice(n).map(e => '\n     ' + e).join('')); } }
+{ const n = errors.length; await page.click('#pt-acct'); await page.click('[data-acc="anon"]'); await page.waitForTimeout(300);
+  const onStudio = await page.$eval('#gx', el => !el.hidden).catch(() => false); if (!onStudio || errors.length > n) { failed++; console.log('FAIL account switch to Anonymous'); } }
+{ const n = errors.length; const r = await page.evaluate(async () => { const a = useLimit('regenPerDesign', 'd1'), b = useLimit('regenPerDesign', 'd1'); const llm = await mockLLM('copy', {}); waSend('campaign_report', 'en', ['Dewi', '11.11', 'Rp6 jt', 'Rp2 jt', 'flik.id/r/1']);
+    const d = await ledgerDebit(2000, 'Studio export'); return a.ok && !b.ok && llm.ai && GS.outbox.length > 0 && !!d.ledgerTxnId; });
+  if (!r || errors.length > n) { failed++; console.log('FAIL shared helpers (limits, AI fallback, WhatsApp, ledger)'); } }
 
 await browser.close(); srv.kill();
 console.log(failed ? `${failed} check(s) failed` : 'All screens load without errors');

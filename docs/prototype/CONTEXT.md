@@ -102,7 +102,7 @@ Only the **owner** gets WhatsApp OTPs, notifications and reports. Show the owner
 | File | What it holds |
 | --- | --- |
 | `app/ge-data.js` | All example data and constants for this work: sample products, scenes, layouts, phrase bank, vibe dictionary, competitors, big-date calendar, WA templates, ideas, limits, ledger, vouchers, outbox. Registers `FLIK.mock(...)` answers. |
-| `app/ge-core.js` | Account state `GS`, `LIMITS` + `useLimit()`, `mockLLM()`, `ledgerDebit()`, `paymentLinkSheet()`, `waSend()` + Outbox, `t()` for i18n, prototype-bar additions. |
+| `app/ge-core.js` | Account state `GS`, `LIMITS` + `useLimit()`, `mockLLM()`, `ledgerDebit()`, `paymentLinkSheet()`, `waSend()` + Outbox, `geT()` for i18n, prototype-bar additions. |
 | `app/studio.js` | Public Studio page, editor, composer, watermark, sign-up gate, export and payment. |
 | `app/compete.js` | Competitor monitoring (lead snapshot + merchant full view). |
 | `app/growth.js` | Marketing › Growth Engine v2: ideas, adjust, execute, campaigns, results, reports, settings. Replaces `crm.js`. |
@@ -117,7 +117,7 @@ Load order: `...analytics.js`, `ge-i18n.js`, `ge-data.js`, `ge-core.js`, `studio
 - Globals for this work start with `GE`/`ge`/`ST`/`st`/`CP` to avoid clashes with Raam's names.
 - `track('event_name', {props})` for every meaningful step (BUILD_SPEC section 8 lists them). No shopper names or phones in props.
 - Deterministic: seeded random only. The same URL shows the same screen every time.
-- All new user-facing text through `t('key')`, in `id` and `en`. Default language follows a switch in the prototype bar (default Bahasa Indonesia for Studio's public page, English for the dashboard, like today).
+- All new user-facing text through `geT('key')`, in `id` and `en`. Default language follows a switch in the prototype bar (default Bahasa Indonesia for Studio's public page, English for the dashboard, like today).
 - Accessibility: buttons are `<button>`, images have `alt`, focus is visible, modals close on Escape.
 - Desktop 1440 px first; the public Studio page must also work at 390 px phone width.
 

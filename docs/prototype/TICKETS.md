@@ -26,17 +26,17 @@ Plan (5 working days, 2–4 Claude sessions in parallel, two review windows a da
 - [x] README: new row "Growth Engine v2 + Studio (v4.0, in progress)" linking to the docs
 
 **Story P0.2** As a developer, I have the shared pieces every lane needs.
-- [ ] Create `app/ge-i18n.js`, `app/ge-data.js`, `app/ge-core.js`, `app/studio.js`, `app/compete.js`, `app/growth.js` (empty renderers) and add script tags in the CONTEXT section 7 order
-- [ ] `GS` account state + `?account=anon|lead|new|active|top`, default `active`
-- [ ] `t(key)` with `id`/`en`, language switch state
-- [ ] `LIMITS` object + `useLimit(name)` returning `{ok, left, message}` and firing `limit_reached`
-- [ ] `mockLLM(case, input)` → Promise with canned answers, 1.2 s delay, logs to the API drawer, counts `llmFallbacksPerDay`
-- [ ] `ledgerDebit(amount, label)` and `paymentLinkSheet(amount, label)` → Promise resolved on **Mark as paid**
-- [ ] `waSend(template, lang, vars, image)` → Outbox
-- [ ] Prototype bar: Account switch, Language, Outbox, Ledger, Limits editor, Skip 7 days, End campaign, Cashier app (empty handlers allowed)
-- [ ] Sidebar: Marketing › Growth Engine, Studio, Competitors; routes from BUILD_SPEC section 1 in `boot.js` with empty views
-- [ ] Remove `app/crm.js` and its script tag; note in README that v3.12 is replaced
-- [ ] Smoke test: every new route × account state loads without errors
+- [x] Create `app/ge-i18n.js`, `app/ge-data.js`, `app/ge-core.js`, `app/studio.js`, `app/compete.js`, `app/growth.js` (empty renderers) and add script tags in the CONTEXT section 7 order
+- [x] `GS` account state + `?account=anon|lead|new|active|top`, default `active`
+- [x] `geT(key)` with `id`/`en`, language switch state
+- [x] `LIMITS` object + `useLimit(name)` returning `{ok, left, message}` and firing `limit_reached`
+- [x] `mockLLM(case, input)` → Promise with canned answers, 1.2 s delay, logs to the API drawer, counts `llmFallbacksPerDay`
+- [x] `ledgerDebit(amount, label)` and `paymentLinkSheet(amount, label)` → Promise resolved on **Mark as paid**
+- [x] `waSend(template, lang, vars, image)` → Outbox
+- [x] Prototype bar: Account switch, Language, Outbox, Ledger, Limits editor, Skip 7 days, End campaign, Cashier app (empty handlers allowed)
+- [x] Sidebar: Marketing › Growth Engine, Studio, Competitors; routes from BUILD_SPEC section 1 in `boot.js` with empty views
+- [x] Remove `app/crm.js` and its script tag; note in README that v3.12 is replaced
+- [x] Smoke test: every new route × account state loads without errors
 
 ---
 

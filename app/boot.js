@@ -5,6 +5,9 @@ function show(){const h=location.hash.replace(/^#/,'');let view=null;
   if(h==='shipments/create'){view='shp';if(sx.hidden)openShip()}else if(!sx.hidden)closeShip();
   if(h==='warehouses/new'){view='wh';openWh()}else if(!wx.hidden&&!whEdit)closeWh();
   if(h==='merchant-cash-advance/apply'){view='mca';openMca()}else if(!mx.hidden)closeMca();
+  /* Growth Engine v2 + Studio: dashboard pages and full-screen pages (app/ge-core.js) */
+  const g=geRoute(h);if(g&&g.redirect){location.replace('#'+g.redirect);return}
+  GS.route=g;if(g)view=g.view;if(g&&g.full)geOpen(g);else geClose();
   if(!view)view=Object.keys(VIEWS).find(k=>VIEWS[k][0]===h)||(h==='tracking'?'mon':h==='analytics/shipping'?'ana':'home');
   /* an active shipper goes straight to Create shipment; the list lives in Monitoring */
   if(view==='shp'&&h!=='shipments/create'&&SH.length){location.replace('#shipments/create');return}
@@ -17,19 +20,26 @@ function show(){const h=location.hash.replace(/^#/,'');let view=null;
   if(view==='mon')renderMon();
   if(view==='cr')renderCr();
   if(view==='ana')renderAna();
-  if(view==='crm')renderCrm();
+  if(view==='gro')renderGrowth();
+  if(view==='stu')renderStudio();
+  if(view==='cmp')renderCompete();
   if(view==='mca')renderMca();
   if(view==='bal')renderBal();
   if(view==='cus')renderCus();
   if(view==='prd')renderPrd();
   if(view==='wh')renderWh();
   if(view==='inv')renderInv();
-  ['shp','mon','cr','ana','inv','crm'].forEach(v=>{if(view===v)openGrp(v)});
-  closeDetail();setSide(false);if(sx.hidden)scrollTo(0,0);
-  track('page_viewed',{page:VIEWS[view][0]})}
+  ['shp','mon','cr','ana','inv','gro','stu','cmp'].forEach(v=>{if(view===v)openGrp(v)});
+  closeDetail();setSide(false);if(sx.hidden)scrollTo(0,0);geSync(view);
+  track('page_viewed',{page:g&&g.full?h:VIEWS[view][0]})}
 (async()=>{
   const q=new URLSearchParams(location.search);
   if(FLAGS[q.get('products')])PS.qFlags=q.get('products');
+  if(GE_ACCOUNTS.includes(q.get('account')))GS.account=q.get('account');
+  if(['id','en'].includes(q.get('lang')))GS.lang=q.get('lang');
+  /* a stranger lands on the public Studio page, a lead on Studio in the dashboard */
+  if(!location.hash&&GS.account==='anon')location.replace('#studio');
+  else if(!location.hash&&GS.account==='lead')location.replace('#marketing/studio');
   try{await FLIK.api.merchant()}catch(e){}
   setMode(q.get('merchant')==='new'?'new':'active');
 })();
