@@ -20,6 +20,7 @@ function show(){const h=location.hash.replace(/^#/,'');let view=null;
   if(view==='mon')renderMon();
   if(view==='cr')renderCr();
   if(view==='ana')renderAna();
+  if(view==='brd')renderBrand();
   if(view==='gro')renderGrowth();
   if(view==='stu')renderStudio();
   if(view==='cmp')renderCompete();
@@ -29,7 +30,7 @@ function show(){const h=location.hash.replace(/^#/,'');let view=null;
   if(view==='prd')renderPrd();
   if(view==='wh')renderWh();
   if(view==='inv')renderInv();
-  ['shp','mon','cr','ana','inv','gro','stu','cmp'].forEach(v=>{if(view===v)openGrp(v)});
+  ['shp','mon','cr','ana','inv'].forEach(v=>{if(view===v)openGrp(v)});
   closeDetail();setSide(false);if(sx.hidden)scrollTo(0,0);geSync(view);
   track('page_viewed',{page:g&&g.full?h:VIEWS[view][0]})}
 (async()=>{
@@ -39,7 +40,7 @@ function show(){const h=location.hash.replace(/^#/,'');let view=null;
   if(['id','en'].includes(q.get('lang')))GS.lang=q.get('lang');
   /* a stranger lands on the public Studio page, a lead on Studio in the dashboard */
   if(!location.hash&&GS.account==='anon')location.replace('#studio');
-  else if(!location.hash&&GS.account==='lead')location.replace('#marketing/studio');
+  else if(!location.hash&&GS.account==='lead')location.replace('#marketing/growth/studio');
   try{await FLIK.api.merchant()}catch(e){}
   setMode(q.get('merchant')==='new'?'new':'active');
 })();

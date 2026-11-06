@@ -13,7 +13,9 @@ const GE_LIMITS={
   competitors:{anon:0,lead:1,new:3,active:3,top:3},
   leadExportPrice:0,   // Rp, FLIK config; 0 = free for now
   exportPrice:2000,    // Rp per export over the free quota (example)
-  waCost:500           // Rp per WhatsApp marketing message (example)
+  waCost:500,          // Rp per WhatsApp marketing message (example)
+  llmPrice:5000,       // Rp per AI design set, when the merchant doesn't take the FLIK watermark (example)
+  matchMin:60          // %: below this template match, Studio offers the AI
 };
 const GE_LIMITS_DEFAULT=JSON.parse(JSON.stringify(GE_LIMITS));
 const GE_ACCOUNTS=['anon','lead','new','active','top'];
@@ -227,7 +229,50 @@ const CP_FIX={
       [13,'promo','linen-shirt','#e9e0d4','-10%','Diskon 10% akhir bulan.','10% off at the end of the month.',12,310]],
     products:[],
     activity:[[-5,'new','2 produk baru di Instagram','2 new products on Instagram'],[2,'promo','Giveaway bareng brand partner','A giveaway with a partner brand']]},
-  'private.label':{private:true,name:'Private Label',cat:'fashion'}
+  'private.label':{private:true,name:'Private Label',cat:'fashion'},
+  /* the merchant's own brand, read the same way as a competitor (account sync comes later) */
+  'aruna.studio':{own:true,name:'Aruna Studio',cat:'fashion',followers:18400,site:'aruna.flik.id',platform:'flik',
+    bio:{id:'Kemeja linen & batik untuk kerja dan akhir pekan · Bandung',en:'Linen & batik for work and weekends · Bandung'},
+    posts:[[1,'new','linen-shirt','#efe6d4','Baru','Kemeja linen warna baru: sage dan pasir.','New linen shirt colours: sage and sand.',12,310],
+      [3,'ugc','batik-dress','#f1e2cf','','Terima kasih @mira.ootd sudah pakai dress batik kami!','Thanks @mira.ootd for wearing our batik dress!',13,240],
+      [6,'promo','tote-bag','#e6e0d2','-10%','Gajian: diskon 10% tote kanvas.','Payday: 10% off canvas totes.',12,280],
+      [9,'new','batik-dress','#ecd9c6','Baru','Dress batik indigo, stok terbatas.','Indigo batik dress, limited stock.',11,350],
+      [13,null,'linen-shirt','#e9e1d6','','Proses menjahit di workshop kami.','Sewing at our workshop.',12,190],
+      [16,'ugc','linen-shirt','#e5ddd3','','Review pelanggan: adem dipakai seharian.','A customer review: cool all day.',13,170],
+      [20,'promo','linen-shirt','#e8d6c0','-15%','Diskon 15% kemeja linen akhir pekan ini.','15% off linen shirts this weekend.',12,420],
+      [24,'new','tote-bag','#efe6d4','Baru','Tote kanvas, muat laptop.','Canvas tote, fits a laptop.',12,200],
+      [28,'ugc','batik-dress','#f3e3d3','','Dipakai ke kondangan, cantik!','Worn to a wedding, lovely!',13,260]],
+    products:[['Linen shirt · White',289000,0,true,''],['Batik dress · Indigo',375000,0,true,''],['Wide-leg trousers',219000,0,true,''],['Canvas tote bag',149000,0,true,''],
+      ['Basic tee · Black',99000,0,true,''],['Voile scarf · Floral',125000,0,false,''],['Leather sneakers',459000,0,true,'']],
+    activity:[[-1,'new','Posting warna baru kemeja linen','Posted new linen shirt colours']]}};
+/* Facebook and Meta ads per account (public page + Meta Ad Library; both need a Meta app token, so example data).
+ * fb: followers, posts in 30 days, average reactions per post, top post [caption id, caption en, reactions].
+ * ads: [days running, format, text id, text en, new this week] */
+const CP_CH={
+  'aruna.studio':{fb:{followers:9200,posts30:10,avg:46,top:['Dress batik indigo, stok terbatas.','Indigo batik dress, limited stock.',140]},ads:[[12,'image','Kemeja linen untuk kerja','Linen shirts for work',false]]},
+  'kain.kita.id':{fb:{followers:31500,posts30:22,avg:310,top:['Giveaway 3 dress batik!','Giveaway: 3 batik dresses!',2140]},
+    ads:[[3,'carousel','Sale 20% kemeja linen, sampai 20 Okt','20% off linen shirts, until 20 Oct',true],[3,'video','Cara styling kemeja linen untuk kerja','How to style a linen shirt for work',true],
+      [21,'image','Outer tenun asli Lombok','Handwoven Lombok outers',false],[38,'video','Kenapa linen kami adem','Why our linen stays cool',false],[45,'image','Gratis ongkir se-Jawa','Free shipping across Java',false]]},
+  'lunaloom.co':{fb:{followers:12800,posts30:16,avg:120,top:['1 celana, 3 gaya','1 pair of pants, 3 looks',620]},
+    ads:[[1,'video','Reels: 1 celana 3 gaya','Reel: 1 pair of pants, 3 looks',true],[9,'image','Harga turun untuk 4 favorit','Lower prices on 4 favourites',false],[16,'carousel','Midi skirt plisket 5 warna','Pleated midi skirt in 5 colours',false]]},
+  'sare.basic':{fb:{followers:4100,posts30:6,avg:35,top:['2 warna baru: navy dan olive.','2 new colours: navy and olive.',90]},ads:[]},
+  'private.label':{fb:{followers:2600,posts30:4,avg:18,top:['Koleksi musim hujan','Rainy season collection',60]},ads:[[6,'image','Koleksi musim hujan','Rainy season collection',true]]}
+};
+/* Action plan categories. Every suggestion (rules first, the AI only rewords) must be one of these, so it is always
+ * something FLIK can do, or a clearly-marked suggestion. kind: campaign (opens Campaign), content (opens Studio), tip (suggestion only). */
+const GE_ACTIONS={
+  answer_promo:{kind:'campaign',n:{id:'Jawab promo kompetitor',en:'Answer a competitor promo'}},
+  protect_price:{kind:'campaign',n:{id:'Cashback, bukan potong harga',en:'Cashback instead of a price cut'}},
+  win_back:{kind:'campaign',n:{id:'Ajak kembali pelanggan yang pergi',en:'Win back shoppers who left'}},
+  early_access:{kind:'campaign',n:{id:'Akses awal sebelum tanggal besar',en:'Early access before a big date'}},
+  new_arrival_wa:{kind:'campaign',n:{id:'Kabari pelanggan setia soal produk baru',en:'Tell loyal shoppers about new products'}},
+  match_content:{kind:'content',n:{id:'Tiru format konten terbaik mereka',en:'Match their best-performing content'}},
+  ad_creative:{kind:'content',n:{id:'Buat materi iklan',en:'Make an ad creative'}},
+  new_product_post:{kind:'content',n:{id:'Tampilkan produk baru',en:'Show your new products'}},
+  posting_time:{kind:'content',n:{id:'Ubah waktu dan frekuensi posting',en:'Change when and how often you post'}},
+  price_gap:{kind:'tip',n:{id:'Tinjau selisih harga',en:'Review the price gap'}},
+  range_gap:{kind:'tip',n:{id:'Tinjau produk yang belum kamu punya',en:'Review products you don\'t have'}},
+  ad_spend:{kind:'tip',n:{id:'Pertimbangkan anggaran iklan',en:'Consider an ad budget'}}
 };
 const CP_MARKET=/(^|\.)(shopee|tokopedia|lazada|tiktok|bukalapak|blibli|zalora)\./i;
 
@@ -248,7 +293,8 @@ const GE_SEG=[
   {k:'repeat',n:{id:'Pelanggan berulang',en:'Repeat'},rule:{id:'2+ pesanan dalam 90 hari',en:'2 or more orders in 90 days'},on:410,off:262},
   {k:'vip',n:{id:'VIP',en:'VIP'},rule:{id:'5% teratas berdasarkan belanja, 180 hari',en:'Top 5% by spend in 180 days'},on:118,off:71},
   {k:'risk',n:{id:'Berisiko pergi',en:'At risk'},rule:{id:'Pelanggan berulang, tidak belanja 45–90 hari',en:'Repeat shopper, no order in 45 to 90 days'},on:384,off:207},
-  {k:'lapsed',n:{id:'Sudah lama tidak belanja',en:'Lapsed'},rule:{id:'Tidak belanja lebih dari 90 hari',en:'No order in more than 90 days'},on:690,off:452}];
+  {k:'lapsed',n:{id:'Sudah lama tidak belanja',en:'Lapsed'},rule:{id:'Tidak belanja lebih dari 90 hari',en:'No order in more than 90 days'},on:690,off:452},
+  {k:'checkout',n:{id:'Checkout belum dibayar',en:'Checkout not paid'},rule:{id:'Mulai checkout, belum bayar dalam 7 hari',en:'Started checkout, not paid in 7 days'},on:136,off:0}];
 const GE_SCALE={new:.03,active:1,top:3.2};
 const GE_AOV=285000;          // example average order value
 const GE_FEE=1.5;             // % FLIK campaign fee on attributed sales only (example)
@@ -300,3 +346,8 @@ const GE_CAMP_SEED=[
 
 /* Example shoppers who appear in the Outbox (fictional names, fictional numbers) */
 const GE_SHOPPERS=['Sari','Budi','Maya','Andi','Putri','Fajar','Nadia','Bayu'].map((n,i)=>({n,phone:'62813000001'+String(10+i)}));
+/* Shoppers for "Selected shoppers" (fictional names and numbers) */
+const GE_SHOPLIST=(()=>{const R=mkRng(777),segs=['new','repeat','vip','risk','lapsed'],out=[];
+  for(let i=0;i<36;i++){const sg=segs[Math.floor(R()*segs.length)];out.push({id:'S'+(1000+i),n:FN[Math.floor(R()*FN.length)]+' '+LN[Math.floor(R()*LN.length)],phone:'6281300'+String(200000+i*137).slice(0,6),seg:sg,
+    orders:sg==='new'?1:sg==='vip'?6+Math.floor(R()*8):2+Math.floor(R()*4),spent:Math.round((sg==='vip'?3e6:sg==='new'?2.8e5:9e5)*(0.6+R())/1000)*1000,last:Math.floor(sg==='lapsed'?95+R()*80:sg==='risk'?46+R()*40:R()*40),off:R()<.37})}
+  return out})();

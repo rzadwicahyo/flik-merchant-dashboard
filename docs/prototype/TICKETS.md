@@ -167,6 +167,19 @@ Plan (5 working days, 2–4 Claude sessions in parallel, two review windows a da
 
 ---
 
+## Lane E: Growth Engine tabs (v4.1, Reza's feedback of 6 Nov)
+
+- [x] E1 One sidebar item, four tabs (My Brand, Competitor, Studio, Campaign); old links redirect; lead tabs locked where needed
+- [x] E2 My Brand: socials (same public method as competitors) + my FLIK store
+- [x] E3 Competitor: limit 3 (configurable), add/remove, summary per channel with gap lines, per-competitor channel detail
+- [x] E4 Action plan from the 12 fixed categories (campaign, content, suggestion only), opening the journeys prefilled
+- [x] E5 Studio create content: output → photo and details → design (AI when asked or match < 60%, paid by watermark, balance or link) → deliver → WhatsApp preview → done
+- [x] E6 Campaign tab: create, ideas, overall metrics, sales by campaign, list; create journey with selected shoppers, voucher or cashback, rules, review, submit
+- [x] E7 Smoke tests for every route and the full flow; ID and EN texts
+- [ ] E8 Account sync for My Brand (later), email channel (later), Reels (later), holdout and poster (not now)
+
+---
+
 ## QA (Reza)
 
 - [ ] Demo script (BUILD_SPEC section 2) runs start to finish on the live GitHub Pages link, desktop

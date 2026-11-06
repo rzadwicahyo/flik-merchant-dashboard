@@ -1,11 +1,9 @@
-/* ===== Marketing › Growth Engine v2 (BUILD_SPEC section 5). Replaces v3.12 (app/crm.js). =====
- * Three inputs make the ideas: competitors (compete.js), the merchant's own store (segments by phone number,
- * ported from v1) and the calendar (big dates + public holidays). An idea is a post or a campaign. The owner
- * reviews it, adjusts it (channels, voucher, Studio image, WhatsApp template, own context, holdout), executes it,
- * and reads the result against the holdout. Results feed the next week's ideas.
- * C1 ideas · C2 review and adjust · C3 execute · C4 campaigns and results · C5 claim page, cashier, settings.
+/* ===== Growth Engine › Campaign (BUILD_SPEC section 5). Replaces v3.12 (app/crm.js). =====
+ * Create a campaign (WhatsApp now, email later): shopper category → (pick shoppers) → voucher or cashback →
+ * rules → review → submit. Ideas for this week (competitors + the merchant's store + the calendar) start the same
+ * journey prefilled; a post idea opens Studio. Results per campaign by voucher or cashback ID. No holdout for now.
  */
-const GE={acct:null,dismissed:{},extra:[],camps:[],drafts:{},claims:[],settings:{cap:7,hold:10,lang:'id',quiet:true},seq:1100};
+const GE={acct:null,dismissed:{},extra:[],camps:[],drafts:{},claims:[],settings:{cap:7,hold:0,lang:'id',quiet:true},seq:1100};
 const GE_CH=[['wa','chat2'],['ig','studio'],['tt','sparkle'],['off','store']];
 /* short headline for the auto-made Studio image */
 const GE_HEAD={'i-1111':{id:'Akses awal 11.11',en:'11.11 early access'},'i-kk-sale':{id:'Beli 2, lebih hemat',en:'Buy 2, save more'},'i-second':{id:'Kembali lagi, ya',en:'Come back soon'},
@@ -41,20 +39,6 @@ function geAudience(i,hold){const n=(i.segs||[]).reduce((a,k)=>a+geSegN(k),0),op
   busy=GE.camps.some(c=>c.st==='running'&&c.ch.includes('wa'))?Math.round(n*.06):0,h=Math.round((n-opt-busy)*hold/100);
   return{n,on:(i.segs||[]).reduce((a,k)=>a+geSegN(k,'on'),0),off:(i.segs||[]).reduce((a,k)=>a+geSegN(k,'off'),0),opt,busy,hold:h,send:Math.max(0,n-opt-busy-h)}}
 
-/* ----- ideas made from a competitor move (B3 "Get an idea") ----- */
-function geIdeaIdFor(h,ai){if(h==='kain.kita.id'&&ai===0&&(GE_IDEAS_FOR[GS.account]||[]).includes('i-kk-sale'))return'i-kk-sale';const x=GE.extra.find(i=>i.cmp===h&&i.act===ai);return x?x.id:null}
-function geIdeaFromActivity(c,ai){geInit();const id=geIdeaIdFor(c.h,ai);if(id){go('marketing/growth/idea/'+id);return}
-  const a=c.f.activity[ai],n=c.f.name,k=a[1],what={id:a[2],en:a[3]},I={id:'i-c'+(GE.extra.length+1),cmp:c.h,act:ai,src:['competitor'],fresh:true,product:'linen-shirt',exp:[1e6,3e6]};
-  if(k==='promo')Object.assign(I,{type:'campaign',segs:['risk','repeat'],ch:['wa','ig'],conv:.06,tpl:'bundle_offer',tpls:['bundle_offer','promo_discount','flash_sale'],scene:'linen-sand',
-    voucher:{kind:'amt',v:30000,max:30000,min:300000,days:7,quota:120},offer:{id:'hemat {v} untuk belanja 2 produk',en:'{v} off when you buy 2'},
-    title:{id:`Jawab promo ${n} dengan paket hemat`,en:`Answer ${n}'s promo with a bundle`},
-    why:{id:`${n}: ${what.id.toLowerCase()}. Pelanggan berulang dan yang berisiko pergi paling mungkin membandingkan. Jawab dengan nilai, bukan diskon lebih dalam.`,en:`${n}: ${what.en.charAt(0).toLowerCase()+what.en.slice(1)}. Repeat and at-risk shoppers are the most likely to compare. Answer with value, not a deeper discount.`}});
-  else Object.assign(I,{type:'post',ch:['ig','tt'],scene:k==='new'?'studio-white':'window-light',
-    title:k==='price'?{id:`${n} turun harga: tunjukkan kualitas produkmu`,en:`${n} cut prices: show why yours is worth it`}:k==='new'?{id:`${n} rilis produk baru: tampilkan koleksi terbarumu`,en:`${n} launched new products: show your newest pieces`}:{id:`Coba yang berhasil untuk ${n}: reels styling`,en:`Try what worked for ${n}: a styling reel`},
-    why:{id:`${n}: ${what.id.toLowerCase()}. Posting minggu ini supaya pengikutmu melihat pilihanmu dulu.`,en:`${n}: ${what.en.charAt(0).toLowerCase()+what.en.slice(1)}. Post this week so your followers see your option first.`},
-    caption:{id:'Dibuat untuk dipakai setiap hari: bahan adem, jahitan rapi. Cek koleksinya di link bio.',en:'Made to be worn every day: cool fabric, neat stitching. See the collection at the link in bio.'}});
-  GE.extra.unshift(I);track('idea_created',{source:'competitor',type:I.type});toast(geT('g.idea.made'));go('marketing/growth/idea/'+I.id)}
-
 /* ----- the Studio image for an idea: a saved design, or one Studio makes from the idea's product ----- */
 function geAutoDesign(i,L){const k='auto-'+i.id+'-'+L;let s=GS.designs.find(d=>d.key===k);if(s)return s;
   const cc=ST_COPY.fashion.playful[L],b=i.voucher?(i.voucher.kind==='pct'?'-'+i.voucher.v+'%':''):'',h=(GE_HEAD[i.id]||{})[L]||geL(i.title);
@@ -65,44 +49,32 @@ function geAutoDesign(i,L){const k='auto-'+i.id+'-'+L;let s=GS.designs.find(d=>d
 function geDesignOf(g){const s=GS.designs.find(d=>d.key===g.design);if(s)return s;const a=geAutoDesign(g.i,g.lang),v=g.voucher,b=v?(v.kind==='pct'?'-'+v.v+'%':'-'+Math.round(v.v/1000)+'rb'):'';a.v.badge=a.design.badge=b;return a}
 function geImg(sd,W=540,fmt){const k=stSwap(sd),keepF=STU.design.format;if(fmt)STU.design.format=fmt;stBrandOn();const r=stRender(sd.v,W,{});STU.design.format=keepF;stSwap(k);return r.c}
 
-/* ===== C1 landing ===== */
+/* ===== Campaign tab: create (from scratch or an idea), overall metrics, metrics by campaign, the list ===== */
 function renderGrowth(){const el=document.getElementById('view-gro'),g=GS.route||{};
-  if(GS.account==='lead'){el.innerHTML=`<h1>${geT('gro.h')}</h1><section class="card w-empty"><span class="qic">${ic('rocket',22,1.6)}</span><div><b>${geT('gro.lead.h')}</b><span>${geT('gro.lead.sub')}</span></div><button class="btn btn-p" data-gelead>${geT('gro.lead.cta')}</button></section>`;
-    el.querySelector('[data-gelead]').onclick=()=>{track('merchant_cta_clicked',{from:'growth'});toast(geT('lead.signup.toast'))};return}
+  if(GS.account==='lead'){el.innerHTML=geTabs('gro')+geLocked('gro');return}
   geInit();cpInit();
   if(g.sub==='campaign'){geRenderCamp(el,g.id);return}
-  const ideas=geIdeaList().filter(i=>!GE.dismissed[i.id]),pulse=GE_PULSE[GS.account]||GE_PULSE.active,wk=geNow(),we=new Date(wk.getTime()+6*DAY);
-  const cmpN=CP.tracked.length,cmpCh=CP.tracked.reduce((a,c)=>a+cpActs(c).filter(cpNew).length,0),dates=geBigDates(GE_HOL_CACHE),next=dates.find(d=>d.kind!=='payday');
-  const ch=pulse.prev?Math.round((pulse.orders/pulse.prev-1)*100):0;
-  el.innerHTML=`<div class="ph"><div><h1>${geT('g.week',{from:cpShort(wk),to:cpShort(we)})}</h1><p class="sec-sub ge-sub">${geT('gro.sub')}</p></div>
-    <div class="g-hact">${geLangSeg()}<button class="btn btn-o" data-gset>${ic('gear',15)}${geT('g.settings')}</button></div></div>
-  <section class="card g-flow" aria-label="${geT('g.flow.h')}"><div class="g-flow-h"><b>${geT('g.flow.h')}</b><span>${geT('g.flow.sub')}</span></div>
-    <div class="g-fl">
-      <div class="g-in">
-        <a class="g-node" href="#marketing/competitors">${ic('eye',16)}<span><b>${geT('g.f.cmp')}</b><small>${geT('g.f.cmp.v',{n:cmpN,c:cmpCh})}</small></span></a>
-        <button class="g-node" data-gseg>${ic('user',16)}<span><b>${geT('g.f.store')}</b><small>${geT('g.f.store.v',{n:pulse.orders,s:GE_SEG.length})}</small></span></button>
-        <button class="g-node" data-gcal>${ic('calendar',16)}<span><b>${geT('g.f.cal')}</b><small>${next?geT('g.f.cal.v',{d:esc(geL(next.n)),n:Math.max(0,Math.ceil((next.at-geNow())/DAY))}):'—'}</small></span></button></div>
-      <span class="g-arr">${ic('chev',16)}</span>
-      <div class="g-node g-core">${ic('bulb',16)}<span><b>${geT('g.f.ideas',{n:ideas.length})}</b><small>${geT('g.f.rules')}</small></span></div>
-      <span class="g-arr">${ic('chev',16)}</span>
-      <a class="g-node" href="#marketing/studio">${ic('studio',16)}<span><b>${geT('g.f.studio')}</b><small>${geT('g.f.studio.v')}</small></span></a>
-      <span class="g-arr">${ic('chev',16)}</span>
-      <div class="g-node">${ic('chat2',16)}<span><b>${geT('g.f.run')}</b><small>${geT('g.f.run.v')}</small></span></div>
-      <span class="g-arr">${ic('chev',16)}</span>
-      <button class="g-node" data-gcamps>${ic('chart',16)}<span><b>${geT('g.f.res')}</b><small>${geT('g.f.res.v')}</small></span></button></div>
-    <p class="g-loop">${ic('repeat',13)}${geT('g.f.loop')}</p></section>
-  <div class="g-pulse">${[[geT('g.p.orders'),`${pulse.orders}`,pulse.prev?`<span class="${ch>=0?'ge-pos':'ge-neg'}">${ch>=0?'+':''}${ch}%</span> ${geT('g.p.vs')}`:''],
-      [geT('g.p.repeat'),pulse.repeat==null?'—':pulse.repeat.toString().replace('.',geLang()==='id'?',':'.')+'%',pulse.repeat==null?geT('g.p.learn'):geT('g.p.peers',{n:String(pulse.peers).replace('.',geLang()==='id'?',':'.')})],
-      [geT('g.p.top'),esc(pulse.top),geT('g.p.recent')],[geT('g.p.off'),pulse.off+'%',geT('g.p.off.sub')]].map(([k,v,s])=>`<section class="card"><span>${k}</span><b>${v}</b><small>${s}</small></section>`).join('')}</div>
-  ${GS.account==='new'?`<p class="g-note">${ic('info',14)}${geT('g.new.note')}</p>`:''}
-  <div class="sec-h"><div><h2 class="sec">${geT('g.ideas.h')}</h2><p class="sec-sub">${geT('g.ideas.sub')}</p></div></div>
+  const ideas=geIdeaList().filter(i=>!GE.dismissed[i.id]),dates=geBigDates(GE_HOL_CACHE),wk=geNow(),we=new Date(wk.getTime()+6*DAY);
+  const cs=GE.camps,R=cs.map(geRes),sum=k=>R.reduce((a,r)=>a+(r[k]||0),0),sales=sum('sales'),cost=R.reduce((a,r)=>a+r.cost+r.vcost,0),f=n=>Math.round(n).toLocaleString(geLang()==='id'?'id-ID':'en-US');
+  const byC=cs.map((c,i)=>({c,r:R[i]})).filter(x=>x.c.st!=='scheduled').sort((a,b)=>b.r.sales-a.r.sales).slice(0,6),mx=Math.max(1,...byC.map(x=>x.r.sales));
+  el.innerHTML=`${geTabs('gro',`${geLangSeg()}<button class="btn btn-o" data-gset>${ic('gear',15)}${geT('g.settings')}</button>`)}
+  <section class="card g-create"><div><b>${geT('g.create.h')}</b><span>${geT('g.create.sub')}</span></div>
+    <ol class="g-steps">${['ch','who','type','rules','review'].map((k,i)=>`<li><i>${i+1}</i>${geT('cj.s.'+k)}</li>`).join('')}</ol>
+    <a class="btn btn-p" href="#marketing/growth/campaigns/new" data-gnew>${ic('plus',15)}${geT('cj.new')}</a></section>
+  <div class="sec-h"><div><h2 class="sec">${geT('g.week',{from:cpShort(wk),to:cpShort(we)})}</h2><p class="sec-sub">${geT('g.ideas.sub2')}</p></div></div>
+  <p class="g-loop">${ic('repeat',13)}${geT('g.f.made',{c:CP.tracked.length,d:dates.filter(d=>d.kind!=='payday').length})}</p>
   <div class="g-ideas">${ideas.map(geIdeaCard).join('')||`<section class="card w-empty"><span class="qic">${ic('bulb',22,1.6)}</span><div><b>${geT('g.ideas.none')}</b></div></section>`}</div>
-  <div class="sec-h" id="g-cal"><div><h2 class="sec">${geT('g.cal.h')}</h2><p class="sec-sub" id="g-cal-src">${GE_HOL_LIVE?geT('g.cal.live'):geT('g.cal.fb')}</p></div></div>
-  <div class="g-cal">${dates.filter(d=>d.kind!=='payday').slice(0,8).map(d=>`<div class="g-day g-${d.kind}"><b>${d.at.getDate()}</b><span>${d.at.toLocaleDateString(geLang()==='id'?'id-ID':'en-GB',{month:'short'})}</span><small>${esc(geL(d.n))}</small><i>${geT('g.kind.'+d.kind)}</i></div>`).join('')}</div>
+  <details class="g-cald"><summary>${ic('calendar',14)}${geT('g.cal.h')} · <span id="g-cal-src">${GE_HOL_LIVE?geT('g.cal.live'):geT('g.cal.fb')}</span></summary>
+  <div class="g-cal">${dates.filter(d=>d.kind!=='payday').slice(0,8).map(d=>`<div class="g-day g-${d.kind}"><b>${d.at.getDate()}</b><span>${d.at.toLocaleDateString(geLang()==='id'?'id-ID':'en-GB',{month:'short'})}</span><small>${esc(geL(d.n))}</small><i>${geT('g.kind.'+d.kind)}</i></div>`).join('')}</div></details>
+  <div class="sec-h"><div><h2 class="sec">${geT('g.all.h')}</h2><p class="sec-sub">${geT('g.all.sub')}</p></div></div>
+  <div class="g-pulse g-k5">${[[geT('g.all.camps'),f(cs.length),geT('g.all.run',{n:cs.filter(c=>c.st==='running').length})],[geT('g.all.sent'),f(sum('sent')),geT('g.all.read',{n:f(sum('read'))})],
+      [geT('g.all.used'),f(sum('redeemed')),geT('g.all.used.sub')],[geT('g.k.sales'),geJt(sales),geT('g.all.cost',{c:geJt(cost)})],[geT('g.k.ret'),cost?geT('g.k.ret.v',{x:(sales/cost).toFixed(1).replace('.',geLang()==='id'?',':'.')}):'—',geT('g.all.ret.sub')]].map(([k,v,s])=>`<section class="card"><span>${k}</span><b>${v}</b><small>${s}</small></section>`).join('')}</div>
+  ${byC.length?`<section class="card g-byc"><h4>${geT('g.byc.h')}</h4>${byC.map(({c,r})=>`<button class="g-bar" data-gcamp="${c.id}"><span><b>${esc(geL(c.name))}</b><small>${c.id} · ${geT('g.type.'+(c.type||'voucher'))} · ${geT('g.byc.used',{n:f(r.redeemed),s:f(r.sent)})}</small></span><i><em style="width:${Math.max(2,r.sales/mx*100)}%"></em></i><b>${geJt(r.sales)}</b></button>`).join('')}</section>`:''}
   <div class="sec-h" id="g-camps"><div><h2 class="sec">${geT('g.camps.h')}</h2><p class="sec-sub">${geT('g.camps.sub')}</p></div></div>
   ${geCampList()}`;
   el.onclick=geLandClick;
-  if(!GE_HOL_CACHE)geHolidays().then(h=>{GE_HOL_CACHE=h;if(location.hash==='#marketing/growth')renderGrowth()})}
+  el.querySelectorAll('[data-gnew]').forEach(a=>a.onclick=()=>{GS.cj=null;GS.campPre=null});
+  if(!GE_HOL_CACHE)geHolidays().then(h=>{GE_HOL_CACHE=h;if(location.hash==='#marketing/growth/campaigns')renderGrowth()})}
 let GE_HOL_CACHE=null;
 function geIdeaCard(i){const L=geLang(),c=geCampOf(i.id),v=i.voucher,chs=i.ch.map(k=>`<span class="g-ch" title="${geT('g.ch.'+k)}">${ic(GE_CH.find(x=>x[0]===k)[1],14)}${geT('g.ch.'+k)}</span>`).join('');
   return`<section class="card g-idea">
@@ -110,155 +82,158 @@ function geIdeaCard(i){const L=geLang(),c=geCampOf(i.id),v=i.voucher,chs=i.ch.ma
     <h3>${esc(geL(i.title))}</h3><p>${esc(geL(i.why).replace('{n}',(i.segs||[]).reduce((a,k)=>a+geSegN(k),0).toLocaleString(L==='id'?'id-ID':'en-US')))}</p>
     <div class="g-im">${chs}${v?`<span class="g-v">${ic('tag',13)}${esc(geOffer(i,v,L))}</span>`:''}</div>
     <div class="g-if"><div class="g-exp"><b>${geRange(geExpOf(i))}</b><span>${geT(i.type==='post'?'g.exp.post':'g.exp')}</span></div>
-      ${c?`<a class="btn btn-o" href="#marketing/growth/campaign/${c.id}">${geT('g.running')}</a>`:`<button class="btn btn-o" data-gnot="${i.id}">${geT('g.not')}</button><a class="btn btn-p" href="#marketing/growth/idea/${i.id}">${geT('g.review')}</a>`}</div></section>`}
+      ${c?`<a class="btn btn-o" href="#marketing/growth/campaign/${c.id}">${geT('g.running')}</a>`:`<button class="btn btn-o" data-gnot="${i.id}">${geT('g.not')}</button><button class="btn btn-p" data-gidea="${i.id}">${geT(i.type==='post'?'g.idea.content':'g.idea.camp')}</button>`}</div></section>`}
+/* an idea opens the same journeys as everything else: a campaign idea → Create campaign, a post idea → Studio */
+function geIdeaGo(id){const i=geIdea(id);if(!i)return;track('idea_used',{id,type:i.type});
+  if(i.type==='post'){GS.cr=null;GS.studioPre={ch:'feed',fmt:'still',product:i.product,caption:geL(i.caption),from:{idea:i.id,name:geL(i.title)}};go('marketing/growth/studio/new');return}
+  GS.cj=null;GS.campPre={type:'voucher',segs:[...(i.segs||[])],voucher:i.voucher?{...i.voucher}:null,tpl:i.tpl,name:geL(i.title),idea:i.id,design:geAutoDesign(i,GE.settings.lang).key,from:{idea:i.id,name:geL(i.title)}};
+  if(!GS.designs.some(d=>d.key===GS.campPre.design))GS.designs.push(geAutoDesign(i,GE.settings.lang));
+  go('marketing/growth/campaigns/new')}
 function geLandClick(e){const b=e.target.closest('button');if(!b)return;const D=b.dataset;
   if('gset' in D)geSettings();
-  if('gseg' in D)geSegSheet();
-  if('gcal' in D)document.getElementById('g-cal').scrollIntoView({behavior:'smooth'});
-  if('gcamps' in D)document.getElementById('g-camps').scrollIntoView({behavior:'smooth'});
   if(D.lang)geSetLang(D.lang);
+  if(D.gidea)geIdeaGo(D.gidea);
   if(D.gnot){e.stopPropagation();if(popFor===b){closePop();return}popFor=b;
     pop.innerHTML=`<h6>${geT('g.not.h')}</h6>${['rel','did','later'].map(k=>`<button class="opt" data-why="${k}">${geT('g.not.'+k)}</button>`).join('')}`;
     pop.querySelectorAll('[data-why]').forEach(o=>o.onclick=()=>{closePop();GE.dismissed[D.gnot]=o.dataset.why;track('idea_dismissed',{reason:o.dataset.why});toast(geT('g.not.done'));renderGrowth()});placePop(b,true)}
   if(D.gcamp)go('marketing/growth/campaign/'+D.gcamp)}
-/* v1's segments: shoppers keyed by phone number, online and offline merged */
-function geSegSheet(){modal.classList.add('nw');
-  modal.innerHTML=`<div class="mh"><h3>${geT('g.seg.h')}</h3><button class="ib" data-mclose aria-label="Close">${ic('x',18)}</button></div>
-  <div class="mb"><p class="vf-lead">${geT('g.seg.sub')}</p><div class="tbl-wrap"><table class="cp-tbl"><thead><tr><th>${geT('g.seg.n')}</th><th>${geT('g.seg.rule')}</th><th class="r">${geT('g.ch.on')}</th><th class="r">${geT('g.ch.off')}</th></tr></thead>
-  <tbody>${GE_SEG.map(s=>`<tr><td><b>${esc(geL(s.n))}</b></td><td>${esc(geL(s.rule))}</td><td class="r">${geSegN(s.k,'on').toLocaleString()}</td><td class="r">${geSegN(s.k,'off').toLocaleString()}</td></tr>`).join('')}</tbody></table></div>
-  <p class="d-sub">${geT('g.seg.priv')}</p></div><div class="mf"><button class="btn btn-p" data-mclose>${geT('g.ok')}</button></div>`;mscrim.classList.add('open')}
 
-/* ===== C4 campaigns list ===== */
+/* ===== Campaign list ===== */
 function geCampList(){const groups=[['running',GE.camps.filter(c=>c.st==='running')],['scheduled',GE.camps.filter(c=>c.st==='scheduled')],['ended',GE.camps.filter(c=>c.st==='ended')]];
-  if(!GE.camps.length)return`<section class="card w-empty"><span class="qic">${ic('chart',22,1.6)}</span><div><b>${geT('g.camps.none')}</b><span>${geT('g.camps.none.sub')}</span></div></section>`;
-  return`<section class="card"><div class="tbl-wrap"><table class="cp-tbl g-ct"><thead><tr><th>${geT('g.c.name')}</th><th>${geT('g.c.status')}</th><th>${geT('g.c.ch')}</th><th>${geT('g.c.start')}</th><th class="r">${geT('g.c.sales')}</th><th class="r">${geT('g.c.extra')}</th><th></th></tr></thead>
-  <tbody>${groups.flatMap(([k,cs])=>cs.map(c=>{const r=geRes(c);return`<tr><td><b>${esc(geL(c.name))}</b><small>${c.id}</small></td><td><span class="st ${k==='running'?'ok':k==='scheduled'?'pu':'gr'} sm">${geT('g.st.'+k)}</span></td><td>${c.ch.map(x=>geT('g.ch.'+x)).join(', ')}</td><td>${geFdate(c.start)}</td><td class="r">${geJt(r.sales)}</td><td class="r">${geJt(r.extra)}</td><td class="r"><button class="btn btn-o" data-gcamp="${c.id}">${geT('g.c.open')}</button></td></tr>`})).join('')}</tbody></table></div></section>`}
+  if(!GE.camps.length)return`<section class="card w-empty"><span class="qic">${ic('chart',22,1.6)}</span><div><b>${geT('g.camps.none')}</b><span>${geT('g.camps.none.sub')}</span></div><a class="btn btn-p" href="#marketing/growth/campaigns/new">${geT('cj.new')}</a></section>`;
+  return`<section class="card"><div class="tbl-wrap"><table class="cp-tbl g-ct"><thead><tr><th>${geT('g.c.name')}</th><th>${geT('g.c.status')}</th><th>${geT('g.c.type')}</th><th>${geT('g.c.ch')}</th><th>${geT('g.c.start')}</th><th class="r">${geT('g.c.sent')}</th><th class="r">${geT('g.c.used')}</th><th class="r">${geT('g.c.sales')}</th><th></th></tr></thead>
+  <tbody>${groups.flatMap(([k,cs])=>cs.map(c=>{const r=geRes(c);return`<tr><td><b>${esc(geL(c.name))}</b><small>${c.id}</small></td><td><span class="st ${k==='running'?'ok':k==='scheduled'?'pu':'gr'} sm">${geT('g.st.'+k)}</span></td><td>${geT('g.type.'+(c.type||'voucher'))}</td><td>${c.ch.map(x=>geT('g.ch.'+x)).join(', ')}</td><td>${geFdate(c.start)}</td><td class="r">${r.sent.toLocaleString()}</td><td class="r">${r.redeemed.toLocaleString()}</td><td class="r">${geJt(r.sales)}</td><td class="r"><button class="btn btn-o" data-gcamp="${c.id}">${geT('g.c.open')}</button></td></tr>`})).join('')}</tbody></table></div></section>`}
 
-/* ===== C2 + C3: idea detail, full screen, 3 steps ===== */
-GX.idea=g=>{geInit();const i=geIdea(g.id);
-  if(!i)return{title:geT('gro.idea.h'),html:`<div class="gx-in"><section class="card w-empty"><span class="qic">${ic('bulb',22,1.6)}</span><div><b>${geT('g.idea.gone')}</b><span>${geT('g.idea.gone.sub')}</span></div><a class="btn btn-p" href="#marketing/growth">${geT('gro.h')}</a></section></div>`};
-  const run=geCampOf(i.id);if(run)return{title:geL(i.title),html:`<div class="gx-in"><section class="card w-empty"><span class="qic">${ic('rocket',22,1.6)}</span><div><b>${geT('g.idea.run')}</b><span>${geT('g.idea.run.sub',{id:run.id})}</span></div><a class="btn btn-p" href="#marketing/growth/campaign/${run.id}">${geT('g.running')}</a></section></div>`};
-  if(!GE.drafts[i.id])GE.drafts[i.id]={i,step:1,ch:[...i.ch],voucher:i.voucher?{...i.voucher}:null,tpl:i.tpl,lang:GE.settings.lang,hold:GE.settings.hold,design:null,ctx:'',ai:null,
-    cap:{ig:geL(i.caption)||'',tt:geL(i.caption)||''},send:'now',pm:'balance'};
-  const d=GE.drafts[i.id];d.i=i;if(!d.cap.ig)d.cap.ig=d.cap.tt=geCapDefault(d);
-  track('idea_viewed',{source:i.src[0],type:i.type});
-  return{title:geL(i.title),html:`<div class="gi" id="gi"></div>`,after:()=>giDraw(d)}};
-function geCapDefault(d){const i=d.i,L=d.lang,v=d.voucher;return L==='id'?`${i.title.id}. ${v?'Pakai '+geOffer(i,v,'id')+' sampai '+geUntil(v.days)+'. ':''}Info lengkap di link bio.`:`${i.title.en}. ${v?'Use '+geOffer(i,v,'en')+' until '+geUntil(v.days)+'. ':''}Details at the link in bio.`}
-function giDraw(d){const el=document.getElementById('gi');if(!el)return;const i=d.i,camp=i.type==='campaign',steps=[1,2,3];
-  el.innerHTML=`<div class="gi-steps">${steps.map(n=>`${n>1?'<span class="stp-l"></span>':''}<button class="stp${d.step===n?' on':d.step>n?' done':''}" data-gstep="${n}"><i>${d.step>n?ic('check',11,2.6):n}</i><span>${geT('g.s'+n)}</span></button>`).join('')}</div>
-  <div class="gi-grid"><div class="gi-main">${d.step===1?giReview(d):d.step===2?giAdjust(d):giExecute(d)}</div><aside class="gi-side" id="gi-side">${giSide(d)}</aside></div>
-  <div class="gi-foot">${d.step>1?`<button class="btn btn-o" data-gstep="${d.step-1}">${geT('g.back')}</button>`:'<span></span>'}
-    ${d.step<3?`<button class="btn btn-p" data-gstep="${d.step+1}">${d.step===1?geT('g.next.adjust'):geT('g.next.exec')}</button>`:`<button class="btn btn-p" id="gi-go">${ic(camp?'rocket':'export',15)}${camp?geT('g.exec'):geT('g.kit')}</button>`}</div>`;
-  el.onclick=e=>giClick(e,d);el.oninput=e=>giInput(e,d);el.onchange=e=>giInput(e,d,true);
-  const go=document.getElementById('gi-go');if(go)go.onclick=()=>geExecute(d)}
-/* step 1 · Review: why this idea, the data behind it, audience, channels */
-function giReview(d){const i=d.i,L=geLang(),a=geAudience(i,d.hold),f=n=>n.toLocaleString(L==='id'?'id-ID':'en-US');
-  const data=[];
-  if(i.src.includes('date')){const dt=i.date?new Date(i.date+'T00:00:00'):null;if(dt)data.push([ic('calendar',15),geT('g.d.date',{d:geFdate(dt),n:Math.ceil((dt-geNow())/DAY)}),null])}
-  if(i.cmp){const c=CP.tracked.find(x=>x.h===i.cmp)||cpMake(i.cmp),act=c.f.activity[i.act];data.push([ic('eye',15),`${esc(c.f.name)}: ${esc(geL({id:act[2],en:act[3]}))} · ${cpShort(cpDay(act[0]))}`,'#marketing/competitors',i.cmp])}
-  if(i.segs)i.segs.forEach(k=>{const s=geSeg(k);data.push([ic('user',15),`${esc(geL(s.n))}: ${f(geSegN(k))} · ${esc(geL(s.rule))}`,null])});
-  if(i.past){const p=GE.camps.find(c=>c.id===i.past);if(p)data.push([ic('chart',15),geT('g.d.past',{name:esc(geL(p.name)),x:geJt(geRes(p).extra)}),'#marketing/growth/campaign/'+p.id])}
-  if(i.src.includes('store')&&!i.segs)data.push([ic('cart',15),geT('g.d.orders'),null]);
-  return`<section class="card gi-why"><div class="g-ih"><span class="st ${i.type==='post'?'gr':'pu'} sm">${geT('g.type.'+i.type)}</span>${i.src.map(s=>`<span class="g-src g-src-${s}">${geT('g.src.'+s)}</span>`).join('')}</div>
-    <h2>${esc(geL(i.title))}</h2><p>${esc(geL(i.why).replace('{n}',f(a.n)))}</p>
-    <h4>${geT('g.r.data')}</h4><ul class="gi-data">${data.map(([ico,t,href,h])=>`<li>${ico}<span>${t}</span>${href?`<a class="lnk" href="${href}" ${h?`data-gcmp="${esc(h)}"`:''}>${geT('g.r.see')}</a>`:''}</li>`).join('')}</ul></section>
-  ${i.type==='campaign'?`<section class="card"><h4>${geT('g.r.aud')}</h4>
-    <div class="gi-aud"><div><b>${f(a.n)}</b><span>${geT('g.r.shoppers')}</span><small>${geT('g.r.split',{on:f(a.on),off:f(a.off)})}</small></div>
-      <ul><li><span>${geT('g.r.opt')}</span><b>−${f(a.opt)}</b></li><li><span>${geT('g.r.busy',{n:GE.settings.cap})}</span><b>−${f(a.busy)}</b></li><li><span>${geT('g.r.hold',{n:d.hold})}</span><b>−${f(a.hold)}</b></li><li class="t"><span>${geT('g.r.send')}</span><b>${f(a.send)}</b></li></ul></div></section>`
-  :`<section class="card"><h4>${geT('g.r.who')}</h4><p class="d-sub">${geT('g.r.who.sub')}</p></section>`}
-  <section class="card"><h4>${geT('g.r.ch')}</h4><ul class="gi-chs">${d.ch.map(k=>`<li>${ic(GE_CH.find(x=>x[0]===k)[1],15)}<b>${geT('g.ch.'+k)}</b><span>${geT('g.ch.'+k+'.what')}</span></li>`).join('')}</ul></section>`}
-/* step 2 · Adjust */
-function giAdjust(d){const i=d.i,camp=i.type==='campaign',v=d.voucher,L=geLang(),sd=geDesignOf(d),mine=GS.designs.filter(s=>!s.auto);
-  const left=limitLeft('ownContextPerWeek'),cap=limitCap('ownContextPerWeek');
-  return`<section class="card"><h4>${geT('g.a.ch')}</h4><div class="gi-tog">${GE_CH.filter(([k])=>camp||k==='ig'||k==='tt').map(([k,ico])=>`<label class="gi-t${d.ch.includes(k)?' on':''}"><input type="checkbox" data-gch="${k}" ${d.ch.includes(k)?'checked':''}>${ic(ico,15)}<span><b>${geT('g.ch.'+k)}</b><small>${geT('g.ch.'+k+'.what')}</small></span></label>`).join('')}</div></section>
-  ${camp?`<section class="card"><div class="gi-h"><h4>${geT('g.a.v')}</h4><label class="st-chk"><input type="checkbox" data-gvon ${v?'checked':''}> ${geT('g.a.v.on')}</label></div>
-    ${v?`<div class="gi-vf"><div class="fld"><label>${geT('g.a.v.kind')}</label><div class="seg">${['pct','amt'].map(k=>`<button class="${v.kind===k?'on':''}" data-gvk="${k}">${k==='pct'?'%':'Rp'}</button>`).join('')}</div></div>
-      <div class="fld"><label for="gv-v">${geT('g.a.v.v')}</label><input id="gv-v" type="number" min="1" data-gv="v" value="${v.v}"></div>
-      ${v.kind==='pct'?`<div class="fld"><label for="gv-max">${geT('g.a.v.max')}</label><input id="gv-max" type="number" min="0" step="1000" data-gv="max" value="${v.max}"></div>`:''}
-      <div class="fld"><label for="gv-min">${geT('g.a.v.min')}</label><input id="gv-min" type="number" min="0" step="10000" data-gv="min" value="${v.min}"></div>
-      <div class="fld"><label for="gv-days">${geT('g.a.v.days')}</label><input id="gv-days" type="number" min="1" max="60" data-gv="days" value="${v.days}"></div>
-      <div class="fld"><label for="gv-q">${geT('g.a.v.q')}</label><input id="gv-q" type="number" min="1" data-gv="quota" value="${v.quota}"></div></div>
-      <p class="d-sub">${ic('info',13)} ${geT('g.a.v.who')}</p>`:''}</section>`:''}
-  <section class="card"><h4>${geT('g.a.img')}</h4><div class="gi-img"><img src="${geImg(sd,360).toDataURL('image/jpeg',.8)}" alt="${esc(sd.v.h)}"><div>
-      <p>${sd.auto?geT('g.a.img.auto'):geT('g.a.img.saved',{date:geFdate(sd.at)})}</p>
-      <div class="gi-imgb"><button class="btn btn-o" data-gstudio="new">${ic('studio',15)}${geT('g.a.img.make')}</button><button class="btn btn-o" data-gstudio="edit">${geT('g.a.img.edit')}</button></div></div></div>
-    ${mine.length?`<p class="d-sub">${geT('g.a.img.pick')}</p><div class="gi-pick">${mine.slice(0,6).map(s=>`<button class="${s.key===sd.key?'on':''}" data-gdes="${esc(s.key)}"><img src="${s.thumb||geImg(s,160).toDataURL('image/jpeg',.7)}" alt="${esc(s.v.h)}"></button>`).join('')}</div>`:''}</section>
-  ${d.ch.some(k=>k==='ig'||k==='tt')?`<section class="card"><h4>${geT('g.a.cap')}</h4>${['ig','tt'].filter(k=>d.ch.includes(k)).map(k=>`<div class="fld"><label for="gc-${k}">${geT('g.ch.'+k)}${d.ai?' '+aiTag():''}</label><textarea id="gc-${k}" rows="3" data-gcap="${k}">${esc(d.cap[k])}</textarea></div>`).join('')}</section>`:''}
-  ${camp&&d.ch.includes('wa')?`<section class="card"><div class="gi-h"><h4>${geT('g.a.wa')}</h4>${geLangSegX(d.lang)}</div>
-    <div class="fld"><label for="g-tpl">${geT('g.a.tpl')}</label><select id="g-tpl" data-gtpl>${i.tpls.map(t=>`<option value="${t}" ${d.tpl===t?'selected':''}>${geT('tpl.'+t)} · ${geT('g.a.ok')}</option>`).join('')}</select></div>
-    <p class="d-sub">${ic('lock',13)} ${geT('g.a.locked')}</p></section>`:''}
-  ${camp?`<section class="card"><h4>${geT('g.a.ctx')}</h4><p class="d-sub">${geT('g.a.ctx.sub')}</p><div class="gi-ctx"><textarea id="g-ctx" rows="2" placeholder="${geT('g.a.ctx.ph')}">${esc(d.ctx)}</textarea><button class="btn btn-o" data-gctx ${cap?'':'disabled'}>${ic('sparkle',15)}${geT('g.a.ctx.go')}</button></div>
-    <p class="d-sub">${cap?geT('g.a.ctx.left',{n:left,cap}):geT('g.a.ctx.none')}</p>${d.ai?`<p class="gi-tweak">${aiTag()} ${esc(d.ai.tweak)}</p>`:''}</section>
-  <section class="card"><div class="gi-h"><h4>${geT('g.a.hold')}</h4><button class="lnk" data-ghold title="${esc(geT('g.a.hold.tip'))}">${ic('info',13)} ${geT('g.a.hold.why')}</button></div>
-    <div class="gi-hold"><input type="range" min="0" max="30" step="5" value="${d.hold}" data-ghr aria-label="${geT('g.a.hold')}"><b id="g-holdv">${d.hold}%</b></div><p class="d-sub" id="g-holdtip" hidden>${geT('g.a.hold.tip')}</p></section>`:''}`}
-const geLangSegX=l=>`<div class="seg" role="group" aria-label="WhatsApp language">${['id','en'].map(x=>`<button class="${l===x?'on':''}" data-gwl="${x}">${x.toUpperCase()}</button>`).join('')}</div>`;
-/* step 3 · Execute: summary, cost, payment */
-function giExecute(d){const i=d.i,camp=i.type==='campaign',a=geAudience(i,d.hold),v=d.voucher,f=n=>n.toLocaleString(geLang()==='id'?'id-ID':'en-US');
-  const wa=d.ch.includes('wa')&&camp?a.send:0,cost=wa*GE_LIMITS.waCost,vcap=v?v.quota*(v.kind==='pct'?v.max:v.v):0;
-  return`<section class="card"><h4>${geT('g.e.sum')}</h4><ul class="gi-sum">${d.ch.map(k=>`<li>${ic(GE_CH.find(x=>x[0]===k)[1],15)}<b>${geT('g.ch.'+k)}</b><span>${k==='wa'?geT('g.e.wa',{n:f(wa)}):k==='ig'?geT('g.e.ig'):k==='tt'?geT('g.e.tt'):geT('g.e.off')}</span></li>`).join('')}</ul></section>
-  ${camp?`<section class="card"><h4>${geT('g.e.when')}</h4><div class="seg gi-when">${['now','tmr'].map(k=>`<button class="${d.send===k?'on':''}" data-gsend="${k}">${geT('g.e.when.'+k)}</button>`).join('')}</div>
-    <p class="d-sub">${geT('g.e.quiet')}</p></section>
-  <section class="card"><h4>${geT('g.e.cost')}</h4><div class="gi-cost">
-    <div><span>${geT('g.e.cost.wa',{n:f(wa),p:rp(GE_LIMITS.waCost)})}</span><b>${rp(cost)}</b></div>
-    ${v?`<div><span>${geT('g.e.cost.v',{q:f(v.quota)})}</span><b>${geT('g.e.upto',{x:rp(vcap)})}</b></div>`:''}
-    <div><span>${geT('g.e.fee',{p:String(GE_FEE).replace('.',geLang()==='id'?',':'.')})}</span><b>${geT('g.e.fee.v')}</b></div>
-    <div class="t"><span>${geT('g.e.now')}</span><b>${rp(cost)}</b></div></div>
-    ${cost?`<div class="fld"><label>${geT('ex.method')}</label><div class="st-pm"><label class="st-chk"><input type="radio" name="gpm" value="balance" ${d.pm==='balance'?'checked':''}> ${geT('ex.balance',{bal:rp(GS.balance)})}${GS.balance<cost?` <span class="cp-err">${geT('pay.low')}</span>`:''}</label><label class="st-chk"><input type="radio" name="gpm" value="link" ${d.pm==='link'?'checked':''}> ${geT('ex.other')}</label></div></div>`:''}</section>`
-  :`<section class="card"><h4>${geT('g.e.kit')}</h4><p class="d-sub">${geT('g.e.kit.sub')}</p></section>`}`}
-/* the live preview on the right: image, WhatsApp bubble, voucher */
-function giSide(d){const i=d.i,sd=geDesignOf(d),L=d.lang,v=d.voucher,img=geImg(sd,360).toDataURL('image/jpeg',.8);
-  const wa=i.type==='campaign'&&d.ch.includes('wa'),tp=GE_WA[d.tpl]||{},name=GE_SHOPPERS[0].n;
-  const body=wa?String(tp[L]||'').replace(/\{\{(\d)\}\}/g,(m,n)=>`<mark>${esc([name,GE_OWNER.store,geOffer(i,v,L)||geL(i.title),v?geUntil(v.days):geUntil(7),'flik.id/v/ARU'+GE.seq][n-1])}</mark>`):'';
-  return`<div class="gi-sh">${geT('g.side.h')}</div>
-  ${wa?`<div class="ge-wa"><div class="gi-sender">${esc(GE_OWNER.store)} via FLIK · ${geT('tpl.'+d.tpl)}</div><div class="ge-bub"><div class="ge-bimg"><img src="${img}" alt="${geT('g.side.img')}"></div><p>${body}</p><small class="ge-bf">${GE_WA_FOOT[L]}</small><div class="ge-bbtn">${GE_WA_BTN[L].map(b=>`<span>${b}</span>`).join('')}</div></div></div>`
-    :`<div class="gi-post"><img src="${img}" alt="${geT('g.side.img')}"><p>${esc(d.cap.ig||d.cap.tt)}</p></div>`}
-  ${v&&i.type==='campaign'?`<div class="gi-vcard">${ic('tag',15)}<div><b>${esc(geCap(geOffer(i,v,geLang())))}</b><span>${geT('g.side.v',{min:rp(v.min),until:geUntil(v.days)})}</span></div></div>`:''}
-  ${d.ch.includes('off')&&i.type==='campaign'?`<div class="gi-vcard">${ic('qr',15)}<div><b>${geT('g.side.poster')}</b><span>${geT('g.side.poster.sub')}</span></div></div>`:''}`}
-function giSideOnly(d){const s=document.getElementById('gi-side');if(s)s.innerHTML=giSide(d)}
-function giClick(e,d){const b=e.target.closest('button,a');if(!b)return;const D=b.dataset;
-  if(D.gcmp){CP.sel=D.gcmp;CP.tab='activity'}
-  if(D.gstep){d.step=+D.gstep;giDraw(d);document.getElementById('gx-body').scrollTop=0;if(d.step===3)track('idea_adjusted',{field:'done'})}
-  if(D.gvk){d.voucher.kind=D.gvk;if(D.gvk==='amt'){d.voucher.v=Math.max(5000,d.voucher.max||10000)}else{d.voucher.v=10}track('idea_adjusted',{field:'voucher_type'});giDraw(d)}
-  if(D.gwl){d.lang=D.gwl;track('idea_adjusted',{field:'language'});giDraw(d)}
-  if(D.gdes){d.design=D.gdes;track('idea_adjusted',{field:'image'});giDraw(d)}
-  if(D.gsend){d.send=D.gsend;giDraw(d)}
-  if('ghold' in D){const t=document.getElementById('g-holdtip');if(t)t.hidden=!t.hidden}
-  if(D.gstudio){GS.studioReturn={idea:d.i.id};track('idea_adjusted',{field:'studio'});
-    if(D.gstudio==='edit')stOpenSaved(geDesignOf(d));else{STU.design=null;STU.product={id:d.i.product};STU.cat='fashion';STU.vibe='';STU.phase='idle';go('studio/new')}}
-  if('gctx' in D){const t=document.getElementById('g-ctx').value.trim();if(!t){toast(geT('g.a.ctx.empty'));return}d.ctx=t;
-    const l=useLimit('ownContextPerWeek');if(!l.ok){toast(l.message);giDraw(d);return}
-    b.disabled=true;b.innerHTML=`<span class="ai-dots"><i></i><i></i><i></i></span>${geT('g.a.ctx.busy')}`;
-    mockLLM('context',{text:t,lang:geLang()==='en'?'en':'id',until:d.voucher?geUntil(d.voucher.days):''}).then(r=>{if(r.ai){d.ai=r;d.cap.ig=d.cap.tt=r.caption}track('idea_adjusted',{field:'own_context'});giDraw(d)})}}
-function giInput(e,d,commit){const t=e.target,D=t.dataset;
-  if(D.gch){const k=D.gch;d.ch=t.checked?[...new Set([...d.ch,k])]:d.ch.filter(x=>x!==k);if(!d.ch.length){d.ch=[k];t.checked=true;toast(geT('g.a.ch.one'))}track('idea_adjusted',{field:'channels'});giDraw(d);return}
-  if('gvon' in D){d.voucher=t.checked?{...(d.i.voucher||{kind:'pct',v:10,max:10000,min:150000,days:7,quota:100})}:null;track('idea_adjusted',{field:'voucher'});giDraw(d);return}
-  if(D.gv){d.voucher[D.gv]=Math.max(0,+t.value||0);if(commit)track('idea_adjusted',{field:'voucher_'+D.gv});giSideOnly(d);return}
-  if(D.gcap){d.cap[D.gcap]=t.value;giSideOnly(d);return}
-  if('gtpl' in D){d.tpl=t.value;track('idea_adjusted',{field:'template'});giSideOnly(d);return}
-  if('ghr' in D){d.hold=+t.value;document.getElementById('g-holdv').textContent=d.hold+'%';if(commit)track('idea_adjusted',{field:'holdout'});return}
-  if(t.name==='gpm'){d.pm=t.value}
-  if(t.id==='g-ctx')d.ctx=t.value}
-
-/* ===== C3 execute ===== */
-function geExecute(d){const i=d.i,camp=i.type==='campaign',a=geAudience(i,d.hold),wa=d.ch.includes('wa')&&camp?a.send:0,cost=wa*GE_LIMITS.waCost,label=geT('g.e.ledger',{name:geL(i.title)});
-  const pay=!cost?Promise.resolve({}):d.pm==='balance'?ledgerDebit(cost,label):paymentLinkSheet(cost,label);
-  pay.then(r=>{const sd=geDesignOf(d);
-    if(!camp){geKit(d,sd);track('post_kit_downloaded',{channels:d.ch.join(',')});toast(geT('g.kit.done'));GE.dismissed[i.id]='posted';go('marketing/growth');return}
-    const id='C-'+(++GE.seq),c={id,idea:i.id,name:i.title,tpl:d.tpl,lang:d.lang,segs:i.segs,ch:[...d.ch],voucher:d.voucher?{...d.voucher}:null,hold:d.hold,conv:i.conv||.06,
-      start:d.send==='tmr'?new Date(geNow().getTime()+DAY):geNow(),st:d.send==='tmr'?'scheduled':'running',n:wa,aud:a,cost,code:'ARU'+id.slice(2),claims:0,cashier:0,paid:r.ledgerTxnId?'balance':r.paymentLinkId?'payment_link':'none',design:sd.key};
+/* ===== Create campaign: channel → shoppers → (pick shoppers) → voucher or cashback → rules → review → submit ===== */
+const CJ_ALL=['new','repeat','vip','risk','lapsed'];
+function cjNew(pre={}){return{step:pre.design&&pre.fromStudio?'who':'ch',ch:'wa',segs:pre.segs||[],sel:new Set(pre.sel||[]),type:pre.type||'voucher',
+  voucher:pre.voucher||{kind:'pct',v:10,max:20000,min:100000,days:7,quota:200},cb:pre.cb||{v:20000,min:100000,days:14,quota:150},
+  tpl:pre.tpl||'promo_discount',lang:GE.settings.lang,design:pre.design||null,name:pre.name||'',send:'now',pm:'balance',from:pre.from||null,idea:pre.idea||null,q:'',fseg:''}}
+const cjSteps=j=>['ch','who',...(j.segs.includes('sel')?['pick']:[]),'type','rules','review'];
+function cjAud(j){if(j.segs.includes('sel')){const n=j.sel.size;return{n,opt:0,busy:0,send:n}}
+  const ks=j.segs.includes('all')?[...CJ_ALL]:j.segs,n=ks.reduce((a,k)=>a+geSegN(k),0),opt=Math.round(n*.03),busy=GE.camps.some(c=>c.st==='running'&&c.ch.includes('wa'))?Math.round(n*.06):0;
+  return{n,opt,busy,send:Math.max(0,n-opt-busy)}}
+const cjSegName=k=>k==='all'?geT('cj.all'):k==='sel'?geT('cj.sel'):geL(geSeg(k).n);
+/* the offer, in the shopper's language, for the WhatsApp template */
+function cjOffer(j,L=j.lang){const v=j.voucher,c=j.cb,R=n=>rp(n);
+  if(j.type==='cashback')return L==='id'?`cashback ${R(c.v)} untuk pesanan pertama min. ${R(c.min)}`:`${R(c.v)} cashback on your first order of ${R(c.min)} or more`;
+  return v.kind==='pct'?(L==='id'?`diskon ${v.v}% (maks ${R(v.max)}), min. belanja ${R(v.min)}`:`${v.v}% off (up to ${R(v.max)}) on orders of ${R(v.min)} or more`)
+    :(L==='id'?`potongan ${R(v.v)}, min. belanja ${R(v.min)}`:`${R(v.v)} off on orders of ${R(v.min)} or more`)}
+const cjDays=j=>j.type==='cashback'?j.cb.days:j.voucher.days;
+GX.camp=g=>{geInit();cpInit();if(!GS.cj){GS.cj=cjNew(GS.campPre||{});GS.campPre=null;track('campaign_create_started',{from:GS.cj.from?Object.keys(GS.cj.from)[0]:'scratch'})}
+  return{title:geT('cj.new'),html:`<div class="gi" id="cj"></div>`,after:cjDraw}};
+function cjDraw(){const el=document.getElementById('cj');if(!el||!GS.cj)return;const j=GS.cj,st=cjSteps(j);if(!st.includes(j.step))j.step='who';const k=st.indexOf(j.step);
+  el.innerHTML=`${j.from?`<p class="cj-from">${ic('info',14)}${geT('cj.from',{n:esc(j.from.name||cjSegName(j.from.seg||'all'))})}</p>`:''}
+  <div class="gi-steps">${st.map((s,i)=>`${i?'<span class="stp-l"></span>':''}<button class="stp${i===k?' on':i<k?' done':''}" data-cjstep="${s}" ${i>k?'disabled':''}><i>${i<k?ic('check',11,2.6):i+1}</i><span>${geT('cj.s.'+s)}</span></button>`).join('')}</div>
+  <div class="gi-grid"><div class="gi-main">${cjBody(j)}</div><aside class="gi-side" id="cj-side">${cjSide(j)}</aside></div>
+  <div class="gi-foot">${k?`<button class="btn btn-o" data-cjstep="${st[k-1]}">${geT('g.back')}</button>`:'<span></span>'}
+    ${j.step==='review'?`<button class="btn btn-p" id="cj-go">${ic('rocket',15)}${geT(j.send==='now'?'cj.submit':'cj.schedule')}</button>`:`<button class="btn btn-p" data-cjnext>${geT('cj.next')}</button>`}</div>`;
+  el.onclick=cjClick;el.oninput=e=>cjInput(e,false);el.onchange=e=>cjInput(e,true)}
+function cjBody(j){const f=n=>Math.round(n).toLocaleString(geLang()==='id'?'id-ID':'en-US');
+  if(j.step==='ch')return`<section class="card"><h4>${geT('cj.ch.h')}</h4><div class="gi-tog cj-ch">
+    <label class="gi-t on"><input type="radio" name="cjch" checked><span>${ic('chat2',18)}</span><div><b>WhatsApp</b><small>${geT('cj.ch.wa',{c:rp(GE_LIMITS.waCost)})}</small></div></label>
+    <label class="gi-t cj-off" aria-disabled="true"><input type="radio" name="cjch" disabled><span>${ic('mail',18)}</span><div><b>Email <span class="st gr sm">${geT('cj.soon')}</span></b><small>${geT('cj.ch.email')}</small></div></label></div></section>`;
+  if(j.step==='who'){const all=[...CJ_ALL,'checkout'],tot=CJ_ALL.reduce((a,k)=>a+geSegN(k),0);
+    return`<section class="card"><h4>${geT('cj.who.h')}</h4><p class="d-sub">${geT('cj.who.sub')}</p><div class="cj-segs">
+    ${[['all',tot,geT('cj.all.rule')],...all.map(k=>[k,geSegN(k),geL(geSeg(k).rule)]),['sel',GE_SHOPLIST.length,geT('cj.sel.rule')]].map(([k,n,r])=>`<label class="gi-t${j.segs.includes(k)?' on':''}"><input type="checkbox" data-cjseg="${k}" ${j.segs.includes(k)?'checked':''}><div><b>${esc(cjSegName(k))}</b><small>${esc(r)}</small></div><em>${f(n)}</em></label>`).join('')}</div></section>`}
+  if(j.step==='pick'){const q=j.q.toLowerCase(),list=GE_SHOPLIST.filter(s=>(!j.fseg||s.seg===j.fseg)&&(!q||s.n.toLowerCase().includes(q)||s.phone.includes(q)));
+    return`<section class="card"><div class="gi-h"><h4>${geT('cj.pick.h')}</h4><b class="cj-cnt">${geT('cj.pick.n',{n:j.sel.size})}</b></div>
+    <div class="cj-pf"><input id="cj-q" placeholder="${geT('cj.pick.q')}" value="${esc(j.q)}" autocomplete="off"><select id="cj-fseg"><option value="">${geT('cj.pick.allseg')}</option>${CJ_ALL.map(k=>`<option value="${k}" ${j.fseg===k?'selected':''}>${esc(geL(geSeg(k).n))}</option>`).join('')}</select><button class="btn btn-o" data-cjall>${geT('cj.pick.all')}</button></div>
+    <div class="cj-list" id="cj-list">${cjList(list,j)}</div><p class="d-sub">${geT('cj.pick.note')}</p></section>`}
+  if(j.step==='type')return`<section class="card"><h4>${geT('cj.type.h')}</h4><div class="gi-tog">
+    ${['voucher','cashback'].map(k=>`<label class="gi-t${j.type===k?' on':''}"><input type="radio" name="cjtype" value="${k}" ${j.type===k?'checked':''}><span>${ic(k==='voucher'?'tag':'wallet',18)}</span><div><b>${geT('g.type.'+k)}</b><small>${geT('cj.type.'+k)}</small></div></label>`).join('')}</div>
+    <div class="cj-ex">${cjExample(j)}</div></section>`;
+  if(j.step==='rules'){const v=j.voucher,c=j.cb,mine=GS.designs.filter(s=>s.thumb||s.merchant).slice(0,8),tpls=Object.keys(GE_WA).filter(k=>GE_WA[k].cat==='marketing');
+    return`<section class="card"><h4>${geT('cj.rules.h')}</h4>
+    <div class="fld"><label for="cj-name">${geT('cj.name')}</label><input id="cj-name" value="${esc(j.name)}" placeholder="${geT('cj.name.ph')}"></div>
+    ${j.type==='voucher'?`<div class="gi-vf">
+      <div class="fld"><label>${geT('g.v.kind')}</label><div class="seg">${['pct','amt'].map(x=>`<button class="${v.kind===x?'on':''}" data-cjvk="${x}">${x==='pct'?'%':'Rp'}</button>`).join('')}</div></div>
+      <div class="fld"><label for="cjv-v">${geT('g.v.value')}</label><input id="cjv-v" type="number" min="1" value="${v.v}" data-cjv="v"></div>
+      ${v.kind==='pct'?`<div class="fld"><label for="cjv-max">${geT('g.v.max')}</label><input id="cjv-max" type="number" min="0" step="1000" value="${v.max}" data-cjv="max"></div>`:''}
+      <div class="fld"><label for="cjv-min">${geT('g.v.min')}</label><input id="cjv-min" type="number" min="0" step="1000" value="${v.min}" data-cjv="min"></div>
+      <div class="fld"><label for="cjv-days">${geT('g.v.days')}</label><input id="cjv-days" type="number" min="1" value="${v.days}" data-cjv="days"></div>
+      <div class="fld"><label for="cjv-quota">${geT('g.v.quota')}</label><input id="cjv-quota" type="number" min="1" value="${v.quota}" data-cjv="quota"></div></div>`
+    :`<div class="gi-vf">
+      <div class="fld"><label for="cjc-v">${geT('cj.cb.v')}</label><input id="cjc-v" type="number" min="1000" step="1000" value="${c.v}" data-cjc="v"></div>
+      <div class="fld"><label for="cjc-min">${geT('g.v.min')}</label><input id="cjc-min" type="number" min="0" step="1000" value="${c.min}" data-cjc="min"></div>
+      <div class="fld"><label for="cjc-days">${geT('g.v.days')}</label><input id="cjc-days" type="number" min="1" value="${c.days}" data-cjc="days"></div>
+      <div class="fld"><label for="cjc-quota">${geT('g.v.quota')}</label><input id="cjc-quota" type="number" min="1" value="${c.quota}" data-cjc="quota"></div></div>
+      <p class="d-sub">${geT('cj.cb.rule')}</p>`}
+    </section>
+    <section class="card"><h4>${geT('cj.msg.h')}</h4>
+    <div class="gi-vf"><div class="fld"><label for="cj-tpl">${geT('g.tpl')}</label><select id="cj-tpl">${tpls.map(k=>`<option value="${k}" ${j.tpl===k?'selected':''}>${geT('tpl.'+k)}</option>`).join('')}</select></div>
+      <div class="fld"><label>${geT('g.lang')}</label>${geLangSegX(j.lang)}</div>
+      <div class="fld"><label>${geT('cj.when')}</label><div class="seg">${['now','tmr'].map(x=>`<button class="${j.send===x?'on':''}" data-cjsend="${x}">${geT('cj.when.'+x)}</button>`).join('')}</div></div></div>
+    <p class="d-sub">${geT('cj.tpl.note')}</p>
+    <div class="fld"><label>${geT('cj.img')}</label><div class="gi-pick"><button class="cj-noimg${j.design?'':' on'}" data-cjimg="">${geT('cj.img.none')}</button>${mine.map(s=>`<button class="${j.design===s.key?'on':''}" data-cjimg="${s.key}" title="${esc(s.v.h)}"><img src="${s.thumb||geImg(s,140).toDataURL('image/jpeg',.7)}" alt="${esc(s.v.h)}"></button>`).join('')}</div>
+      <button class="lnk" data-cjstudio>${ic('studio',14)}${geT('cj.img.new')}</button></div></section>`}
+  /* review */
+  const a=cjAud(j),cost=a.send*GE_LIMITS.waCost,lines=[[ic('chat2',15),geT('cj.r.ch'),'WhatsApp · '+geT('tpl.'+j.tpl)+' · '+j.lang.toUpperCase()],[ic('user',15),geT('cj.r.who'),j.segs.map(cjSegName).join(', ')+' · '+geT('cj.r.n',{n:f(a.send)})],
+    [ic(j.type==='voucher'?'tag':'wallet',15),geT('g.type.'+j.type),geCap(cjOffer(j,geLang()))],[ic('calendar',15),geT('cj.r.valid'),geT('cj.r.days',{n:cjDays(j),until:geUntil(cjDays(j))})+' · '+geT('cj.r.quota',{n:j.type==='voucher'?j.voucher.quota:j.cb.quota})],
+    [ic('clock',15),geT('cj.when'),geT('cj.when.'+j.send)]];
+  return`<section class="card"><h4>${esc(j.name||geT('cj.name.ph'))}</h4><ul class="gi-sum">${lines.map(([i,k,v])=>`<li>${i}<span>${k}</span><b>${esc(v)}</b></li>`).join('')}</ul></section>
+  <section class="card"><h4>${geT('cj.r.money')}</h4><div class="gi-cost"><div><span>${geT('cj.r.reach')}</span><b>${f(a.n)}</b></div>${a.opt?`<div><span>${geT('cj.r.opt')}</span><b>−${f(a.opt)}</b></div>`:''}${a.busy?`<div><span>${geT('cj.r.busy')}</span><b>−${f(a.busy)}</b></div>`:''}
+    <div><span>${geT('cj.r.msgs',{n:f(a.send),c:rp(GE_LIMITS.waCost)})}</span><b>${rp(cost)}</b></div><div class="t"><span>${geT('cj.r.now')}</span><b>${rp(cost)}</b></div></div>
+    <p class="d-sub">${geT('cj.r.later')}</p>
+    ${cost?`<div class="fld"><label>${geT('ex.method')}</label><div class="st-pm"><label class="st-chk"><input type="radio" name="cjpm" value="balance" ${j.pm==='balance'?'checked':''}> ${geT('ex.balance',{bal:rp(GS.balance)})}</label><label class="st-chk"><input type="radio" name="cjpm" value="link" ${j.pm==='link'?'checked':''}> ${geT('ex.other')}</label></div></div>`:''}</section>
+  <section class="card cj-ex">${cjExample(j)}</section>`}
+function cjList(list,j){return list.map(s=>`<label class="cj-sh"><input type="checkbox" data-cjsh="${s.id}" ${j.sel.has(s.id)?'checked':''}><b>${esc(s.n)}</b><span>${fphone(s.phone)}</span><span class="st gr sm">${esc(geL(geSeg(s.seg).n))}</span><small>${geT('cj.sh.v',{o:s.orders,d:s.last})}</small></label>`).join('')||`<p class="d-sub">${geT('cj.pick.none')}</p>`}
+/* what one order looks like, so the merchant sees what they receive */
+function cjExample(j){const p=Math.max(j.type==='cashback'?j.cb.min:j.voucher.min,150000),v=j.voucher,d=j.type==='cashback'?j.cb.v:v.kind==='pct'?Math.min(v.max||1e12,Math.round(p*v.v/100)):v.v,fee=Math.round(p*GE_FEE/100),pay=Math.round((p-(j.type==='voucher'?d:0))*.007);
+  const rows=j.type==='cashback'?[[geT('cj.e.price'),rp(p)],[geT('cj.e.pays'),rp(p)],[geT('cj.e.cb'),'−'+rp(d)],[geT('cj.e.fee',{p:String(GE_FEE).replace('.',geLang()==='id'?',':'.')}),'−'+rp(fee)],[geT('cj.e.pay'),'−'+rp(pay)]]
+    :[[geT('cj.e.price'),rp(p)],[geT('cj.e.disc'),'−'+rp(d)],[geT('cj.e.pays'),rp(p-d)],[geT('cj.e.fee',{p:String(GE_FEE).replace('.',geLang()==='id'?',':'.')}),'−'+rp(fee)],[geT('cj.e.pay'),'−'+rp(pay)]];
+  const get=p-d-fee-pay;
+  return`<h4>${geT('cj.e.h')}</h4><div class="gi-cost">${rows.map(([k,x])=>`<div><span>${k}</span><b>${x}</b></div>`).join('')}<div class="t"><span>${geT('cj.e.get')}</span><b>${rp(get)}</b></div></div><p class="d-sub">${geT(j.type==='cashback'?'cj.e.cb.note':'cj.e.v.note')}</p>`}
+function cjSide(j){const L=j.lang,tp=GE_WA[j.tpl]||{},sd=j.design?GS.designs.find(d=>d.key===j.design):null,img=sd?geImg(sd,360).toDataURL('image/jpeg',.8):null,a=cjAud(j);
+  const who=j.segs.includes('sel')?(GE_SHOPLIST.find(s=>j.sel.has(s.id))||GE_SHOPLIST[0]).n.split(' ')[0]:GE_SHOPPERS[0].n;
+  const body=String(tp[L]||'').replace(/\{\{(\d)\}\}/g,(m,n)=>`<mark>${esc([who,GE_OWNER.store,cjOffer(j),geUntil(cjDays(j)),'flik.id/v/ARU'+(GE.seq+1)][n-1])}</mark>`);
+  return`<div class="gi-sh">${geT('cj.side.h')}</div>
+  <div class="ge-wa"><div class="gi-sender">${esc(GE_OWNER.store)} via FLIK · ${geT('tpl.'+j.tpl)}</div><div class="ge-bub">${img?`<div class="ge-bimg"><img src="${img}" alt="${geT('g.side.img')}"></div>`:''}<p>${body}</p><small class="ge-bf">${GE_WA_FOOT[L]}</small><div class="ge-bbtn">${GE_WA_BTN[L].map(b=>`<span>${b}</span>`).join('')}</div></div></div>
+  <div class="gi-vcard">${ic(j.type==='voucher'?'tag':'wallet',15)}<div><b>${esc(geCap(cjOffer(j,geLang())))}</b><span>${geT('cj.side.v',{n:a.send.toLocaleString(),until:geUntil(cjDays(j))})}</span></div></div>
+  <p class="d-sub">${geT('cj.side.tpl')}</p>`}
+function cjSideOnly(){const s=document.getElementById('cj-side');if(s&&GS.cj)s.innerHTML=cjSide(GS.cj)}
+function cjNext(j){const st=cjSteps(j),k=st.indexOf(j.step);
+  if(j.step==='who'&&!j.segs.length){toast(geT('cj.need.who'));return}
+  if(j.step==='pick'&&!j.sel.size){toast(geT('cj.need.pick'));return}
+  if(j.step==='rules'){const v=j.type==='voucher'?j.voucher:j.cb;if(!(v.v>0)||!(v.days>0)||!(v.quota>0)||j.type==='voucher'&&v.kind==='pct'&&v.v>90){toast(geT('cj.need.rules'));return}
+    if(!j.name.trim())j.name=j.type==='voucher'?geCap(cjOffer(j,geLang()).split(',')[0]):geT('cj.cb.name',{v:rp(j.cb.v)})}
+  j.step=st[k+1];cjDraw();scrollTo(0,0)}
+function cjClick(e){const j=GS.cj,b=e.target.closest('button');if(!b||!j)return;const D=b.dataset;
+  if(D.cjstep){j.step=D.cjstep;cjDraw()}
+  if('cjnext' in D)cjNext(j);
+  if(D.cjvk){j.voucher.kind=D.cjvk;if(D.cjvk==='amt'&&j.voucher.v<1000)j.voucher.v=25000;if(D.cjvk==='pct'&&j.voucher.v>90)j.voucher.v=10;cjDraw()}
+  if(D.cjsend){j.send=D.cjsend;cjDraw()}
+  if(D.gwl){j.lang=D.gwl;cjDraw()}
+  if(D.cjimg!==undefined){j.design=D.cjimg||null;cjDraw()}
+  if('cjstudio' in D){GS.studioReturn={camp:true};GS.cr=null;GS.studioPre={ch:'wa',fmt:'still',from:{camp:true,name:j.name||geT('cj.new')}};go('marketing/growth/studio/new')}
+  if('cjall' in D){const q=j.q.toLowerCase();GE_SHOPLIST.filter(s=>(!j.fseg||s.seg===j.fseg)&&(!q||s.n.toLowerCase().includes(q))).forEach(s=>j.sel.add(s.id));cjDraw()}
+  if(b.id==='cj-go')cjSubmit(j)}
+function cjInput(e,commit){const j=GS.cj,t=e.target,D=t.dataset;if(!j)return;
+  if(D.cjseg&&commit){const k=D.cjseg;if(t.checked){if(k==='all'||k==='sel')j.segs=[k];else j.segs=[...j.segs.filter(x=>x!=='all'&&x!=='sel'),k]}else j.segs=j.segs.filter(x=>x!==k);cjDraw();return}
+  if(D.cjsh){t.checked?j.sel.add(D.cjsh):j.sel.delete(D.cjsh);const c=document.querySelector('.cj-cnt');if(c)c.textContent=geT('cj.pick.n',{n:j.sel.size});return}
+  if(t.id==='cj-q'||t.id==='cj-fseg'){if(t.id==='cj-q')j.q=t.value;else j.fseg=t.value;const q=j.q.toLowerCase();document.getElementById('cj-list').innerHTML=cjList(GE_SHOPLIST.filter(s=>(!j.fseg||s.seg===j.fseg)&&(!q||s.n.toLowerCase().includes(q)||s.phone.includes(q))),j);return}
+  if(t.name==='cjtype'&&commit){j.type=t.value;cjDraw();return}
+  if(t.name==='cjpm'){j.pm=t.value;return}
+  if(t.id==='cj-name'){j.name=t.value;return}
+  if(t.id==='cj-tpl'){j.tpl=t.value;cjSideOnly();return}
+  if(D.cjv){j.voucher[D.cjv]=Math.max(0,+t.value||0);cjSideOnly();if(commit)cjDraw();return}
+  if(D.cjc){j.cb[D.cjc]=Math.max(0,+t.value||0);if(D.cjc==='v')j.cb.v=Math.round(j.cb.v);cjSideOnly();if(commit)cjDraw()}}
+/* submit: pay the WhatsApp messages from the balance or a payment link, send through FLIK's approved template, open the results */
+function cjSubmit(j){const a=cjAud(j),cost=a.send*GE_LIMITS.waCost,label=geT('g.e.ledger',{name:j.name});
+  const pay=!cost?Promise.resolve({}):j.pm==='balance'?ledgerDebit(cost,label):paymentLinkSheet(cost,label);
+  pay.then(r=>{const id='C-'+(++GE.seq),start=j.send==='tmr'?new Date(geNow().getTime()+DAY):geNow(),v=j.type==='voucher'?{...j.voucher}:{kind:'amt',v:j.cb.v,max:j.cb.v,min:j.cb.min,days:j.cb.days,quota:j.cb.quota};
+    const c={id,idea:j.idea,name:{id:j.name,en:j.name},type:j.type,tpl:j.tpl,lang:j.lang,segs:[...j.segs],sel:[...j.sel],ch:['wa'],voucher:v,hold:0,conv:j.type==='cashback'?.045:.05,
+      start,st:j.send==='tmr'?'scheduled':'running',n:a.send,offer:{id:cjOffer(j,'id'),en:cjOffer(j,'en')},aud:{...a,hold:0},cost,code:'ARU'+id.slice(2),claims:0,cashier:0,paid:r.ledgerTxnId?'balance':r.paymentLinkId?'payment_link':'none',design:j.design,from:j.from};
     GE.camps.unshift(c);
-    if(wa&&c.st==='running'){const img=geImg(sd,540).toDataURL('image/jpeg',.82),off=geOffer(i,c.voucher,c.lang)||geL(i.title),until=c.voucher?geUntil(c.voucher.days,c.start):geUntil(7,c.start);
-      if(wa>5)GS.outbox.unshift({more:geT('g.e.more',{n:(wa-5).toLocaleString(geLang()==='id'?'id-ID':'en-US')})});
-      GE_SHOPPERS.slice(0,Math.min(5,wa)).forEach(s=>waSend(c.tpl,c.lang,[s.n,GE_OWNER.store,off,until,'flik.id/v/'+c.code],img,s.phone))}
-    geKit(d,sd,c);
-    track('campaign_executed',{channels:c.ch.join(','),pay:c.paid,holdout:c.hold});
-    toast(c.st==='scheduled'?geT('g.e.sched'):geT('g.e.done'));go('marketing/growth/campaign/'+id)}).catch(()=>{})}
-/* downloads: Instagram/TikTok post kit (PNG + caption), offline poster (A5 PNG with claim QR) */
+    if(c.st==='running'&&a.send){const sd=j.design?GS.designs.find(d=>d.key===j.design):null,img=sd?geImg(sd,540).toDataURL('image/jpeg',.82):null,off=cjOffer(j),until=geUntil(cjDays(j),start);
+      const to=j.segs.includes('sel')?GE_SHOPLIST.filter(s=>j.sel.has(s.id)).map(s=>({n:s.n.split(' ')[0],phone:s.phone})):GE_SHOPPERS;
+      if(a.send>5)GS.outbox.unshift({more:geT('g.e.more',{n:(a.send-5).toLocaleString(geLang()==='id'?'id-ID':'en-US')})});
+      to.slice(0,Math.min(5,a.send)).forEach(s=>waSend(c.tpl,c.lang,[s.n,GE_OWNER.store,off,until,'flik.id/v/'+c.code],img,s.phone))}
+    track('campaign_submitted',{type:c.type,segments:c.segs.join(','),pay:c.paid,from:j.from?Object.keys(j.from)[0]:'scratch'});
+    GS.cj=null;toast(c.st==='scheduled'?geT('g.e.sched'):geT('g.e.done'));go('marketing/growth/campaign/'+id)}).catch(()=>{})}
+const geLangSegX=l=>`<div class="seg" role="group" aria-label="WhatsApp language">${['id','en'].map(x=>`<button class="${l===x?'on':''}" data-gwl="${x}">${x.toUpperCase()}</button>`).join('')}</div>`;
 function geDl(name,href,delay){setTimeout(()=>{try{const a=document.createElement('a');a.href=href;a.download=name;document.body.appendChild(a);a.click();a.remove()}catch(e){}},delay)}
-function geKit(d,sd,c){const base=(GE_OWNER.store+'-'+(c?c.id:d.i.id)).toLowerCase().replace(/[^a-z0-9-]+/g,'-');let t=0;
-  ['ig','tt'].filter(k=>d.ch.includes(k)).forEach(k=>{geDl(`${base}-${k==='ig'?'instagram':'tiktok'}.png`,geImg(sd,1080,k==='tt'?'9:16':'4:5').toDataURL('image/png'),t);t+=350;
-    geDl(`${base}-${k==='ig'?'instagram':'tiktok'}-caption.txt`,URL.createObjectURL(new Blob([d.cap[k]||''],{type:'text/plain'})),t);t+=350});
-  if(c&&d.ch.includes('off')){geDl(`${base}-poster-a5.png`,gePoster(c,sd).toDataURL('image/png'),t);track('poster_downloaded',{})}}
+/* Offline poster with a claim QR: parked for now (Reza, 6 Nov). Kept so the claim page and cashier still have a way in. */
 function gePoster(c,sd){const W=1240,H=1748,cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d'),F=stFont(),L=c.lang,i=geIdea(c.idea)||{offer:null};
   const wrap=(t,X,Y,maxW,lh)=>{const w=String(t).split(' ');let line='',y=Y;w.forEach(word=>{const n=line?line+' '+word:word;if(x.measureText(n).width>maxW&&line){x.fillText(line,X,y);line=word;y+=lh}else line=n});if(line)x.fillText(line,X,y);return y};
   x.fillStyle='#fffaf3';x.fillRect(0,0,W,H);
@@ -285,19 +260,20 @@ function geRes(c){if(c.res&&c.st==='ended'&&c.final)return c.final;if(c.res)retu
 function geDerive(r,hold){const sent=r.sent||0,rate=sent?r.redeemed/sent:0,hrate=r.hold?r.holdRed/r.hold:0,base=sent*(r.hold?r.holdSales/r.hold:0);
   return{...r,lift:hrate?rate/hrate:rate?null:0,extra:Math.max(0,r.sales-base),ret:(r.cost+r.vcost)?Math.max(0,r.sales-base)/(r.cost+r.vcost):0}}
 function geRenderCamp(el,id){const c=GE.camps.find(x=>x.id===id);
-  if(!c){el.innerHTML=`<div class="ph"><div><h1>${geT('gro.camp.h')}</h1><p class="sec-sub ge-sub"><a href="#marketing/growth">${geT('gro.h')}</a> › ${esc(id)}</p></div></div><section class="card w-empty"><span class="qic">${ic('chart',22,1.6)}</span><div><b>${geT('g.c.gone')}</b><span>${geT('g.c.gone.sub')}</span></div><a class="btn btn-p" href="#marketing/growth">${geT('gro.h')}</a></section>`;return}
-  const r=geRes(c),f=n=>Math.round(n).toLocaleString(geLang()==='id'?'id-ID':'en-US'),days=Math.max(0,Math.floor((geNow()-c.start)/DAY)),fun=[['sent',r.sent],['delivered',r.delivered],['read',r.read],['clicked',r.clicked],['claimed',r.claimed],['redeemed',r.redeemed]];
+  if(!c){el.innerHTML=`<div class="ph"><div><h1>${geT('gro.camp.h')}</h1><p class="sec-sub ge-sub"><a href="#marketing/growth/campaigns">${geT('tab.camp')}</a> › ${esc(id)}</p></div></div><section class="card w-empty"><span class="qic">${ic('chart',22,1.6)}</span><div><b>${geT('g.c.gone')}</b><span>${geT('g.c.gone.sub')}</span></div><a class="btn btn-p" href="#marketing/growth/campaigns">${geT('tab.camp')}</a></section>`;return}
+  const r=geRes(c),f=n=>Math.round(n).toLocaleString(geLang()==='id'?'id-ID':'en-US'),days=Math.max(0,Math.floor((geNow()-c.start)/DAY)),off=c.ch.includes('off'),fun=[['sent',r.sent],['delivered',r.delivered],['read',r.read],['clicked',r.clicked],...(off?[['claimed',r.claimed]]:[]),['redeemed',r.redeemed]];
   const end=new Date(c.start.getTime()+(c.voucher?c.voucher.days:c.days||14)*DAY);
-  el.innerHTML=`<div class="ph"><div><h1>${esc(geL(c.name))}</h1><p class="sec-sub ge-sub"><a href="#marketing/growth">${geT('gro.h')}</a> › ${c.id} · <span class="st ${c.st==='running'?'ok':c.st==='scheduled'?'pu':'gr'} sm">${geT('g.st.'+c.st)}</span> · ${geT('g.c.dates',{a:geFdate(c.start),b:geFdate(end)})}</p></div>
+  el.innerHTML=`<div class="ph"><div><h1>${esc(geL(c.name))}</h1><p class="sec-sub ge-sub"><a href="#marketing/growth/campaigns">${geT('tab.camp')}</a> › ${c.id} · <span class="st ${c.st==='running'?'ok':c.st==='scheduled'?'pu':'gr'} sm">${geT('g.st.'+c.st)}</span> · ${geT('g.c.dates',{a:geFdate(c.start),b:geFdate(end)})}</p></div>
     <div class="g-hact"><button class="btn btn-o" data-gcsv>${ic('export',15)}${geT('g.c.csv')}</button>${c.st==='running'?`<button class="btn btn-o" data-gend>${geT('bar.end')}</button>`:''}${c.ch.includes('off')&&c.st!=='ended'?`<a class="btn btn-o" href="#claim/${c.code}">${ic('qr',15)}${geT('g.c.claim')}</a>`:''}</div></div>
   ${c.st==='running'&&days<1?`<p class="g-note">${ic('clock',14)}${geT('g.c.early')}</p>`:''}
-  <div class="g-pulse g-k">${[[geT('g.k.sales'),geJt(r.sales),geT('g.k.sales.sub',{n:f(r.redeemed)})],[geT('g.k.extra'),geJt(r.extra),r.lift?geT('g.k.lift',{x:r.lift.toFixed(1).replace('.',geLang()==='id'?',':'.')}):geT('g.k.wait')],
-      [geT('g.k.cost'),geJt(r.cost+r.vcost),geT('g.k.cost.sub',{a:geJt(r.cost),b:geJt(r.vcost)})],[geT('g.k.ret'),r.ret?geT('g.k.ret.v',{x:r.ret.toFixed(1).replace('.',geLang()==='id'?',':'.')}):'—',geT('g.k.ret.sub')]].map(([k,v,s])=>`<section class="card"><span>${k}</span><b>${v}</b><small>${s}</small></section>`).join('')}</div>
-  ${r.lift?`<section class="card g-hold"><span class="qic">${ic('chart',20,1.6)}</span><div><b>${geT('g.hold.h',{x:r.lift.toFixed(1).replace('.',geLang()==='id'?',':'.'),extra:geJt(r.extra)})}</b><span>${geT('g.hold.sub',{n:f(r.hold),p:c.hold||10})}</span></div></section>`:''}
+  ${c.from||c.type?`<p class="cj-from">${ic(c.type==='cashback'?'wallet':'tag',14)}${esc(geCap(c.offer?geL(c.offer):geOffer({},c.voucher,geLang())))} · ${geT('g.type.'+(c.type||'voucher'))} · ${geT('g.c.code',{code:c.code})}${c.from&&c.from.name?' · '+geT('cj.from',{n:esc(c.from.name)}):''}</p>`:''}
+  <div class="g-pulse g-k">${[[geT('g.k.sales'),geJt(r.sales),geT('g.k.sales.sub',{n:f(r.redeemed)})],c.hold?[geT('g.k.extra'),geJt(r.extra),r.lift?geT('g.k.lift',{x:r.lift.toFixed(1).replace('.',geLang()==='id'?',':'.')}):geT('g.k.wait')]:[geT('g.k.used'),f(r.redeemed),geT('g.k.used.sub',{n:f(r.sent),p:r.sent?Math.round(r.redeemed/r.sent*1000)/10:0})],
+      [geT('g.k.cost'),geJt(r.cost+r.vcost),geT('g.k.cost.sub',{a:geJt(r.cost),b:geJt(r.vcost)})],[geT('g.k.ret'),(c.hold?r.ret:r.sales/Math.max(1,r.cost+r.vcost))?geT('g.k.ret.v',{x:(c.hold?r.ret:r.sales/Math.max(1,r.cost+r.vcost)).toFixed(1).replace('.',geLang()==='id'?',':'.')}):'—',geT('g.k.ret.sub')]].map(([k,v,s])=>`<section class="card"><span>${k}</span><b>${v}</b><small>${s}</small></section>`).join('')}</div>
+  ${r.lift&&c.hold?`<section class="card g-hold"><span class="qic">${ic('chart',20,1.6)}</span><div><b>${geT('g.hold.h',{x:r.lift.toFixed(1).replace('.',geLang()==='id'?',':'.'),extra:geJt(r.extra)})}</b><span>${geT('g.hold.sub',{n:f(r.hold),p:c.hold||10})}</span></div></section>`:''}
   <div class="g-two"><section class="card"><h4>${geT('g.c.funnel')}</h4><div class="g-fun">${fun.map(([k,v])=>`<div><span>${geT('g.fn.'+k)}</span><i><em style="width:${r.sent?Math.max(1.5,v/r.sent*100):0}%"></em></i><b>${f(v)}</b></div>`).join('')}</div></section>
-    <section class="card"><h4>${geT('g.c.by')}</h4><table class="cp-tbl"><tbody>${[['on',r.on],['cashier',r.cashier],['claim',r.claim]].map(([k,v])=>`<tr><td>${geT('g.by.'+k)}</td><td class="r"><b>${f(v)}</b></td></tr>`).join('')}</tbody></table>
+    <section class="card"><h4>${geT('g.c.by')}</h4><table class="cp-tbl"><tbody>${[['on',r.on],['cashier',r.cashier],...(off?[['claim',r.claim]]:[])].map(([k,v])=>`<tr><td>${geT('g.by.'+k)}</td><td class="r"><b>${f(v)}</b></td></tr>`).join('')}</tbody></table>
       <p class="d-sub">${geT('g.c.attr')}</p></section></div>
-  ${c.st==='ended'?`<section class="card g-learn"><span class="qic">${ic('bulb',20,1.6)}</span><div><b>${geT('g.learn.h')}</b><span>${geT(r.lift>=1.5?'g.learn.good':'g.learn.meh',{x:(r.lift||0).toFixed(1)})}</span></div></section>`:''}`;
+  ${c.st==='ended'?`<section class="card g-learn"><span class="qic">${ic('bulb',20,1.6)}</span><div><b>${geT('g.learn.h')}</b><span>${c.hold?geT(r.lift>=1.5?'g.learn.good':'g.learn.meh',{x:(r.lift||0).toFixed(1)}):geT('g.learn.used',{p:r.sent?Math.round(r.redeemed/r.sent*1000)/10:0})}</span></div></section>`:''}`;
   el.onclick=e=>{const b=e.target.closest('button');if(!b)return;if('gcsv' in b.dataset)geCsv(c);if('gend' in b.dataset)geEndCampaign(c)}}
 function geCsv(c){const r=geRes(c),days=Math.max(1,Math.min(c.voucher?c.voucher.days:14,Math.ceil((geNow()-c.start)/DAY)||1)),rows=[];
   const share=d=>{const w=[.42,.2,.12,.09,.07,.06,.04];return(w[d]||.03)/Math.min(1,w.slice(0,days).reduce((a,b)=>a+b,0))};
@@ -309,7 +285,7 @@ function geCsv(c){const r=geRes(c),days=Math.max(1,Math.min(c.voucher?c.voucher.
 function geEndCampaign(c){geInit();c=c||GE.camps.find(x=>x.st==='running');if(!c){toast(geT('bar.noCampaign'));return}
   c.final=geRes(c);c.st='ended';c.res=c.res||c.final;const r=c.final,L=GE.settings.lang;
   waSend('campaign_report',L,[GE_OWNER.name,c.name[L]||geL(c.name),geJt(r.sales),geJt(r.extra),'flik.id/c/'+c.id],geReportImg(c,r,L).toDataURL('image/jpeg',.85),GE_OWNER.phone);
-  track('campaign_ended',{id:c.id});toast(geT('g.ended'));if(location.hash==='#marketing/growth/campaign/'+c.id||location.hash==='#marketing/growth')show();else go('marketing/growth/campaign/'+c.id)}
+  track('campaign_ended',{id:c.id});toast(geT('g.ended'));if(location.hash==='#marketing/growth/campaign/'+c.id||location.hash==='#marketing/growth/campaigns')show();else go('marketing/growth/campaign/'+c.id)}
 function geReportImg(c,r,L){const W=540,cv=document.createElement('canvas');cv.width=W;cv.height=300;const x=cv.getContext('2d'),F=stFont();
   x.fillStyle='#f2efff';x.fillRect(0,0,W,300);x.fillStyle='#1d2430';x.font=`700 24px ${F}`;x.fillText(c.name[L],28,48,W-56);x.font=`400 15px ${F}`;x.fillStyle='#4a5160';x.fillText(`${GE_OWNER.store} · ${c.id}`,28,74);
   [[L==='id'?'Penjualan':'Sales',geJt(r.sales)],[L==='id'?'Tambahan':'Extra',geJt(r.extra)],[L==='id'?'Voucher dipakai':'Vouchers used',String(r.redeemed)],[L==='id'?'Biaya':'Cost',geJt(r.cost+r.vcost)]].forEach(([k,v],i)=>{const cx=28+(i%2)*250,cy=118+Math.floor(i/2)*86;
@@ -349,12 +325,11 @@ const geClaimable=()=>GE.camps.find(c=>c.st==='running'&&c.ch.includes('off'));
 function geSettings(){const s=GE.settings;modal.classList.add('nw');
   modal.innerHTML=`<div class="mh"><h3>${geT('g.settings')}</h3><button class="ib" data-mclose aria-label="Close">${ic('x',18)}</button></div>
   <div class="mb g-set"><div class="fld"><label for="gs-cap">${geT('s.cap')}</label><select id="gs-cap">${[3,5,7,10,14].map(n=>`<option value="${n}" ${s.cap===n?'selected':''}>${geT('s.cap.v',{n})}</option>`).join('')}</select><p class="d-sub">${geT('s.cap.sub')}</p></div>
-    <div class="fld"><label for="gs-hold">${geT('s.hold')}</label><select id="gs-hold">${[0,5,10,15,20,30].map(n=>`<option value="${n}" ${s.hold===n?'selected':''}>${n}%</option>`).join('')}</select></div>
     <div class="fld"><label for="gs-lang">${geT('s.lang')}</label><select id="gs-lang"><option value="id" ${s.lang==='id'?'selected':''}>Bahasa Indonesia</option><option value="en" ${s.lang==='en'?'selected':''}>English</option></select></div>
     <div class="fld"><label>${geT('s.owner')}</label><input value="${esc(GE_OWNER.name)} · ${fphone(GE_OWNER.phone)}" readonly><p class="d-sub">${geT('s.owner.sub')}</p></div>
     <label class="st-chk"><input type="checkbox" id="gs-q" ${s.quiet?'checked':''}> ${geT('s.quiet')}</label></div>
   <div class="mf"><button class="btn btn-o" data-mclose>${geT('pay.cancel')}</button><button class="btn btn-p" id="gs-save">${geT('s.save')}</button></div>`;mscrim.classList.add('open');
-  document.getElementById('gs-save').onclick=()=>{s.cap=+document.getElementById('gs-cap').value;s.hold=+document.getElementById('gs-hold').value;s.lang=document.getElementById('gs-lang').value;s.quiet=document.getElementById('gs-q').checked;
+  document.getElementById('gs-save').onclick=()=>{s.cap=+document.getElementById('gs-cap').value;s.lang=document.getElementById('gs-lang').value;s.quiet=document.getElementById('gs-q').checked;
     track('growth_settings_saved',{cap:s.cap,hold:s.hold,lang:s.lang});closeModal();toast(geT('s.saved'));renderGrowth()}}
 
 /* ===== QR code (byte mode, error correction M, versions 1–10), drawn on a canvas. A normal link, never a payment QRIS. ===== */
