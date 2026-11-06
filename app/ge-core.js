@@ -10,6 +10,11 @@ Object.assign(P,{
   clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
   sliders:'<path d="M5 6h14M5 12h14M5 18h14"/><circle cx="9" cy="6" r="1.8"/><circle cx="15" cy="12" r="1.8"/><circle cx="8" cy="18" r="1.8"/>',
   repeat:'<path d="M17 3.5 20 6.5l-3 3"/><path d="M4 11.5v-1a4 4 0 0 1 4-4h12"/><path d="M7 20.5 4 17.5l3-3"/><path d="M20 12.5v1a4 4 0 0 1-4 4H4"/>',
+  lock:'<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
+  info:'<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.6v.1"/>',
+  calendar:'<rect x="4" y="5.5" width="16" height="15" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>',
+  qr:'<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2.5v2.5H14zM17.5 17.5H20V20h-2.5zM14 19.5h1M19.5 14v1"/>',
+  star:'<path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z"/>',
   store:'<path d="M4 9.5 5.5 4.5h13L20 9.5"/><path d="M4 9.5a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0"/><path d="M5.5 11.5v8h13v-8"/><path d="M10 19.5v-4h4v4"/>'
 });
 
@@ -22,6 +27,31 @@ const geFdate=d=>d.toLocaleDateString(geLang()==='id'?'id-ID':'en-GB',{day:'nume
 /* Bahasa by default on public pages (Studio, claim), English in the dashboard, unless the bar sets it */
 const geLang=()=>GS.lang||(GS.account==='anon'||GS.full&&GX_PUBLIC.includes(GS.full.full)?'id':'en');
 function geT(k,v){const s=(GE_I18N[geLang()]||{})[k]??GE_I18N.en[k]??k;return v?s.replace(/\{(\w+)\}/g,(m,x)=>v[x]??m):s}
+/* bilingual example data: {id, en} → the current language */
+const geL=o=>o&&typeof o==='object'&&!Array.isArray(o)?(o[geLang()]??o.en):o;
+
+/* ===== Free public data, live where it exists, example data when it doesn't answer =====
+ * Only public, free, keyless sources (config.js liveFreeApis; ?live=0 turns them off). Anything that needs
+ * a key or a partner account (Instagram, WhatsApp, payments) stays example data in the prototype. */
+const geLiveOn=()=>FLIK.config.liveFreeApis!==false&&new URLSearchParams(location.search).get('live')!=='0';
+function geFetchJson(name,url,ms=4500){
+  if(!geLiveOn()){FLIK.apiLog.unshift({name,method:'GET',path:url,source:'example data (live sources off)'});return Promise.reject(new Error('off'))}
+  const c=new AbortController(),t=setTimeout(()=>c.abort(),ms),t0=performance.now();
+  return fetch(url,{signal:c.signal,headers:{accept:'application/json'}}).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
+    .then(j=>{clearTimeout(t);FLIK.apiLog.unshift({name,method:'GET',path:url,source:'live · public, free',ms:Math.round(performance.now()-t0)});track('live_source_used',{source:name});return j})
+    .catch(e=>{clearTimeout(t);FLIK.apiLog.unshift({name,method:'GET',path:url,source:'example data (live call failed: '+(e.name==='AbortError'?'timeout':e.message)+')'});throw e})}
+/* Indonesian public holidays (date.nager.at, free, no key); the built-in list is the fallback */
+let GE_HOL=null,GE_HOL_LIVE=false;
+const geHolidays=()=>GE_HOL||(GE_HOL=(()=>{const y=geNow().getFullYear();
+  return Promise.all([y,y+1].map(n=>geFetchJson('calendar.publicHolidays','https://date.nager.at/api/v3/PublicHolidays/'+n+'/ID')))
+    .then(a=>{GE_HOL_LIVE=true;return a.flat().filter(h=>h&&h.date).map(h=>[h.date,'holiday',h.localName||h.name,h.name||h.localName])})
+    .catch(()=>GE_DATES.filter(d=>d[4]))})());
+/* every big date from today to 5 months ahead: built-in moments + public holidays (live or fallback) */
+function geBigDates(hol){const from=new Date(geNow().getTime()-DAY),to=new Date(geNow().getTime()+150*DAY),seen=new Set(),out=[];
+  [...GE_DATES.filter(d=>!d[4]),...(hol||GE_DATES.filter(d=>d[4]))].forEach(d=>{const at=new Date(d[0]+'T00:00:00'),k=d[0]+d[2].toLowerCase();
+    if(at<from||at>to||seen.has(k))return;seen.add(k);out.push({at,kind:d[1],n:{id:d[2],en:d[3]}})});
+  return out.sort((a,b)=>a.at-b.at)}
+
 const aiTag=()=>`<span class="ge-ai" title="Written by AI because the ready-made options didn't fit">${ic('sparkle',11)}${geT('ai.tag')}</span>`;
 
 /* ===== Limits: counters per account status ===== */
@@ -41,7 +71,7 @@ function mockLLM(kind,input){const l=useLimit('llmFallbacksPerDay');
 /* ===== Money: FLIK balance (ledger) or a FLIK payment link ===== */
 function ledgerDebit(amount,label){
   if(GS.balance<amount){toast(geT('pay.low'));return Promise.reject(new Error('balance'))}
-  GS.balance-=amount;const id='LG-'+(9000+GS.ledger.length);GS.ledger.unshift({at:geNow(),label,amount:-amount,id});
+  GS.balance-=amount;if(typeof BAL==='number'){BAL=GS.balance;const bv=document.getElementById('balv');if(bv)bv.textContent=rp(BAL)}const id='LG-'+(9000+GS.ledger.length);GS.ledger.unshift({at:geNow(),label,amount:-amount,id});
   FLIK.apiLog.unshift({name:'ledger.debit',method:'POST',path:'/v1/ledger/debits',source:'example data'});
   track('ledger_debited',{amount});geBarCounts();return Promise.resolve({ledgerTxnId:id})}
 function paymentLinkSheet(amount,label){return new Promise((res,rej)=>{
@@ -62,7 +92,7 @@ function paymentLinkSheet(amount,label){return new Promise((res,rej)=>{
 /* ===== WhatsApp: FLIK's approved templates only, image header per send; the prototype keeps an outbox ===== */
 function waSend(template,lang,vars=[],image=null,to=GE_OWNER.phone){
   const tp=GE_WA[template]||{},body=(tp[lang]||tp.en||`[${template}]`).replace(/\{\{(\d+)\}\}/g,(m,i)=>vars[i-1]??m);
-  const m={at:geNow(),template,lang,to,text:body,image:tp.noImage?null:image};GS.outbox.unshift(m);
+  const m={at:geNow(),template,lang,to,text:body,image:tp.noImage?null:image,foot:tp.cat==='marketing'?GE_WA_FOOT[lang]:null,btns:tp.cat==='marketing'?GE_WA_BTN[lang]:null};GS.outbox.unshift(m);
   FLIK.apiLog.unshift({name:'whatsapp.send',method:'POST',path:'/v1/whatsapp/messages',source:'example data (outbox)'});
   geBarCounts();return m}
 
@@ -128,14 +158,14 @@ function geSetAccount(k){GS.account=k;GS.usage={};track('account_switched',{acco
   if(k==='anon'&&!/^(studio|claim\/)/.test(h))go('studio');
   else if(k!=='anon'&&h==='studio')go('marketing/studio');
   else show()}
-function geBarCounts(){const n=document.getElementById('pt-wa');if(n)n.textContent=GS.outbox.length}
+function geBarCounts(){const n=document.getElementById('pt-wa');if(n)n.textContent=GS.outbox.filter(m=>!m.more).length}
 function geSync(view){document.body.classList.toggle('ge-lead',GS.account==='lead');const ab=document.querySelector('.acct b');if(ab)ab.textContent=GS.account==='lead'?(GS.lead||ST_LEAD_EXAMPLE).brand:GE_OWNER.store;const on=['gro','stu','cmp'].includes(view)||!gx.hidden;document.body.classList.toggle('ge-on',on);
   document.getElementById('pt-acv').textContent=geT('acct.'+GS.account);
   document.querySelector('.pbar .pb-lang').innerHTML=geLangSeg();geBarCounts()}
 function geOutbox(){
   drawer.innerHTML=`<div class="dh"><span class="kind">${ic('chat2',15)}${geT('outbox.title')}</span><button class="ib" data-dclose aria-label="Close">${ic('x',18)}</button></div>
   <div class="db"><p class="d-sub" style="margin:0 0 14px">${geT('outbox.sub')}</p>
-  <div class="ge-wa">${GS.outbox.length?GS.outbox.map(m=>`<div class="ge-bub">${m.image?`<div class="ge-bimg">${m.image.startsWith('data:')?`<img src="${m.image}" alt="Message image">`:esc(m.image)}</div>`:''}<p>${esc(m.text)}</p><div class="ge-bm"><span class="chip">${esc(m.template)} · ${m.lang.toUpperCase()}</span><span>${geT('outbox.to')} ${fphone(m.to)}</span><time>${m.at.toTimeString().slice(0,5)}</time></div></div>`).join(''):`<p class="d-sub">${geT('outbox.empty')}</p>`}</div></div>`;
+  <div class="ge-wa">${GS.outbox.length?GS.outbox.map(m=>m.more?`<p class="ge-more">${esc(m.more)}</p>`:`<div class="ge-bub">${m.image?`<div class="ge-bimg">${m.image.startsWith('data:')?`<img src="${m.image}" alt="Message image">`:esc(m.image)}</div>`:''}<p>${esc(m.text)}</p>${m.foot?`<small class="ge-bf">${esc(m.foot)}</small>`:''}${m.btns?`<div class="ge-bbtn">${m.btns.map(b=>`<span>${esc(b)}</span>`).join('')}</div>`:''}<div class="ge-bm"><span class="chip">${esc(m.template)} · ${m.lang.toUpperCase()}</span><span>${geT('outbox.to')} ${fphone(m.to)}</span><time>${m.at.toTimeString().slice(0,5)}</time></div></div>`).join(''):`<p class="d-sub">${geT('outbox.empty')}</p>`}</div></div>`;
   openDrawer()}
 function geLedger(){
   drawer.innerHTML=`<div class="dh"><span class="kind">${ic('wallet',15)}${geT('ledger.title')}</span><button class="ib" data-dclose aria-label="Close">${ic('x',18)}</button></div>
@@ -161,12 +191,14 @@ function geCashierSoon(){modal.classList.add('nw');
   modal.classList.add('nw');
   modal.innerHTML=`<div class="mh"><h3>Growth Engine v2 + Studio</h3><button class="ib" data-mclose aria-label="Close">${ic('x',18)}</button></div>
   <div class="mb guide"><p class="vf-lead">Example data only. Use Account in the dark bar to switch between a stranger, a lead and merchants.</p>
-  <ol><li><b>Studio (stranger):</b> make a product image, see watermarked previews, sign up to download.</li>
-  <li><b>Lead:</b> download free, then a one-time look at one competitor on Instagram.</li>
-  <li><b>Active merchant:</b> Marketing › Growth Engine shows ideas for this week from competitors, the store and big dates.</li>
-  <li><b>Run an idea:</b> adjust the voucher and channels, pay WhatsApp sends from the balance, see the messages in Outbox.</li>
-  <li><b>Results:</b> Skip 7 days, then End campaign: results against the holdout, a CSV, and the owner's WhatsApp report.</li></ol>
-  <p class="vf-lead">Screens fill in ticket by ticket (docs/prototype/TICKETS.md).</p></div>
+  <ol><li><b>Stranger</b> (<code>?account=anon</code>): pick the Linen shirt, type “earthy, lebaran feel”, see 4 watermarked previews. Change tone, language and format, then Download.</li>
+  <li><b>Sign up</b>: Fill with example data, code <code>123456</code>. Now a lead: download PNG, cut-out PNG and SVG for free.</li>
+  <li><b>Lead</b>: Competitors › try <code>@kain.kita.id</code> for the one-time snapshot. Growth Engine is locked behind “Become a FLIK merchant”.</li>
+  <li><b>Active merchant</b>: Growth Engine shows how this week's ideas were made (competitors + your store + calendar) and 5 ideas.</li>
+  <li><b>Run 11.11</b>: Review › Adjust (voucher 10% → 5%, own context “we have a new batik collection”, template) › Execute, pay from the balance. Outbox has the WhatsApp messages; the post kit and A5 poster download.</li>
+  <li><b>Results</b>: Skip 7 days, Download CSV. Open the claim page, save a voucher, then Cashier app › Redeem. End campaign sends the owner's WhatsApp report.</li>
+  <li><b>How they connect</b>: Competitors › Get an idea on any change; Studio › Use in a campaign; an idea › Make one in Studio and back.</li></ol>
+  <p class="vf-lead">Public holidays and real Shopify/WooCommerce shops are read live when they answer (free, no key). Instagram, WhatsApp and payments are example data. Turn live sources off with <code>?live=0</code>.</p></div>
   <div class="mf"><button class="btn btn-p" data-mclose>Start</button></div>`;mscrim.classList.add('open')}}
 
 /* ===== Sidebar: Marketing › Growth Engine, Studio, Competitors ===== */
