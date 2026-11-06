@@ -81,7 +81,7 @@ Plan (5 working days, 2–4 Claude sessions in parallel, two review windows a da
 
 **Story S6** As a lead or merchant, Studio lives in my dashboard too.
 - [x] `#marketing/studio`: same editor + "Your designs" grid (saved variations, re-download)
-- [ ] Merchant: saved logo and brand colour reused; **Use in a campaign** opens Growth Engine idea picker
+- [x] Merchant: saved logo and brand colour reused; **Use in a campaign** opens Growth Engine idea picker
 - [x] Lead home card: "See what your competitor posts" → Competitors
 - [x] Lead's dashboard: welcome, Lead tag, what's left today and this month, lead-only sidebar, "Become a FLIK merchant"
 
@@ -90,58 +90,58 @@ Plan (5 working days, 2–4 Claude sessions in parallel, two review windows a da
 ## Lane B: Competitor monitoring
 
 **Story B1** As a lead, I get a free one-time look at one competitor. *(BUILD_SPEC 4.1)*
-- [ ] Instagram handle input only; fixture lookup with 0.8 s load
-- [ ] Snapshot card: profile, 9-post grid, detected promos, posting times, themes
-- [ ] One-time: saved snapshot with date replaces the input
-- [ ] Become a FLIK merchant CTA (`merchant_cta_clicked`)
+- [x] Instagram handle input only; fixture lookup with 0.8 s load
+- [x] Snapshot card: profile, 9-post grid, detected promos, posting times, themes
+- [x] One-time: saved snapshot with date replaces the input
+- [x] Become a FLIK merchant CTA (`merchant_cta_clicked`)
 
 **Story B2** As a merchant, I track up to 3 competitors every week. *(4.2)*
-- [ ] Add competitor: Instagram + optional website; limit from `LIMITS.competitors`
-- [ ] Website check: Shopify / WooCommerce / unsupported; marketplace URLs → friendly refusal
-- [ ] Tabs per competitor: Posts, Products and prices, Activity timeline
-- [ ] Skip 7 days adds new activity; "weekly · Mon 07:00" line
+- [x] Add competitor: Instagram + optional website; limit from `LIMITS.competitors`
+- [x] Website check: Shopify / WooCommerce / unsupported; marketplace URLs → friendly refusal
+- [x] Tabs per competitor: Posts, Products and prices, Activity timeline
+- [x] Skip 7 days adds new activity; "weekly · Mon 07:00" line
 
 **Story B3** As a merchant, a competitor move becomes an idea, and failures never look broken.
-- [ ] Friendly states: private/personal account, website unreachable, unsupported site
-- [ ] Unclassified post → `mockLLM('classify')` with AI tag
-- [ ] **Get an idea** on activity → creates a competitor-reaction idea in Growth Engine
+- [x] Friendly states: private/personal account, website unreachable, unsupported site
+- [x] Unclassified post → `mockLLM('classify')` with AI tag
+- [x] **Get an idea** on activity → creates a competitor-reaction idea in Growth Engine
 
 ---
 
 ## Lane C: Growth Engine
 
 **Story C1** As a merchant, I see ideas for this week that make sense for my store. *(BUILD_SPEC 5.1)*
-- [ ] Landing: week header, store pulse strip, idea cards (type, source chips, why, channels, voucher, expected range)
-- [ ] Ideas from D3 for active; reduced set for new; upsell card for lead
-- [ ] Not now (dismiss with reason: not relevant, already did it, later)
-- [ ] Port v1's segments-by-phone and holdout wording from `crm.js`
+- [x] Landing: week header, store pulse strip, idea cards (type, source chips, why, channels, voucher, expected range)
+- [x] Ideas from D3 for active; reduced set for new; upsell card for lead
+- [x] Not now (dismiss with reason: not relevant, already did it, later)
+- [x] Port v1's segments-by-phone and holdout wording from `crm.js`
 
 **Story C2** As a merchant, I review and adjust an idea before anything runs. *(5.2 steps 1–2)*
-- [ ] Full-screen 3-step flow; step 1 Review with data and links
-- [ ] Channels toggle; offline poster only when Offline is on
-- [ ] Voucher editor (%, Rp, max, min order, validity, quota) with merchant-voucher line
-- [ ] Creative: pick a saved Studio design or Make one in Studio (round trip)
-- [ ] WhatsApp template picker (matching templates only), ID/EN, locked text outside variables, bubble preview with image
-- [ ] Own context → `mockLLM('context')`, counted by `LIMITS.ownContextPerWeek`
-- [ ] Holdout slider with tooltip
+- [x] Full-screen 3-step flow; step 1 Review with data and links
+- [x] Channels toggle; offline poster only when Offline is on
+- [x] Voucher editor (%, Rp, max, min order, validity, quota) with merchant-voucher line
+- [x] Creative: pick a saved Studio design or Make one in Studio (round trip)
+- [x] WhatsApp template picker (matching templates only), ID/EN, locked text outside variables, bubble preview with image
+- [x] Own context → `mockLLM('context')`, counted by `LIMITS.ownContextPerWeek`
+- [x] Holdout slider with tooltip
 
 **Story C3** As a merchant, I execute in one tap and pay for WhatsApp the way I want. *(5.2 step 3)*
-- [ ] Summary: reach per channel, schedule, cost, voucher cap
-- [ ] Pay: balance (ledger) or payment link
-- [ ] Outbox bubbles, frequency cap and opt-out exclusions shown in counts
-- [ ] Downloads: IG post kit (PNG + caption .txt), offline poster PNG with claim QR (drawn QR is fine)
-- [ ] Campaign created as Running; `campaign_executed`
+- [x] Summary: reach per channel, schedule, cost, voucher cap
+- [x] Pay: balance (ledger) or payment link
+- [x] Outbox bubbles, frequency cap and opt-out exclusions shown in counts
+- [x] Downloads: IG post kit (PNG + caption .txt), offline poster PNG with claim QR (drawn QR is fine)
+- [x] Campaign created as Running; `campaign_executed`
 
 **Story C4** As a merchant, I see what each campaign brought in. *(5.3)*
-- [ ] Campaigns list (Running, Scheduled, Ended) with 2 seeded ended campaigns
-- [ ] Result screen: funnel, voucher redemptions, holdout comparison, cost, ROI, by channel
-- [ ] Download CSV while running (no shopper phones)
-- [ ] End campaign → owner `campaign_report` in Outbox
+- [x] Campaigns list (Running, Scheduled, Ended) with 2 seeded ended campaigns
+- [x] Result screen: funnel, voucher redemptions, holdout comparison, cost, ROI, by channel
+- [x] Download CSV while running (no shopper phones)
+- [x] End campaign → owner `campaign_report` in Outbox
 
 **Story C5** As a shopper and a cashier, the offline voucher works. *(5.4, 5.5)*
-- [ ] `#claim/<code>` phone card: offer, phone, consent, Save voucher
-- [ ] Cashier app preview: phone lookup → Redeem → counts in the result
-- [ ] Settings: frequency cap, default holdout, language, owner WhatsApp (read-only), quiet hours
+- [x] `#claim/<code>` phone card: offer, phone, consent, Save voucher
+- [x] Cashier app preview: phone lookup → Redeem → counts in the result
+- [x] Settings: frequency cap, default holdout, language, owner WhatsApp (read-only), quiet hours
 
 ---
 
@@ -155,15 +155,15 @@ Plan (5 working days, 2–4 Claude sessions in parallel, two review windows a da
 **Story D2** As a user, copy sounds natural in Bahasa and English.
 - [x] Phrase bank: headline/sub/CTA × 3 tones × 2 languages × 4 categories (about 15 each)
 - [x] Vibe dictionary: ID + EN synonyms → style tags (minimalis, hangat, mewah, ceria, lebaran, natal, earthy…)
-- [ ] 14 WhatsApp template texts × 2 languages (BUILD_SPEC section 7)
-- [ ] `mockLLM` canned answers for vibe, copy, context, classify
+- [x] 14 WhatsApp template texts × 2 languages (BUILD_SPEC section 7)
+- [x] `mockLLM` canned answers for vibe, copy, context, classify
 
 **Story D3** As AG, the demo data tells a believable story.
-- [ ] 4 fictional competitors with posts, products, prices and activity (BUILD_SPEC 4.3)
-- [ ] Big-date calendar Oct–Mar (Sumpah Pemuda, 11.11, Hari Guru, 12.12, Hari Ibu, Natal, Tahun Baru, Imlek, Ramadan start)
-- [ ] 5 ideas for active, 3 for new, with numbers consistent with Aruna Studio's example orders
-- [ ] Example balance Rp1.250.000 and 3 past ledger lines
-- [ ] 2 ended campaigns with results
+- [x] 4 fictional competitors with posts, products, prices and activity (BUILD_SPEC 4.3)
+- [x] Big-date calendar Oct–Mar (Sumpah Pemuda, 11.11, Hari Guru, 12.12, Hari Ibu, Natal, Tahun Baru, Imlek, Ramadan start)
+- [x] 5 ideas for active, 3 for new, with numbers consistent with Aruna Studio's example orders
+- [x] Example balance (the dashboard header balance, Rp4.523.800) and 3 past ledger lines
+- [x] 2 ended campaigns with results
 
 ---
 
@@ -179,5 +179,5 @@ Plan (5 working days, 2–4 Claude sessions in parallel, two review windows a da
 - [ ] ID and EN complete on every new screen
 - [ ] Shipping screens unchanged (smoke test + a quick click-through)
 - [ ] `npm run bundle` single file works offline
-- [ ] Guide updated with the demo script; README row v4.0 complete
+- [x] Guide updated with the demo script; README row v4.0 complete
 - [ ] Feedback from AG captured in `docs/prototype/FEEDBACK.md` for the production build

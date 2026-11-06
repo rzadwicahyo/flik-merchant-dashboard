@@ -100,7 +100,7 @@ Export sheet: the clean full-size preview (first time it appears), formats with 
 
 ### 4.2 Merchant: full view
 - Up to 3 competitors (limit from `LIMITS`), each with Instagram handle and optional website.
-- Website check on add: detects Shopify / WooCommerce / unsupported. Marketplace URL (shopee, tokopedia, lazada, tiktok, bukalapak) → "We can't read marketplaces. Add their Instagram or own website instead."
+- Website check on add: detects Shopify / WooCommerce / unsupported (fixtures for the fictional shops; a real domain is read live, see CONTEXT 2.3). Marketplace URL (shopee, tokopedia, lazada, tiktok, bukalapak) → "We can't read marketplaces. Add their Instagram or own website instead."
 - Per competitor tabs: **Posts** (grid, with tags promo / new arrival / UGC / giveaway), **Products and prices** (from website: name, price, compare-at price, in stock, changed this week), **Activity** (timeline: "Started 20% sale on 12 Oct", "Price of Kemeja Linen Rp259.000 → Rp219.000", "3 new products").
 - Last refreshed "weekly · Mon 07:00". Prototype bar **Skip 7 days** adds new activity.
 - Friendly states: Instagram account is private or personal ("We can only read business or creator accounts"), website unreachable ("Their site didn't answer. We'll try again next week."), unclassified post with AI tag (`mockLLM('classify')`).
@@ -196,4 +196,4 @@ Each template: name, category, language, body with `{{1}}`… variables, footer 
 
 ## 10. Out of scope for the prototype
 
-Real cut-out, real APIs, PSD export, admin pages for staff (manual AI top-up is shown only as a line in the Limits editor: "Top-ups are added by FLIK staff twice a day"), product catalog, referral, TikTok posting, marketplace data, analytics dashboards for FLIK staff.
+Real cut-out, real APIs (except the free public sources in CONTEXT 2.3: public holidays and a competitor's own Shopify/WooCommerce shop, live with example-data fallback), PSD export, admin pages for staff (manual AI top-up is shown only as a line in the Limits editor: "Top-ups are added by FLIK staff twice a day"), product catalog, referral, TikTok posting, marketplace data, analytics dashboards for FLIK staff.

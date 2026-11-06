@@ -97,6 +97,9 @@ function stDrawProduct(x,l){const img=l.upload?stUploadImg:ST_IMG[l.id];if(!img)
   cx.globalCompositeOperation='destination-in';const g=cx.createRadialGradient(l.w/2,l.h/2,Math.min(dw,dh)*(l.tight?.3:.34),l.w/2,l.h/2,Math.min(dw,dh)*(l.tight?.44:.5));
   g.addColorStop(0,'#000');g.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=g;cx.fillRect(0,0,l.w,l.h);x.drawImage(c,l.x,l.y)}
 let stLogoImg=null;
+/* S6: a merchant's saved logo and brand colour come back in every design; a stranger or lead never gets them */
+const stBrandImg=new Image();stBrandImg.src=GE_BRAND.logo;
+function stBrandOn(){if(geMerchant()){if(!STU.logo||STU.logo===GE_BRAND.logo){STU.logo=GE_BRAND.logo;stLogoImg=stBrandImg}}else if(STU.logo===GE_BRAND.logo){STU.logo=null;stLogoImg=null}}
 function stDrawLayers(x,J,{watermark=false,only=null}={}){const {w:W,h:H}=J,F=stFont();
   for(const l of J.layers){if(only&&!only.includes(l.type))continue;x.save();
     if(l.type==='scene')stDrawScene(x,l.id,W,H);
@@ -125,7 +128,7 @@ function stRender(v,W,opt){const J=stLayers(v,W),c=document.createElement('canva
 const stPreview=(v,W=540)=>stRender(v,W,{watermark:true}).c.toDataURL('image/jpeg',.72);
 
 /* ===== S1 public page ===== */
-GX.studio=g=>{const L=geLang();STU.cat=STU.cat||(GS.lead?GS.lead.cat:null);
+GX.studio=g=>{const L=geLang();stBrandOn();STU.cat=STU.cat||(GS.lead?GS.lead.cat:null);
   return{html:`<div class="gx-in st-pub">
   <span class="st-eyebrow">${ic('sparkle',13)} FLIK Studio</span>
   <h1>${geT('studio.pub.h')}</h1><p class="st-lead">${geT('studio.pub.sub')}</p>
@@ -176,8 +179,8 @@ function stBeforeAfter(){const el=document.getElementById('st-ba');if(!el)return
 
 /* ===== S2 designing ===== */
 function stStart(){const l=useLimit('designsPerDay');if(!l.ok){toast(l.message);return}
-  const vt=stVibeTags(STU.vibe),merchantLogo=geMerchant();
-  STU.design={id:'D'+Date.now().toString(36),format:'1:1',lang:geLang(),tone:'casual',badge:'',logoOn:!!STU.logo||merchantLogo,logoPos:'bottom-left',brand:null,round:0,seen:[],tags:vt.tags,match:vt.pct,vibeAi:false,vars:[],sel:0,tight:false,paid:{}};
+  stBrandOn();const vt=stVibeTags(STU.vibe),merchantLogo=geMerchant();
+  STU.design={id:'D'+Date.now().toString(36),format:'1:1',lang:geLang(),tone:'casual',badge:'',logoOn:!!STU.logo||merchantLogo,logoPos:'bottom-left',brand:merchantLogo?GE_BRAND.colour:null,round:0,seen:[],tags:vt.tags,match:vt.pct,vibeAi:false,vars:[],sel:0,tight:false,paid:{}};
   STU.phase='designing';STU.stage=0;STU.tab='scene';STU.t0=performance.now();
   if(location.hash==='#studio/edit')stMountEditor();else go('studio/edit');
   const steps=[600,1800,1200];let i=0;
@@ -193,7 +196,7 @@ GX.edit=g=>{if(!STU.design&&!STU.busy){STU.busy=true;setTimeout(()=>{STU.busy=fa
 function stActs(){const el=document.getElementById('st-acts');if(!el)return;const d=STU.design,ready=STU.phase==='ready';
   const left=d?Math.max(0,limitCap('regenPerDesign')-(GS.usage['regenPerDesign:'+d.id]||0)):0;
   el.innerHTML=`<button class="btn btn-o" id="st-more" ${ready?'':'disabled'}>${ic('sparkle',15)}${geT('st.more')} <span class="st-left">${geT('st.left',{n:left})}</span></button>
-  ${geMerchant()?`<button class="btn btn-o" id="st-use" ${ready?'':'disabled'}>${geT('st.use')}</button>`:''}
+  ${geMerchant()?`<button class="btn btn-o" id="st-use" ${ready?'':'disabled'}>${ic('rocket',15)}${GS.studioReturn?geT('st.use.back'):geT('st.use')}</button>`:''}
   <button class="btn btn-p" id="st-dl" ${ready?'':'disabled'}>${ic('export',15)}${geT('st.download')}</button>`;
   document.getElementById('st-more').onclick=stMore;document.getElementById('st-dl').onclick=()=>stGate('download');
   const u=document.getElementById('st-use');if(u)u.onclick=()=>stGate('use')}
@@ -228,9 +231,9 @@ function stDrawPanel(){const p=document.getElementById('st-panel');if(!p||!STU.d
     <div class="fld"><label for="st-badge">${geT('st.badge')}</label><select id="st-badge">${ST_BADGES[L].map(b=>`<option value="${esc(b)}" ${v.badge===b?'selected':''}>${b||geT('st.none')}</option>`).join('')}</select></div>`}
   else if(STU.tab==='format')body=`<div class="st-fmts">${ST_FORMATS.map(([k,n,r])=>`<button class="st-fmt${d.format===k?' on':''}" data-fmt="${k}"><i style="aspect-ratio:1/${r}"></i><span>${n}</span></button>`).join('')}</div>`;
   else if(STU.tab==='brand')body=`<label class="st-chk"><input type="checkbox" id="st-logo-on" ${d.logoOn?'checked':''}> ${geT('st.logo.show')}</label>
-    <p class="d-sub">${STU.logo?geT('st.logo.yours'):geMerchant()?geT('st.logo.saved'):geT('st.logo.mono')}</p>
+    <p class="d-sub">${STU.logo===GE_BRAND.logo?geT('st.logo.saved'):STU.logo?geT('st.logo.yours'):geT('st.logo.mono')}</p>
     <div class="fld"><label>${geT('st.logo.pos')}</label><div class="st-pos">${['top-left','top-right','bottom-left','bottom-right'].map(k=>`<button class="${d.logoPos===k?'on':''}" data-pos="${k}">${geT('st.pos.'+k)}</button>`).join('')}</div></div>
-    <div class="fld"><label>${geT('st.colour')}</label><div class="st-cols">${[null,'#5b4bdb','#c2410c','#0f766e','#be185d','#1d2430','#ca8a04'].map(c=>`<button class="${d.brand===c?'on':''}" data-col="${c||''}" style="background:${c||'conic-gradient(#e3b65c,#d64f78,#1f8a6c,#e3b65c)'}" aria-label="${c||geT('st.col.auto')}"></button>`).join('')}</div></div>`;
+    <div class="fld"><label>${geT('st.colour')}</label><div class="st-cols">${[null,...(geMerchant()?[GE_BRAND.colour]:[]),'#5b4bdb','#c2410c','#0f766e','#be185d','#1d2430','#ca8a04'].map(c=>`<button class="${d.brand===c?'on':''}" data-col="${c||''}" style="background:${c||'conic-gradient(#e3b65c,#d64f78,#1f8a6c,#e3b65c)'}" aria-label="${c||geT('st.col.auto')}"></button>`).join('')}</div></div>`;
   else if(STU.tab==='cut')body=`<p class="d-sub">${geT('st.cut.sub')}</p><div class="st-cut"><button class="btn btn-o" data-cut="erase">${geT('st.erase')}</button><button class="btn btn-o" data-cut="restore">${geT('st.restore')}</button></div>`;
   p.innerHTML=`<div class="tabs st-tabs" role="tablist">${tabs.map(([k,l])=>`<button class="tab${STU.tab===k?' on':''}" data-stab="${k}" role="tab" aria-selected="${STU.tab===k}">${geT(l)}</button>`).join('')}</div><div class="st-pb">${body}</div>`;
   p.querySelectorAll('canvas[data-scc]').forEach(c=>stDrawScene(c.getContext('2d'),c.dataset.scc,96,96));
@@ -264,7 +267,17 @@ function stMore(){const d=STU.design,l=useLimit('regenPerDesign',d.id);if(!l.ok)
 function stGate(intent){track('studio_download_clicked',{account:GS.account,intent});
   if(GS.account==='anon'){stSignup(()=>intent==='use'?stUse():stExport());return}
   if(intent==='use')stUse();else stExport()}
-function stUse(){if(!geMerchant()){toast(geT('st.use.merchant'));return}stSave();toast(geT('st.use.ok'));go('marketing/growth')}
+function stUse(){if(!geMerchant()){toast(geT('st.use.merchant'));return}const s=stSave();s.merchant=true;track('studio_used_in_campaign',{back:!!GS.studioReturn});
+  /* back to the idea that opened Studio, with this design as its image */
+  if(GS.studioReturn){const id=GS.studioReturn.idea;GS.studioReturn=null;const d=GE.drafts[id];if(d){d.design=s.key;d.step=2}toast(geT('st.use.ok'));go('marketing/growth/idea/'+id);return}
+  geIdeaPicker(s)}
+/* "Use in a campaign" from Studio: pick which idea gets this image (campaign and post ideas both take one) */
+function geIdeaPicker(s){geInit();const ideas=geIdeaList().filter(i=>!GE.dismissed[i.id]&&!geCampOf(i.id));modal.classList.add('nw');
+  modal.innerHTML=`<div class="mh"><h3>${geT('st.pick.h')}</h3><button class="ib" data-mclose aria-label="Close">${ic('x',18)}</button></div>
+  <div class="mb"><p class="vf-lead">${geT('st.pick.sub')}</p><div class="st-pick">${ideas.map(i=>`<button class="st-pi" data-pi="${i.id}"><span class="st ${i.type==='post'?'gr':'pu'} sm">${geT('g.type.'+i.type)}</span><b>${esc(geL(i.title))}</b><span>${i.ch.map(k=>geT('g.ch.'+k)).join(' · ')}</span></button>`).join('')||`<p class="d-sub">${geT('g.ideas.none')}</p>`}</div></div>
+  <div class="mf"><button class="btn btn-o" data-mclose>${geT('pay.cancel')}</button></div>`;mscrim.classList.add('open');
+  modal.querySelectorAll('[data-pi]').forEach(b=>b.onclick=()=>{const id=b.dataset.pi;closeModal();GE.drafts[id]=null;go('marketing/growth/idea/'+id);
+    setTimeout(()=>{const d=GE.drafts[id];if(d){d.design=s.key;d.step=2;giDraw(d)}},0)})}
 function stSignup(done){const L=geLang(),f={name:'',brand:'',phone:'',cat:STU.cat||'',link:'',consent:false};let step=1,sentAt=0,wrong=false;
   track('signup_started',{});
   const draw=()=>{modal.classList.add('nw');
@@ -358,7 +371,7 @@ function stAfterExport(){if(GS.account!=='lead')return;
   mscrim.classList.add('open');document.getElementById('ex-dash').onclick=()=>{closeModal();go('marketing/studio')}}
 
 /* ===== Dashboard Studio: what a lead (and a merchant) sees ===== */
-function renderStudio(){const el=document.getElementById('view-stu'),lead=GS.account==='lead';
+function renderStudio(){const el=document.getElementById('view-stu'),lead=GS.account==='lead';stBrandOn();if(geMerchant())geInit();
   if(lead&&!GS.lead)GS.lead={...ST_LEAD_EXAMPLE};
   if(lead&&!GS.designs.length)stSeedLead();
   const designs=GS.designs,L=geLang();

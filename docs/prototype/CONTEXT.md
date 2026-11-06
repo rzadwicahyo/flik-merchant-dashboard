@@ -8,7 +8,7 @@
 - Read order for an agent: `CLAUDE.md` → this file → `BUILD_SPEC.md` → `TICKETS.md`. Work one task at a time.
 - Product source of truth: Growth Engine v2 + Studio technical spec v4, https://claude.ai/artifact/Fgc4oSpPb9LhJjio8V4XQt. Use it for **product rules only**. Ignore its stack, database and infrastructure sections; they are for production.
 - Goal of the prototype: let AG (management) click through the whole story in one sitting and give feedback. Then the feedback goes into the production build in FLIK's repos.
-- Last updated: 5 Nov 2026
+- Last updated: 6 Nov 2026
 
 ## 1. What the prototype must show
 
@@ -28,7 +28,7 @@ The demo story AG must be able to follow (BUILD_SPEC section 2 has the click pat
 
 1. **Front-end only.** Plain JavaScript files loaded by `index.html`. No framework, no build step, no npm dependencies, no backend, no database. `npm start` must keep working with nothing installed.
 2. **Everything is example data.** No real merchants, shoppers, competitors, phone numbers or Instagram handles. Make up names that are clearly fictional.
-3. **No network calls to anything real.** No Claude API, no Meta API, no Qontak, no FLIK API, no Shopify or WooCommerce fetches, no CDN fonts or images. The smoke test blocks outside requests and must pass.
+3. **No network calls to anything that needs a key or a partner account.** No Claude API, no Meta/Instagram API, no Qontak, no FLIK API, no CDN fonts or images. **Exception (Reza, 6 Nov 2026):** free, public, keyless sources may be called live, always with example data as the fallback: Indonesian public holidays from `date.nager.at`, and a competitor's own Shopify `/products.json` or WooCommerce Store API when a real site is typed. One switch: `liveFreeApis` in `config.js`, or `?live=0`. The smoke test blocks every outside request (fallback path) and mocks the live answers (live path); both must pass.
 4. **No secrets anywhere.** `config.js` is public. Do not add keys.
 5. **Do not touch Shipping.** Leave `shipment.js`, `flow.js`, `monitoring.js`, `checkrate.js`, `analytics.js` and Raam's `index.html` alone. You may change `core.js`, `boot.js`, `data.js`, `home.js` and `app.css` only where a ticket says so.
 6. **`app/crm.js` (Growth Engine v1, v3.12) is replaced**, not extended. Keep its good parts (segments by phone, holdout, merchant vs FLIK voucher wording) by porting them; then delete the file and its script tag in the same PR.
@@ -50,7 +50,9 @@ The demo story AG must be able to follow (BUILD_SPEC section 2 has the click pat
 | FLIK ledger (balance debit) | The merchant's example balance goes down and a ledger line appears. |
 | Voucher engine | Vouchers live in a JS array; redemptions are generated for the result screen. |
 | Orders and shoppers | Example data, seeded and repeatable (use `mkRng`/`hsh` from `core.js`). |
-| Instagram Business Discovery, Shopify `/products.json`, WooCommerce Store API | Fixture data per fictional competitor, with a 0.8 s fake load. One fixture fails on purpose to show the friendly fallback state. |
+| Instagram Business Discovery | Fixture data per fictional competitor, with a 0.8 s fake load. `@private.label` fails on purpose to show the friendly state. An unknown handle gets clearly-labelled example data. |
+| Shopify `/products.json`, WooCommerce Store API | Fixtures for the fictional shops (`kainkita.example` Shopify, `lunaloom.example` WooCommerce, `sare-basic.example` unsupported, any other `.example` unreachable). A real domain is read **live** from the browser; if the browser is blocked (no CORS) it says "Read weekly by FLIK" instead of inventing prices. |
+| Public holidays | Live from `date.nager.at` (free, no key); the built-in list in `GE_DATES` is the fallback. Shopping and cultural moments (11.11, 12.12, Hari Ibu…) are always built in. |
 | Nightly jobs (account status, weekly competitor refresh, campaign end) | Buttons in the prototype bar: **Skip 7 days** (moves the demo clock) and **End campaign**. |
 
 ## 4. Who sees what

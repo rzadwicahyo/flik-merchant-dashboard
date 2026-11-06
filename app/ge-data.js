@@ -22,7 +22,7 @@ const GE_ACCOUNTS=['anon','lead','new','active','top'];
 const GE_OWNER={name:'Dewi',phone:'6281200000007',store:'Aruna Studio',category:'fashion'};
 
 /* Balance and past ledger lines (example) */
-const GE_BALANCE=1250000;
+const GE_BALANCE=typeof BAL==='number'?BAL:1250000;   // the same balance as the dashboard header
 const GE_LEDGER_SEED=[
   {d:2,label:'Top up',amount:500000},
   {d:9,label:'Shipping, batch BT-0412',amount:-184000},
@@ -30,9 +30,42 @@ const GE_LEDGER_SEED=[
 
 /* WhatsApp templates: 12 marketing + 2 utility, each in Bahasa and English. Lane D (D2) writes the full texts. */
 const GE_WA={
-  new_arrival:{cat:'marketing'},promo_discount:{cat:'marketing'},flash_sale:{cat:'marketing'},big_date:{cat:'marketing'},
-  bundle_offer:{cat:'marketing'},restock:{cat:'marketing'},best_seller:{cat:'marketing'},second_purchase:{cat:'marketing'},
-  win_back:{cat:'marketing'},vip_early_access:{cat:'marketing'},checkout_reminder:{cat:'marketing'},event_invite:{cat:'marketing'},
+  new_arrival:{cat:'marketing',kind:'new',
+    id:'Halo {{1}}, koleksi baru dari {{2}} sudah datang! {{3}}. Lihat duluan sebelum kehabisan: {{5}}',
+    en:'Hi {{1}}, new arrivals at {{2}} are here! {{3}}. Have a look before they sell out: {{5}}'},
+  promo_discount:{cat:'marketing',kind:'promo',
+    id:'Halo {{1}}, ada promo dari {{2}}: {{3}}. Berlaku sampai {{4}}. Pakai di sini: {{5}}',
+    en:'Hi {{1}}, a treat from {{2}}: {{3}}. Valid until {{4}}. Use it here: {{5}}'},
+  flash_sale:{cat:'marketing',kind:'promo',
+    id:'Flash sale {{2}} cuma sampai {{4}}! {{1}}, dapatkan {{3}} sebelum habis: {{5}}',
+    en:'{{2}} flash sale, only until {{4}}! {{1}}, get {{3}} before it\'s gone: {{5}}'},
+  big_date:{cat:'marketing',kind:'date',
+    id:'Halo {{1}}, {{2}} punya hadiah spesial buat kamu: {{3}}. Berlaku sampai {{4}}. Klaim di sini: {{5}}',
+    en:'Hi {{1}}, {{2}} has something special for you: {{3}}. Valid until {{4}}. Claim it here: {{5}}'},
+  bundle_offer:{cat:'marketing',kind:'promo',
+    id:'Halo {{1}}, belanja lebih hemat di {{2}}: {{3}}. Sampai {{4}}. Pilih paketmu: {{5}}',
+    en:'Hi {{1}}, save more at {{2}}: {{3}}. Until {{4}}. Pick your bundle: {{5}}'},
+  restock:{cat:'marketing',kind:'new',
+    id:'Kabar baik, {{1}}! {{3}} sudah tersedia lagi di {{2}}. Stok terbatas: {{5}}',
+    en:'Good news, {{1}}! {{3}} is back in stock at {{2}}. Limited stock: {{5}}'},
+  best_seller:{cat:'marketing',kind:'new',
+    id:'Halo {{1}}, ini favorit pelanggan {{2}} bulan ini: {{3}}. Lihat di sini: {{5}}',
+    en:'Hi {{1}}, this month\'s favourite at {{2}}: {{3}}. See it here: {{5}}'},
+  second_purchase:{cat:'marketing',kind:'store',
+    id:'Halo {{1}}, terima kasih sudah belanja di {{2}}! Ini {{3}} untuk belanja berikutnya, berlaku sampai {{4}}: {{5}}',
+    en:'Hi {{1}}, thanks for shopping at {{2}}! Here\'s {{3}} for your next order, valid until {{4}}: {{5}}'},
+  win_back:{cat:'marketing',kind:'store',
+    id:'Halo {{1}}, kami kangen kamu di {{2}}! Yuk belanja lagi dengan {{3}}, sampai {{4}}: {{5}}',
+    en:'Hi {{1}}, we miss you at {{2}}! Come back with {{3}}, until {{4}}: {{5}}'},
+  vip_early_access:{cat:'marketing',kind:'date',
+    id:'Halo {{1}}, kamu pelanggan istimewa {{2}}. Akses lebih dulu buat kamu: {{3}}, sampai {{4}}. Belanja duluan: {{5}}',
+    en:'Hi {{1}}, you\'re one of {{2}}\'s favourite customers. Early access for you: {{3}}, until {{4}}. Shop first: {{5}}'},
+  checkout_reminder:{cat:'marketing',kind:'store',
+    id:'Halo {{1}}, pesananmu di {{2}} belum selesai. Selesaikan dengan {{3}} sampai {{4}}: {{5}}',
+    en:'Hi {{1}}, your order at {{2}} isn\'t finished yet. Complete it with {{3}} until {{4}}: {{5}}'},
+  event_invite:{cat:'marketing',kind:'date',
+    id:'Halo {{1}}, {{2}} mengundangmu: {{3}}, {{4}}. Simpan tempatmu: {{5}}',
+    en:'Hi {{1}}, {{2}} invites you: {{3}}, {{4}}. Save your spot: {{5}}'},
   otp_login:{cat:'utility',noImage:true,
     id:'{{1}} adalah kode verifikasi FLIK kamu. Jangan berikan kode ini ke siapa pun. Berlaku 5 menit.',
     en:'{{1}} is your FLIK verification code. Don\'t share it with anyone. Valid for 5 minutes.'},
@@ -40,13 +73,22 @@ const GE_WA={
     id:'Halo {{1}}, kampanye "{{2}}" sudah selesai. Penjualan dari kampanye: {{3}}. Tambahan dibanding grup pembanding: {{4}}. Lihat detailnya: {{5}}',
     en:'Hi {{1}}, your campaign "{{2}}" has ended. Sales from the campaign: {{3}}. Extra against the holdout group: {{4}}. See the details: {{5}}'}
 };
+/* every marketing template: {{1}} shopper's first name, {{2}} store, {{3}} offer or product, {{4}} valid until, {{5}} link */
+const GE_WA_FOOT={id:'Balas STOP untuk berhenti',en:'Reply STOP to opt out'};
+const GE_WA_BTN={id:['Pakai voucher','STOP'],en:['Use voucher','STOP']};
 
 /* Canned answers for the AI fallback (mockLLM). Lane D (D2) adds the full set. */
 const GE_LLM={
   vibe:q=>({tags:['warm','earthy','festive'],note:`Matched “${q&&q.vibe||'your vibe'}” to warm, earthy, festive scenes`}),
   copy:q=>({options:['Adem seharian, gaya tetap rapi','Linen premium untuk hari yang panjang','Santai tapi tetap standout']}),
-  context:q=>({caption:'Koleksi batik baru sudah datang. Pakai voucher ini sebelum 11.11 berakhir.',tweak:'Add the batik collection to the poster and the WhatsApp header'}),
-  classify:q=>({type:'promo',confidence:.82})
+  /* own context: rewrites the captions with what the owner typed, and suggests one tweak */
+  context:q=>{const t=String(q&&q.text||'').trim(),l=q&&q.lang==='en';
+    return{caption:l?`${t?t.charAt(0).toUpperCase()+t.slice(1)+'. ':''}Use your voucher before ${q&&q.until||'it ends'}, while stock lasts.`
+                    :`${t?t.charAt(0).toUpperCase()+t.slice(1)+'. ':''}Pakai vouchermu sebelum ${q&&q.until||'berakhir'}, selama stok masih ada.`,
+      tweak:l?'Put the new product in the Studio image and the WhatsApp header':'Tampilkan produk baru di gambar Studio dan header WhatsApp'}},
+  /* a competitor post the rules couldn't place */
+  classify:q=>{const c=String(q&&q.caption||'').toLowerCase();
+    return{type:/%|diskon|sale|potong|hemat/.test(c)?'promo':/baru|new|launch|rilis/.test(c)?'new':/giveaway|hadiah|menang/.test(c)?'giveaway':'ugc',confidence:.82}}
 };
 
 /* ===================== Studio content (lane D, D1 + D2) ===================== */
@@ -132,3 +174,129 @@ const ST_CATS=[['fashion',{id:'Fashion',en:'Fashion'}],['fnb',{id:'Makanan & min
 const ST_FORMATS=[['1:1','1:1 Feed',1],['4:5','4:5 Feed',1.25],['9:16','9:16 Story',16/9],['white','1:1 Marketplace white',1]];
 /* Example lead for ?account=lead without signing up */
 const ST_LEAD_EXAMPLE={name:'Rina Wulandari',brand:'Dapur Rina',phone:'6281355500123',cat:'fnb',link:'instagram.com/dapur.rina',consent:true};
+
+/* ===================== Competitors, store, calendar, ideas (lane D, D3) ===================== */
+
+/* The merchant's saved brand (S6): logo and colour come back in every Studio design */
+const GE_BRAND={colour:'#8a5a3b',logo:'data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="260" height="100" viewBox="0 0 260 100"><circle cx="50" cy="50" r="42" fill="#8a5a3b"/><path d="M28 66 50 28l22 38" fill="none" stroke="#f6eddd" stroke-width="8" stroke-linejoin="round"/><path d="M37 54h26" stroke="#f6eddd" stroke-width="7"/><text x="104" y="62" font-family="Georgia,serif" font-size="38" fill="#8a5a3b">aruna</text></svg>')};
+
+/* Fictional competitors (BUILD_SPEC 4.3). Posts: [days ago, type|null, product, background, tag, caption id, caption en, hour, likes].
+ * Activity: [day (negative = before the demo date; positive = appears after "Skip 7 days"), kind, text id, text en]. */
+const CP_FIX={
+  'kain.kita.id':{name:'Kain Kita',cat:'fashion',followers:48200,site:'kainkita.example',platform:'shopify',
+    bio:{id:'Kemeja linen & batik harian · Jakarta',en:'Everyday linen & batik · Jakarta'},
+    posts:[[1,'promo','linen-shirt','#e8d6c0','-20%','Diskon 20% semua kemeja linen sampai 20 Okt!','20% off every linen shirt until 20 Oct!',20,1840],
+      [2,'promo','linen-shirt','#d9e3d1','-20%','Hari ke-2 sale linen. Warna sage tinggal sedikit.','Linen sale day 2. Sage is almost gone.',19,960],
+      [4,'new','batik-dress','#f1e2cf','Baru','Koleksi baru: Outer Tenun, tenun asli Lombok.','New in: the Tenun outer, woven in Lombok.',20,1210],
+      [5,'ugc','linen-shirt','#e5ddd3','','Repost dari @rara.ootd, makasih sudah tag kami!','Reposted from @rara.ootd, thanks for the tag!',21,640],
+      [7,'new','tote-bag','#efe6d4','Baru','Tote kanvas natural, muat laptop 14 inci.','Natural canvas tote, fits a 14-inch laptop.',19,720],
+      [9,'giveaway','batik-dress','#f3e3d3','Giveaway','Giveaway 3 dress batik! Follow, like, tag 2 teman.','Giveaway: 3 batik dresses! Follow, like, tag 2 friends.',20,4310],
+      [12,null,'linen-shirt','#e9e1d6','','Pagi yang adem di studio kami.','A cool morning in our studio.',8,410],
+      [15,'promo','batik-dress','#ecd9c6','-15%','Payday deal: batik parang 15% off.','Payday deal: 15% off Parang batik.',20,1120],
+      [19,'ugc','tote-bag','#e6e0d2','','Kata pelanggan: "adem dan nggak kusut".','Customers say: "cool and doesn\'t crease".',21,530]],
+    products:[['Kemeja Linen Putih',219000,259000,true,'price'],['Kemeja Linen Sage',219000,259000,true,'price'],['Dress Batik Parang',349000,429000,true,''],
+      ['Celana Kulot Linen',199000,249000,true,''],['Tote Kanvas Natural',129000,0,true,''],['Outer Tenun Lombok',389000,0,true,'new'],['Scarf Voile Bunga',119000,0,false,'new'],['Kemeja Batik Pria',299000,0,true,'new']],
+    activity:[[-2,'promo','Mulai sale 20% untuk kemeja linen','Started a 20% sale on linen shirts'],
+      [-2,'price','Harga Kemeja Linen Putih Rp259.000 → Rp219.000','Price of Kemeja Linen Putih Rp259.000 → Rp219.000'],
+      [-4,'new','3 produk baru: Outer Tenun, Scarf Voile Bunga, Kemeja Batik Pria','3 new products: Outer Tenun, Scarf Voile Bunga, Kemeja Batik Pria'],
+      [-9,'post','Giveaway dengan 4.310 likes, postingan terbesar bulan ini','Giveaway with 4,310 likes, their biggest post this month'],
+      [3,'promo','Umumkan pre-sale 11.11: diskon 25% mulai 9 Nov','Announced an 11.11 pre-sale: 25% off from 9 Nov'],
+      [5,'price','Dress Batik Parang kembali ke Rp429.000 (sale selesai)','Dress Batik Parang back to Rp429.000 (sale ended)']]},
+  'lunaloom.co':{name:'Luna Loom',cat:'fashion',followers:21900,site:'lunaloom.example',platform:'woocommerce',
+    bio:{id:'Basic wanita yang nyaman · Bandung',en:'Comfortable women\'s basics · Bandung'},
+    posts:[[0,'new','batik-dress','#e7e3ef','Reels','Styling 1 celana, 3 gaya. Reels malam ini!','1 pair of pants, 3 looks. Tonight\'s reel!',20,880],
+      [1,'promo','tote-bag','#ede4dc','Turun harga','Harga turun untuk 4 favorit kamu.','Lower prices on 4 of your favourites.',20,1020],
+      [2,'ugc','linen-shirt','#e3e8ee','','Foto dari pelanggan di Lembang.','A customer photo from Lembang.',20,470],
+      [3,'new','batik-dress','#efe1e6','Reels','Reels: cara mix & match cardigan rajut.','Reel: how to mix and match the knit cardigan.',20,1390],
+      [4,null,'tote-bag','#e9e6df','','Behind the scenes packing pesanan hari ini.','Behind the scenes: packing today\'s orders.',21,350],
+      [6,'new','linen-shirt','#e5ece6','Restock','Luna Wide Pants sudah restock semua ukuran.','Luna Wide Pants restocked in every size.',20,760],
+      [8,'promo','batik-dress','#f0e5da','-10%','10% untuk pembelian pertama.','10% off your first order.',20,640],
+      [11,'ugc','linen-shirt','#e6e3ea','','Review jujur dari @dinda.k','An honest review from @dinda.k',20,420],
+      [14,'new','tote-bag','#ebe7dd','Baru','Midi skirt plisket, 5 warna.','Pleated midi skirt in 5 colours.',20,910]],
+    products:[['Luna Wide Pants',199000,239000,true,'price'],['Loom Basic Tee',89000,109000,true,'price'],['Midi Skirt Plisket',219000,259000,true,'price'],
+      ['Cardigan Rajut',249000,299000,true,'price'],['Linen Set Kencana',459000,0,false,''],['Kemeja Oversize',189000,0,true,'']],
+    activity:[[-1,'price','Turunkan harga 4 produk, sampai 17%','Dropped prices on 4 items, by up to 17%'],
+      [-3,'post','Posting reels setiap malam pukul 20:00','Posts a reel every night at 20:00'],
+      [-6,'new','Restock Luna Wide Pants','Restocked Luna Wide Pants'],
+      [4,'promo','Mulai gratis ongkir untuk belanja di atas Rp300.000','Started free shipping over Rp300.000']]},
+  'sare.basic':{name:'Sare Basic',cat:'fashion',followers:12400,site:'sare-basic.example',platform:'custom',
+    bio:{id:'Kaos & kemeja basic lokal',en:'Local basic tees and shirts'},
+    posts:[[2,'new','linen-shirt','#e4e7ea','Baru','2 warna baru: navy dan olive.','2 new colours: navy and olive.',12,390],
+      [5,'new','tote-bag','#ece6dc','Baru','Tote kecil untuk sehari-hari.','A small everyday tote.',12,280],
+      [9,'ugc','linen-shirt','#e7e4df','','Dipakai ke kantor, tetap rapi.','Worn to the office, still sharp.',13,240],
+      [13,'promo','linen-shirt','#e9e0d4','-10%','Diskon 10% akhir bulan.','10% off at the end of the month.',12,310]],
+    products:[],
+    activity:[[-5,'new','2 produk baru di Instagram','2 new products on Instagram'],[2,'promo','Giveaway bareng brand partner','A giveaway with a partner brand']]},
+  'private.label':{private:true,name:'Private Label',cat:'fashion'}
+};
+const CP_MARKET=/(^|\.)(shopee|tokopedia|lazada|tiktok|bukalapak|blibli|zalora)\./i;
+
+/* Big dates, Oct to Mar (commercial and cultural moments). National public holidays come live from the public
+ * holiday calendar when it answers; the ones marked fb are only used if it doesn't. */
+const GE_DATES=[
+  ['2026-10-28','culture','Hari Sumpah Pemuda','Youth Pledge Day'],['2026-11-11','shop','11.11','11.11'],
+  ['2026-11-25','culture','Hari Guru','Teachers\' Day'],['2026-12-12','shop','12.12 Harbolnas','12.12 national online shopping day'],
+  ['2026-12-22','culture','Hari Ibu','Mother\'s Day'],['2026-12-25','holiday','Hari Raya Natal','Christmas Day',1],
+  ['2027-01-01','holiday','Tahun Baru Masehi','New Year\'s Day',1],['2027-02-06','holiday','Tahun Baru Imlek','Chinese New Year',1],
+  ['2027-02-08','culture','Awal Ramadan (perkiraan)','Ramadan starts (approx.)'],['2027-02-14','shop','Hari Valentine','Valentine\'s Day'],
+  ['2027-03-10','holiday','Idul Fitri (perkiraan)','Eid al-Fitr (approx.)',1],
+  ...['2026-10-25','2026-11-25','2026-12-25','2027-01-25','2027-02-25','2027-03-25'].map(d=>[d,'payday','Gajian','Payday'])];
+
+/* The merchant's shoppers, keyed by phone number (online + offline merged). Ported from v1 (crm.js). */
+const GE_SEG=[
+  {k:'new',n:{id:'Baru belanja sekali',en:'One-time shoppers'},rule:{id:'1 pesanan, 14–60 hari lalu',en:'1 order, 14 to 60 days ago'},on:1640,off:920},
+  {k:'repeat',n:{id:'Pelanggan berulang',en:'Repeat'},rule:{id:'2+ pesanan dalam 90 hari',en:'2 or more orders in 90 days'},on:410,off:262},
+  {k:'vip',n:{id:'VIP',en:'VIP'},rule:{id:'5% teratas berdasarkan belanja, 180 hari',en:'Top 5% by spend in 180 days'},on:118,off:71},
+  {k:'risk',n:{id:'Berisiko pergi',en:'At risk'},rule:{id:'Pelanggan berulang, tidak belanja 45–90 hari',en:'Repeat shopper, no order in 45 to 90 days'},on:384,off:207},
+  {k:'lapsed',n:{id:'Sudah lama tidak belanja',en:'Lapsed'},rule:{id:'Tidak belanja lebih dari 90 hari',en:'No order in more than 90 days'},on:690,off:452}];
+const GE_SCALE={new:.03,active:1,top:3.2};
+const GE_AOV=285000;          // example average order value
+const GE_FEE=1.5;             // % FLIK campaign fee on attributed sales only (example)
+const GE_PULSE={
+  new:{orders:9,prev:4,repeat:null,peers:14.2,top:'Canvas tote bag',off:22},
+  active:{orders:86,prev:74,repeat:10.8,peers:14.2,top:'Linen shirt · White',off:37},
+  top:{orders:268,prev:241,repeat:18.4,peers:14.2,top:'Batik dress · Indigo',off:41}};
+
+/* Ideas for this week (BUILD_SPEC 5.1). src: date | competitor | store. ch: wa, ig, tt, off. */
+const GE_IDEAS=[
+  {id:'i-1111',type:'campaign',src:['date','store'],date:'2026-11-11',segs:['repeat','vip'],ch:['wa','ig','off'],
+    title:{id:'Akses awal 11.11 untuk pelanggan berulang dan VIP',en:'11.11 early access for repeat and VIP shoppers'},
+    why:{id:'11.11 tinggal 4 minggu lagi. Pelanggan berulang dan VIP-mu membawa 61% penjualan; beri mereka akses lebih dulu sebelum ramai.',en:'11.11 is 4 weeks away. Your repeat and VIP shoppers bring 61% of your sales; give them first access before the rush.'},
+    voucher:{kind:'pct',v:10,max:10000,min:150000,days:28,quota:300},tpl:'vip_early_access',tpls:['vip_early_access','big_date','promo_discount','flash_sale'],
+    offer:{id:'diskon {v} (maks {max}) akses awal 11.11',en:'{v} off (up to {max}) 11.11 early access'},
+    product:'linen-shirt',scene:'festive-red',exp:[4e6,7e6],conv:.05},
+  {id:'i-kk-sale',type:'campaign',src:['competitor','store'],cmp:'kain.kita.id',act:0,segs:['risk'],ch:['wa','ig'],
+    title:{id:'Jawab sale 20% Kain Kita dengan paket 2 kemeja',en:'Answer Kain Kita\'s 20% sale with a 2-shirt bundle'},
+    why:{id:'Kain Kita memotong harga kemeja linen 20% sejak 12 Okt. Kemeja linen adalah produk terlarismu, dan 591 pelanggan berisiko pergi mungkin membandingkan. Jawab dengan nilai: beli 2 hemat Rp50.000, bukan diskon lebih dalam.',
+      en:'Kain Kita cut linen shirt prices by 20% on 12 Oct. Linen shirts are your best seller, and 591 at-risk shoppers may compare. Answer with value: buy 2 and save Rp50.000, not a deeper discount.'},
+    voucher:{kind:'amt',v:50000,max:50000,min:450000,days:10,quota:150},tpl:'bundle_offer',tpls:['bundle_offer','promo_discount','flash_sale'],
+    offer:{id:'hemat {v} untuk 2 kemeja linen',en:'{v} off 2 linen shirts'},
+    product:'linen-shirt',scene:'linen-sand',exp:[2e6,4e6],conv:.05},
+  {id:'i-second',type:'campaign',src:['store'],segs:['new'],ch:['wa'],
+    title:{id:'Pembelian kedua untuk pelanggan yang baru belanja sekali',en:'Second purchase for one-time shoppers'},
+    why:{id:'{n} pelanggan baru belanja sekali, 14–60 hari lalu. Sebagian besar pelangganmu tidak kembali setelah pesanan pertama. Terakhir kali (Agustus) hasilnya 2,2× grup pembanding.',
+      en:'{n} shoppers bought once, 14 to 60 days ago. Most of your shoppers never come back after the first order. Last time (August) it beat the holdout 2.2×.'},
+    voucher:{kind:'pct',v:15,max:30000,min:150000,days:14,quota:400},tpl:'second_purchase',tpls:['second_purchase','win_back','promo_discount'],
+    offer:{id:'diskon {v} (maks {max})',en:'{v} off (up to {max})'},
+    product:'tote-bag',scene:'oak-table',exp:[5e6,9e6],conv:.035,past:'C-1042'},
+  {id:'i-sumpah',type:'post',src:['date'],date:'2026-10-28',ch:['ig','tt'],
+    title:{id:'Hari Sumpah Pemuda (28 Okt): post OOTD batik',en:'Youth Pledge Day (28 Oct): batik OOTD post'},
+    why:{id:'Postingan bertema budaya lokal mendapat 1,8× lebih banyak interaksi di toko fashion FLIK yang mirip. Dress batik ada di pesanan terbarumu.',en:'Local-culture posts get 1.8× more engagement at similar FLIK fashion stores. The batik dress is in your recent orders.'},
+    caption:{id:'Satu nusa, satu bangsa, satu gaya. Rayakan Sumpah Pemuda dengan batik favoritmu. #SumpahPemuda #OOTDbatik',en:'One land, one nation, one style. Celebrate Youth Pledge Day in your favourite batik. #SumpahPemuda #OOTDbatik'},
+    product:'batik-dress',scene:'terracotta-sun',exp:[.8e6,1.6e6]},
+  {id:'i-best',type:'post',src:['store'],ch:['ig'],
+    title:{id:'Terlaris bulan ini: carousel kemeja linen',en:'Best seller this month: linen shirt carousel'},
+    why:{id:'Kemeja Linen Putih ada di 38% pesananmu bulan ini (dari pesanan terbarumu). Tunjukkan kenapa orang suka.',en:'Linen shirt · White is in 38% of your orders this month (from your recent orders). Show why people love it.'},
+    caption:{id:'Terlaris bulan ini: Kemeja Linen Putih. Adem, nggak gampang kusut, cocok buat kerja dan jalan. Cek ukuranmu sebelum kehabisan.',en:'This month\'s best seller: the white linen shirt. Cool, doesn\'t crease easily, works for the office and the weekend. Grab your size before it\'s gone.'},
+    product:'linen-shirt',scene:'window-light',exp:[1e6,2e6]}];
+const GE_IDEAS_FOR={new:['i-1111','i-kk-sale','i-sumpah'],active:GE_IDEAS.map(i=>i.id),top:GE_IDEAS.map(i=>i.id)};
+
+/* Two ended campaigns from the v1 history, with results (D3) */
+const GE_CAMP_SEED=[
+  {id:'C-1042',idea:'i-second',name:{id:'Pembelian kedua · Agustus',en:'Second purchase · August'},tpl:'second_purchase',segs:['new'],ch:['wa'],start:-62,days:14,
+    voucher:{kind:'pct',v:15,max:30000,min:150000,days:14,quota:400},res:{sent:2310,delivered:2228,read:1890,clicked:412,claimed:0,redeemed:97,sales:27.6e6,hold:257,holdRed:5,holdSales:1.45e6,cost:1155000,vcost:2.6e6,on:61,cashier:36,claim:0}},
+  {id:'C-0987',idea:null,name:{id:'Ajak kembali · September',en:'Win back · September'},tpl:'win_back',segs:['risk'],ch:['wa','off'],start:-34,days:14,
+    voucher:{kind:'pct',v:10,max:25000,min:150000,days:14,quota:200},res:{sent:540,delivered:521,read:418,clicked:88,claimed:23,redeemed:26,sales:8.1e6,hold:60,holdRed:1,holdSales:.31e6,cost:270000,vcost:.62e6,on:14,cashier:9,claim:3}}];
+
+/* Example shoppers who appear in the Outbox (fictional names, fictional numbers) */
+const GE_SHOPPERS=['Sari','Budi','Maya','Andi','Putri','Fajar','Nadia','Bayu'].map((n,i)=>({n,phone:'62813000001'+String(10+i)}));
