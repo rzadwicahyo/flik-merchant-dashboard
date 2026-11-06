@@ -67,6 +67,8 @@ The prototype bar gets an **Account** switch (also `?account=` in the URL):
 | `active` (default) | FLIK merchant, Aruna Studio (fashion, online + offline) | Everything. Full competitor monitoring (3 competitors, Instagram + website, weekly), Growth Engine with history. |
 | `top` | Top GMV band | Everything, top limits. |
 
+Since v4.1 (6 Nov) everything sits in one menu, Marketing › Growth Engine, with tabs My Brand, Competitor, Studio, Campaign (BUILD_SPEC section 0). A lead sees Studio and the one-time Competitor look; My Brand and Campaign show the merchant upsell.
+
 Only the **owner** gets WhatsApp OTPs, notifications and reports. Show the owner as "Dewi (owner)" with a fictional number.
 
 ## 5. Product rules (do not break, even in the mock)

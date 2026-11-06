@@ -2,7 +2,42 @@
 
 > **PROTOTYPE doc set** for `rzadwicahyo/flik-merchant-dashboard`. Front-end only, example data. Read `CONTEXT.md` first. The production build has its own docs outside this repo; do not use them here.
 
-Version: v4.0 prototype · 5 Nov 2026 · Owner: Reza
+Version: v4.1 prototype · 6 Nov 2026 · Owner: Reza
+
+## 0. v4.1 restructure (Reza, 6 Nov 2026). Where this differs from sections 1, 2, 4 and 5, this section wins.
+
+**One menu.** Marketing › **Growth Engine** is the only sidebar item; inside it four tabs:
+
+| Hash | Tab / screen | Who | File |
+| --- | --- | --- | --- |
+| `#marketing/growth` | **My Brand**: Socials (own Instagram, Facebook, Meta ads, website, read publicly like a competitor; account sync later) + My store (FLIK sales, orders, average order, repeat rate, shoppers online/offline, top products, segments with "Send campaign") | merchants (lead: locked) | `compete.js` |
+| `#marketing/growth/competitors` | **Competitor**: up to `LIMITS.competitors` (3, configurable), add and remove. *Summary*: My brand vs A vs B vs C, one table per channel, best number highlighted, a gap line per channel. *Per competitor*: what they did, action plan, then channel tabs (Instagram, Facebook, Meta ads, Website) with detailed metrics | merchants (lead: one-time snapshot) | `compete.js` |
+| `#marketing/growth/studio` | **Studio**: Create content + Your content | lead, merchants | `studio.js` |
+| `#marketing/growth/studio/new` | Create content (full screen): Output → Photo and details → Design → Deliver → WhatsApp preview → Done | lead, merchants | `studio.js` |
+| `#marketing/growth/campaigns` | **Campaign**: create, ideas for this week, overall metrics, sales by campaign, campaign list | merchants (lead: locked) | `growth.js` |
+| `#marketing/growth/campaigns/new` | Create campaign (full screen): Channel → Shoppers → (Pick shoppers) → Type → Rules → Review → Submit | merchants | `growth.js` |
+| `#marketing/growth/campaign/<id>` | Campaign result | merchants | `growth.js` |
+
+Old links (`#marketing/studio`, `#marketing/competitors`, `#studio/new`, `#marketing/growth/idea/<id>`) redirect into the tabs. The public Studio page `#studio` stays (entry from flik.co.id; dashboard is merchant.flik.co.id).
+
+**Channel metrics** (example data; Instagram, Facebook and the Meta Ad Library need a Meta app token; a real Shopify/WooCommerce site is read live):
+- Instagram and Facebook: followers, posts in 30 days, average engagement rate, top post by engagement, posting times, promo share.
+- Meta ads: ads running, new this week, longest running, formats.
+- Website: products, price changes this week, on discount, new products, average price.
+
+**Action plan categories** (`GE_ACTIONS`). Rules pick from this fixed list only; the AI may reword the reason, never add an action.
+
+| Kind | Category | Opens |
+| --- | --- | --- |
+| Campaign | Answer a competitor promo · Cashback instead of a price cut · Win back shoppers who left · Early access before a big date · Tell loyal shoppers about new products | Create campaign, prefilled |
+| Content | Match their best-performing content · Make an ad creative · Show your new products · Change when and how often you post | Create content, prefilled |
+| Suggestion only | Review the price gap · Review products you don't have · Consider an ad budget | nothing (FLIK can't do it for you) |
+
+**Studio AI.** Templates and stock scenes first, never charged. The AI runs only when the merchant turns on "Use AI", or the style words match less than `LIMITS.matchMin` (60%) of the scenes, or the merchant says none fit. Paid per design set: free with a small "Made with FLIK" mark, `LIMITS.llmPrice` (Rp5.000) from the balance, or a payment link. Downloads keep the existing quota and export price. WhatsApp: Download, or **Send with FLIK** (FLIK's WhatsApp number, Meta pre-approved template) → WhatsApp preview → Create campaign at the Shoppers step. Reels and email are shown as coming later.
+
+**Campaign journey.** Channel WhatsApp (email later) → shopper categories (All, One-time, Repeat, VIP, At risk, Lapsed, Checkout not paid, or Selected shoppers) → pick shoppers by hand if Selected → Voucher (% or Rp off at checkout) or Cashback (credited after the shopper's first order that meets the minimum; the merchant receives price − cashback − FLIK fee − payment fee) → rules (value, max, minimum order, valid days, quota, template, language, image, send now or tomorrow) → review (WhatsApp cost from the balance or a payment link, one-order example) → submit. Results by voucher or cashback ID. **No holdout and no poster for now** (claim page and cashier stay for the seeded data).
+
+**Ideas for this week** live in the Campaign tab; a campaign idea opens Create campaign prefilled, a post idea opens Create content.
 
 ## 1. Screens and routes
 

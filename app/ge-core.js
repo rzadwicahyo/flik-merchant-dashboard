@@ -15,6 +15,7 @@ Object.assign(P,{
   calendar:'<rect x="4" y="5.5" width="16" height="15" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>',
   qr:'<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2.5v2.5H14zM17.5 17.5H20V20h-2.5zM14 19.5h1M19.5 14v1"/>',
   star:'<path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z"/>',
+  phone:'<rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M10.5 18.5h3"/>',
   store:'<path d="M4 9.5 5.5 4.5h13L20 9.5"/><path d="M4 9.5a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0"/><path d="M5.5 11.5v8h13v-8"/><path d="M10 19.5v-4h4v4"/>'
 });
 
@@ -101,20 +102,33 @@ const GX_PUBLIC=['studio','claim'];
 const GX={};   // full-screen renderers, registered by studio.js and growth.js: GX[name] = g => ({title, html, after})
 document.body.insertAdjacentHTML('beforeend','<div class="gx" id="gx" hidden role="dialog" aria-modal="false"><div class="gx-top" id="gx-top"></div><div class="gx-body" id="gx-body"></div></div>');
 const gx=document.getElementById('gx');
+/* Growth Engine is one sidebar item with four tabs: My Brand, Competitor, Studio, Campaign */
+const GE_TABS=[['brd','marketing/growth','person','tab.brand'],['cmp','marketing/growth/competitors','eye','tab.cmp'],['stu','marketing/growth/studio','studio','tab.stu'],['gro','marketing/growth/campaigns','rocket','tab.camp']];
+const GE_VIEWS=GE_TABS.map(t=>t[0]);
+const GE_OLD={'marketing/studio':'marketing/growth/studio','marketing/competitors':'marketing/growth/competitors','studio/new':'marketing/growth/studio/new'};
 function geRoute(h){let g=null;const id=h.split('/').pop();
+  if(GE_OLD[h]&&GS.account!=='anon')return{redirect:GE_OLD[h]};
+  if(h.startsWith('marketing/growth/idea/'))return{redirect:'marketing/growth/campaigns'};
   if(h==='studio')g={view:'stu',full:'studio'};
   else if(h==='studio/edit')g={view:'stu',full:'edit'};
   else if(h==='studio/new')g={view:'stu',full:'new'};
-  else if(h.startsWith('marketing/growth/idea/'))g={view:'gro',full:'idea',id};
+  else if(h==='marketing/growth/studio/new')g={view:'stu',full:'create'};
+  else if(h==='marketing/growth/campaigns/new')g={view:'gro',full:'camp'};
   else if(h.startsWith('marketing/growth/campaign/'))g={view:'gro',sub:'campaign',id};
   else if(h.startsWith('claim/'))g={view:'gro',full:'claim',id};
-  else if(h==='marketing/growth')g={view:'gro'};
-  else if(h==='marketing/studio')g={view:'stu'};
-  else if(h==='marketing/competitors')g={view:'cmp'};
-  /* a stranger only has the public pages; a lead only has Studio, Competitors and the Growth Engine upsell */
-  if(!g)return GS.account==='anon'?{redirect:'studio'}:GS.account==='lead'?{redirect:'marketing/studio'}:null;
+  else{const t=GE_TABS.find(x=>x[1]===h);if(t)g={view:t[0]}}
+  /* a stranger only has the public pages; a lead has Studio and a one-time competitor look (My Brand and Campaign are locked) */
+  if(!g)return GS.account==='anon'?{redirect:'studio'}:GS.account==='lead'?{redirect:'marketing/growth/studio'}:null;
   if(GS.account==='anon'&&!['studio','edit','claim'].includes(g.full))return{redirect:'studio'};
+  if(GS.account==='lead'&&['camp'].includes(g.full))return{redirect:'marketing/growth/campaigns'};
   return g}
+/* the tab bar on top of every Growth Engine page */
+function geTabs(on,actions=''){const lead=GS.account==='lead';
+  return`<div class="ph ge-ph"><div><h1>${geT('gro.h')}</h1><p class="sec-sub ge-sub">${geT('tab.sub.'+on)}</p></div>${actions?`<div class="g-hact">${actions}</div>`:''}</div>
+  <div class="tabs ge-tabs" role="tablist">${GE_TABS.map(([v,h,i,k])=>{const lock=lead&&(v==='brd'||v==='gro');return`<a class="tab${v===on?' on':''}" href="#${h}" role="tab" aria-selected="${v===on}" data-getab="${v}">${ic(i,15)}${geT(k)}${lock?`<span class="ge-tlock">${ic('lock',11)}</span>`:''}</a>`}).join('')}</div>`}
+/* what a lead sees on a locked tab */
+function geLocked(v){return`<section class="card st-cta st-up ge-locked"><span class="qic">${ic('rocket',20,1.6)}</span><div><b>${geT('lock.'+v+'.h')}</b><span>${geT('lock.'+v+'.sub')}</span><ul>${['lead.b1','lead.b2','lead.b3','lead.b4'].map(k=>`<li>${ic('check',13,2.4)}${geT(k)}</li>`).join('')}</ul></div><button class="btn btn-p" data-gelead>${geT('gro.lead.cta')}</button></section>`}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-gelead]');if(!b)return;track('merchant_cta_clicked',{from:location.hash.slice(1)});toast(geT('lead.signup.toast'))});
 function geOpen(g){GS.full=g;const r=(GX[g.full]||(()=>({title:'',html:''})))(g),pub=GX_PUBLIC.includes(g.full);
   document.getElementById('gx-top').innerHTML=pub
     ?`<span class="gx-logo">FLIK <i>${g.full==='studio'?'Studio':''}</i></span><span class="gx-sp"></span>${geLangSeg()}${g.full==='studio'?`<button class="btn btn-o" data-gxsignin>${geT('gx.signin')}</button>`:''}`
@@ -123,7 +137,7 @@ function geOpen(g){GS.full=g;const r=(GX[g.full]||(()=>({title:'',html:''})))(g)
   gx.classList.toggle('pub',pub);gx.hidden=false;document.body.classList.add('gx-open');if(r.after)r.after()}
 function geClose(){if(gx.hidden)return;gx.hidden=true;GS.full=null;document.body.classList.remove('gx-open')}
 gx.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
-  if('gxclose' in b.dataset)go(GS.full&&GS.full.view==='stu'?'marketing/studio':'marketing/growth');
+  if('gxclose' in b.dataset)go(GS.full&&GS.full.view==='stu'?'marketing/growth/studio':GS.full&&GS.full.view==='gro'?'marketing/growth/campaigns':'marketing/growth');
   if('gxsignin' in b.dataset)toast('Opens FLIK sign-in for existing merchants');
   if(b.dataset.lang)geSetLang(b.dataset.lang)});
 
@@ -156,10 +170,10 @@ document.querySelector('.pbar .pb-ge').addEventListener('click',e=>{const b=e.ta
 function geSetAccount(k){GS.account=k;GS.usage={};track('account_switched',{account:k});
   const h=location.hash.replace(/^#/,'');
   if(k==='anon'&&!/^(studio|claim\/)/.test(h))go('studio');
-  else if(k!=='anon'&&h==='studio')go('marketing/studio');
+  else if(k!=='anon'&&h==='studio')go('marketing/growth/studio');
   else show()}
 function geBarCounts(){const n=document.getElementById('pt-wa');if(n)n.textContent=GS.outbox.filter(m=>!m.more).length}
-function geSync(view){document.body.classList.toggle('ge-lead',GS.account==='lead');const ab=document.querySelector('.acct b');if(ab)ab.textContent=GS.account==='lead'?(GS.lead||ST_LEAD_EXAMPLE).brand:GE_OWNER.store;const on=['gro','stu','cmp'].includes(view)||!gx.hidden;document.body.classList.toggle('ge-on',on);
+function geSync(view){document.body.classList.toggle('ge-lead',GS.account==='lead');const ab=document.querySelector('.acct b');if(ab)ab.textContent=GS.account==='lead'?(GS.lead||ST_LEAD_EXAMPLE).brand:GE_OWNER.store;const on=GE_VIEWS.includes(view)||!gx.hidden;if(GE_VIEWS.includes(view)){nav.querySelectorAll('[data-view="brd"]').forEach(b=>b.classList.add('on'));openGrp('brd')}document.body.classList.toggle('ge-on',on);
   document.getElementById('pt-acv').textContent=geT('acct.'+GS.account);
   document.querySelector('.pbar .pb-lang').innerHTML=geLangSeg();geBarCounts()}
 function geOutbox(){
@@ -173,12 +187,12 @@ function geLedger(){
   <div class="ge-bal"><span>${geT('ledger.balance')}</span><b>${rp(GS.balance)}</b></div>
   <div class="ev">${GS.ledger.map(l=>`<div class="ev-i"><div class="hd"><b>${esc(l.label)}</b><time>${geFdate(l.at)}</time></div><span class="${l.amount<0?'ge-neg':'ge-pos'}">${l.amount<0?'−':'+'}${rp(l.amount)}</span></div>`).join('')}</div></div>`;
   openDrawer()}
-function geLimits(){const keys=['regenPerDesign','designsPerDay','freeExportsPerMonth','llmFallbacksPerDay','ownContextPerWeek','competitors'];
+function geLimits(){const keys=['regenPerDesign','designsPerDay','freeExportsPerMonth','llmFallbacksPerDay','competitors'];
   const draw=()=>{drawer.innerHTML=`<div class="dh"><span class="kind">${ic('sliders',15)}${geT('limits.title')}</span><button class="ib" data-dclose aria-label="Close">${ic('x',18)}</button></div>
   <div class="db"><p class="d-sub" style="margin:0 0 14px">${geT('limits.sub')}</p>
   <div class="ge-limw"><table class="ge-lim"><thead><tr><th></th>${GE_ACCOUNTS.map(a=>`<th class="${a===GS.account?'on':''}" title="${geT('acct.'+a)}">${geT('acct.s.'+a)}</th>`).join('')}</tr></thead>
   <tbody>${keys.map(k=>`<tr><th>${geT('limits.'+k)}</th>${GE_ACCOUNTS.map(a=>`<td class="${a===GS.account?'on':''}"><input type="number" min="0" value="${GE_LIMITS[k][a]}" data-lk="${k}" data-la="${a}" aria-label="${geT('limits.'+k)}, ${geT('acct.'+a)}"></td>`).join('')}</tr>`).join('')}</tbody></table></div>
-  <div class="ge-lim2">${['leadExportPrice','exportPrice','waCost'].map(k=>`<div class="fld"><label for="lk-${k}">${geT('limits.'+k)}</label><input id="lk-${k}" type="number" min="0" step="500" value="${GE_LIMITS[k]}" data-lk="${k}"></div>`).join('')}</div>
+  <div class="ge-lim2">${['leadExportPrice','exportPrice','waCost','llmPrice','matchMin'].map(k=>`<div class="fld"><label for="lk-${k}">${geT('limits.'+k)}</label><input id="lk-${k}" type="number" min="0" step="${k==='matchMin'?5:500}" value="${GE_LIMITS[k]}" data-lk="${k}"></div>`).join('')}</div>
   <p class="d-sub">${geT('limits.topup')}</p>
   <button class="btn btn-o" data-lreset>${geT('limits.reset')}</button></div>`;
   drawer.querySelectorAll('input[data-lk]').forEach(i=>i.onchange=()=>{const v=Math.max(0,+i.value||0);if(i.dataset.la)GE_LIMITS[i.dataset.lk][i.dataset.la]=v;else GE_LIMITS[i.dataset.lk]=v;track('limit_changed',{limit:i.dataset.lk,account:i.dataset.la||'all',value:v})});
@@ -191,24 +205,24 @@ function geCashierSoon(){modal.classList.add('nw');
   modal.classList.add('nw');
   modal.innerHTML=`<div class="mh"><h3>Growth Engine v2 + Studio</h3><button class="ib" data-mclose aria-label="Close">${ic('x',18)}</button></div>
   <div class="mb guide"><p class="vf-lead">Example data only. Use Account in the dark bar to switch between a stranger, a lead and merchants.</p>
-  <ol><li><b>Stranger</b> (<code>?account=anon</code>): pick the Linen shirt, type “earthy, lebaran feel”, see 4 watermarked previews. Change tone, language and format, then Download.</li>
-  <li><b>Sign up</b>: Fill with example data, code <code>123456</code>. Now a lead: download PNG, cut-out PNG and SVG for free.</li>
-  <li><b>Lead</b>: Competitors › try <code>@kain.kita.id</code> for the one-time snapshot. Growth Engine is locked behind “Become a FLIK merchant”.</li>
-  <li><b>Active merchant</b>: Growth Engine shows how this week's ideas were made (competitors + your store + calendar) and 5 ideas.</li>
-  <li><b>Run 11.11</b>: Review › Adjust (voucher 10% → 5%, own context “we have a new batik collection”, template) › Execute, pay from the balance. Outbox has the WhatsApp messages; the post kit and A5 poster download.</li>
-  <li><b>Results</b>: Skip 7 days, Download CSV. Open the claim page, save a voucher, then Cashier app › Redeem. End campaign sends the owner's WhatsApp report.</li>
-  <li><b>How they connect</b>: Competitors › Get an idea on any change; Studio › Use in a campaign; an idea › Make one in Studio and back.</li></ol>
+  <ol><li><b>Stranger</b> (<code>?account=anon</code>): pick the Linen shirt, type “earthy, lebaran feel”, see 4 watermarked previews, then Download and sign up (code <code>123456</code>).</li>
+  <li><b>Lead</b>: Growth Engine › Studio and a one-time Competitor look at <code>@kain.kita.id</code>. My Brand and Campaign are locked behind “Become a FLIK merchant”.</li>
+  <li><b>My Brand</b> (active merchant): Instagram, Facebook, Meta ads and website next to the competitors' average, then the FLIK store. Send campaign on a segment.</li>
+  <li><b>Competitor</b>: the summary compares My brand vs A vs B vs C per channel. Pick a competitor for its channels and action plan (campaign, content, or suggestion only). Add up to 3 (Limits), remove with ×.</li>
+  <li><b>Studio</b> › Create content: Instagram feed, carousel, Linen shirt, style “cyberpunk neon” → below 60% match, Use AI (free with the FLIK watermark, or from the balance) → Download.</li>
+  <li><b>WhatsApp</b>: create content for WhatsApp › Send with FLIK › pick a template › Choose shoppers.</li>
+  <li><b>Campaign</b>: Selected shoppers › Cashback › rules › Review shows what you receive per order › Submit (paid from the balance). Outbox has the messages; Skip 7 days for results; End campaign sends the owner's report.</li></ol>
   <p class="vf-lead">Public holidays and real Shopify/WooCommerce shops are read live when they answer (free, no key). Instagram, WhatsApp and payments are example data. Turn live sources off with <code>?live=0</code>.</p></div>
   <div class="mf"><button class="btn btn-p" data-mclose>Start</button></div>`;mscrim.classList.add('open')}}
 
-/* ===== Sidebar: Marketing › Growth Engine, Studio, Competitors ===== */
-Object.assign(VIEWS,{gro:['marketing/growth','Growth Engine'],stu:['marketing/studio','Studio'],cmp:['marketing/competitors','Competitors']});
-['gro','stu','cmp'].forEach(v=>document.querySelector('.main').insertAdjacentHTML('beforeend',`<main class="content" id="view-${v}" hidden></main>`));
-{const mk=NAV.find(n=>n.t==='Marketing');if(mk)mk.sub.unshift({t:'Growth Engine',v:'gro'},{t:'Studio',v:'stu'},{t:'Competitors',v:'cmp'})}
+/* ===== Sidebar: Marketing › Growth Engine (tabs inside) ===== */
+Object.assign(VIEWS,{brd:['marketing/growth','Growth Engine · My Brand'],cmp:['marketing/growth/competitors','Growth Engine · Competitor'],stu:['marketing/growth/studio','Growth Engine · Studio'],gro:['marketing/growth/campaigns','Growth Engine · Campaign']});
+GE_VIEWS.forEach(v=>document.querySelector('.main').insertAdjacentHTML('beforeend',`<main class="content" id="view-${v}" hidden></main>`));
+{const mk=NAV.find(n=>n.t==='Marketing');if(mk)mk.sub.unshift({t:'Growth Engine',v:'brd'})}
 
-/* A lead's sidebar: only what a lead can use, plus the way to become a merchant */
+/* A lead's sidebar: Growth Engine (Studio and a competitor look), plus the way to become a merchant */
 {const _rn=renderNav;renderNav=function(){if(GS.account!=='lead')return _rn();
-  nav.innerHTML=`<div class="navh">FLIK</div>${[['studio','stu','nav.studio'],['eye','cmp','nav.competitors'],['rocket','gro','nav.growth']].map(([i,v,k])=>`<button class="ni" data-view="${v}">${ic(i)}${geT(k)}${v==='gro'?`<span class="ge-lock">${geT('lead.merchants')}</span>`:''}</button>`).join('')}
+  nav.innerHTML=`<div class="navh">FLIK</div><button class="ni" data-view="brd">${ic('rocket')}${geT('nav.growth')}</button>
   <div class="navh">${geT('lead.nav.h')}</div><button class="ni" data-leadup>${ic('store')}${geT('gro.lead.cta')}</button>`;
-  nav.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>go(VIEWS[b.dataset.view][0]));
+  nav.querySelector('[data-view]').onclick=()=>go('marketing/growth/studio');
   nav.querySelector('[data-leadup]').onclick=()=>{track('merchant_cta_clicked',{from:'sidebar'});toast('Opens FLIK merchant sign-up')}}}
