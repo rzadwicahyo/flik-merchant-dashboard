@@ -15,7 +15,9 @@ const GE_LIMITS={
   exportPrice:2000,    // Rp per export over the free quota (example)
   waCost:500,          // Rp per WhatsApp marketing message (example)
   llmPrice:5000,       // Rp per AI design set, when the merchant doesn't take the FLIK watermark (example)
-  matchMin:60          // %: below this template match, Studio offers the AI
+  matchMin:60,         // %: below this template match, Studio offers the AI
+  cpAutoDay:1,         // day of the month when FLIK reads every competitor again for free, 07:00 (0 = no scheduled read)
+  cpRefreshPrice:5000  // Rp per "Refresh now" (all competitors + My Brand, every channel); 0 = free (example)
 };
 const GE_LIMITS_DEFAULT=JSON.parse(JSON.stringify(GE_LIMITS));
 const GE_ACCOUNTS=['anon','lead','new','active','top'];
@@ -185,7 +187,7 @@ const GE_BRAND={colour:'#8a5a3b',logo:'data:image/svg+xml;charset=utf-8,'+encode
 /* Fictional competitors (BUILD_SPEC 4.3). Posts: [days ago, type|null, product, background, tag, caption id, caption en, hour, likes].
  * Activity: [day (negative = before the demo date; positive = appears after "Skip 7 days"), kind, text id, text en]. */
 const CP_FIX={
-  'kain.kita.id':{name:'Kain Kita',cat:'fashion',followers:48200,site:'kainkita.example',platform:'shopify',
+  'kain.kita.id':{name:'Kain Kita',cat:'fashion',followers:48200,site:'kainkita.example',platform:'shopify',fb:'facebook.com/kainkita',
     bio:{id:'Kemeja linen & batik harian · Jakarta',en:'Everyday linen & batik · Jakarta'},
     posts:[[1,'promo','linen-shirt','#e8d6c0','-20%','Diskon 20% semua kemeja linen sampai 20 Okt!','20% off every linen shirt until 20 Oct!',20,1840],
       [2,'promo','linen-shirt','#d9e3d1','-20%','Hari ke-2 sale linen. Warna sage tinggal sedikit.','Linen sale day 2. Sage is almost gone.',19,960],
@@ -204,7 +206,7 @@ const CP_FIX={
       [-9,'post','Giveaway dengan 4.310 likes, postingan terbesar bulan ini','Giveaway with 4,310 likes, their biggest post this month'],
       [3,'promo','Umumkan pre-sale 11.11: diskon 25% mulai 9 Nov','Announced an 11.11 pre-sale: 25% off from 9 Nov'],
       [5,'price','Dress Batik Parang kembali ke Rp429.000 (sale selesai)','Dress Batik Parang back to Rp429.000 (sale ended)']]},
-  'lunaloom.co':{name:'Luna Loom',cat:'fashion',followers:21900,site:'lunaloom.example',platform:'woocommerce',
+  'lunaloom.co':{name:'Luna Loom',cat:'fashion',followers:21900,site:'lunaloom.example',platform:'woocommerce',fb:'facebook.com/lunaloom.co',fbVia:'fallback',
     bio:{id:'Basic wanita yang nyaman · Bandung',en:'Comfortable women\'s basics · Bandung'},
     posts:[[0,'new','batik-dress','#e7e3ef','Reels','Styling 1 celana, 3 gaya. Reels malam ini!','1 pair of pants, 3 looks. Tonight\'s reel!',20,880],
       [1,'promo','tote-bag','#ede4dc','Turun harga','Harga turun untuk 4 favorit kamu.','Lower prices on 4 of your favourites.',20,1020],
@@ -227,11 +229,11 @@ const CP_FIX={
       [5,'new','tote-bag','#ece6dc','Baru','Tote kecil untuk sehari-hari.','A small everyday tote.',12,280],
       [9,'ugc','linen-shirt','#e7e4df','','Dipakai ke kantor, tetap rapi.','Worn to the office, still sharp.',13,240],
       [13,'promo','linen-shirt','#e9e0d4','-10%','Diskon 10% akhir bulan.','10% off at the end of the month.',12,310]],
-    products:[],
+    products:[['Kaos Basic Navy',99000,0,true,'new'],['Kaos Basic Olive',99000,0,true,'new'],['Kemeja Oxford Putih',229000,259000,true,'price'],['Tote Mini',79000,0,true,'']],
     activity:[[-5,'new','2 produk baru di Instagram','2 new products on Instagram'],[2,'promo','Giveaway bareng brand partner','A giveaway with a partner brand']]},
   'private.label':{private:true,name:'Private Label',cat:'fashion'},
   /* the merchant's own brand, read the same way as a competitor (account sync comes later) */
-  'aruna.studio':{own:true,name:'Aruna Studio',cat:'fashion',followers:18400,site:'aruna.flik.id',platform:'flik',
+  'aruna.studio':{own:true,name:'Aruna Studio',cat:'fashion',followers:18400,site:'aruna.flik.id',platform:'flik',fb:'facebook.com/aruna.studio',
     bio:{id:'Kemeja linen & batik untuk kerja dan akhir pekan · Bandung',en:'Linen & batik for work and weekends · Bandung'},
     posts:[[1,'new','linen-shirt','#efe6d4','Baru','Kemeja linen warna baru: sage dan pasir.','New linen shirt colours: sage and sand.',12,310],
       [3,'ugc','batik-dress','#f1e2cf','','Terima kasih @mira.ootd sudah pakai dress batik kami!','Thanks @mira.ootd for wearing our batik dress!',13,240],

@@ -178,6 +178,15 @@ Plan (5 working days, 2–4 Claude sessions in parallel, two review windows a da
 - [x] E7 Smoke tests for every route and the full flow; ID and EN texts
 - [ ] E8 Account sync for My Brand (later), email channel (later), Reels (later), holdout and poster (not now)
 
+## Lane F: Competitor tool chains and refresh (v4.2, Reza 8 Nov, BUILD_SPEC 0.1)
+
+- [x] F1 No weekly read: free read on day `LIMITS.cpAutoDay` (1) at 07:00; **Refresh now** for `LIMITS.cpRefreshPrice` (balance or payment link; 0 = free); both editable in Limits
+- [x] F2 Add competitor in two steps: Instagram handle → "Is this them?" with the website and Facebook page found, editable
+- [x] F3 Snapshot fills in channel by channel (Instagram and website first, then Facebook and ads)
+- [x] F4 Channel states: "Updated {date}" per channel, "n/a" for a number a fallback tool can't give, couldn't read / not found with Fix link or Add Facebook page
+- [x] F5 Tool chain per channel logged in the API drawer (every tool tried, with "not found, next tool")
+- [x] F6 Smoke tests: two-step add, channel-by-channel load, fix link, paid and free refresh, day-1 read
+
 ---
 
 ## QA (Reza)

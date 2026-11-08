@@ -92,9 +92,23 @@ for (const t of ['outbox', 'ledger', 'limits', 'skip', 'end', 'cashier']) { cons
   await step('Competitor: summary by channel, channel tabs, AI-tagged post, add up to the limit, remove', async () => { await gp.goto(url + '#marketing/growth/competitors'); await W(1300);
     if ((await gp.$$('.cs-ch')).length !== 4) throw new Error('summary should have 4 channels'); if (!await gp.$('.cs-best')) throw new Error('no best highlighted');
     for (const c of ['fb', 'ads', 'web', 'ig']) await gp.click(`[data-cpch="${c}"]`); if (!await gp.$('.cp-post .ge-ai')) throw new Error('no AI-tagged post');
-    await gp.click('.cp-list [data-cpadd]'); await gp.fill('#cp-ah', 'sare.basic'); await gp.fill('#cp-as', 'sare-basic.example'); await gp.click('#cp-ago'); await W(1100);
-    if (!(await txt('#view-cmp')).includes("isn't supported")) throw new Error('no unsupported state'); if (await gp.$('.cp-list [data-cpadd]')) throw new Error('limit of 3 not applied');
+    if (!(await txt('.cs-grid')).includes('n/a')) throw new Error('no n/a for a number the fallback tool cannot give');
+    await gp.click('.cp-list [data-cpadd]'); await gp.fill('#cp-ah', 'shopee.co.id/x'); await gp.click('#cp-find'); await W(100); if (!/marketplace/i.test(await txt('#cp-aerr'))) throw new Error('marketplace not refused in add');
+    await gp.fill('#cp-ah', 'sare.basic'); await gp.click('#cp-find'); await gp.waitForSelector('#cp-afb', { timeout: 3000 });
+    if ((await gp.inputValue('#cp-as')) !== 'sare-basic.example' || (await gp.inputValue('#cp-afb')) !== '') throw new Error('"Is this them?" did not show what was found');
+    await gp.click('#cp-ago'); await W(300); if (!await gp.$('.cs-ld')) throw new Error('snapshot does not fill in channel by channel'); await W(2300);
+    if (!(await txt('.cs-grid')).includes('Not found')) throw new Error('no "not found" state for the missing Facebook page'); if (await gp.$('.cp-list [data-cpadd]')) throw new Error('limit of 3 not applied');
+    await gp.click('[data-cpch="fb"]'); await gp.click('[data-cpfix="sare.basic|fb"]'); await gp.fill('#cp-fx', 'facebook.com/sarebasic'); await gp.click('#cp-fxgo'); await W(2400);
+    if (!(await gp.evaluate(() => { const c = CP.tracked.find(x => x.h === 'sare.basic'); return c.cs.fb === 'ok' && c.cs.ads === 'ok' && c.siteSt === 'ok' }))) throw new Error('fix link did not read Facebook and ads');
     await gp.click('[data-cprm="sare.basic"]'); await W(200); if (!await gp.$('.cp-list [data-cpadd]')) throw new Error('remove did not free a slot'); });
+  await step('Refresh: free day-1 read, paid Refresh now (balance), price 0 makes it free', async () => {
+    await gp.goto(url + '?r=1#marketing/growth/competitors'); await W(1000); const bal = await gp.evaluate(() => GS.balance); await gp.click('[data-cprefresh]'); await gp.click('#rf-go'); await W(300);
+    if (!await gp.$('[data-cprefresh][disabled]')) throw new Error('refresh button not busy'); await W(2300);
+    if (!(await gp.evaluate(b => GS.balance === b - GE_LIMITS.cpRefreshPrice && !CP.refreshing, bal))) throw new Error('refresh not charged');
+    await gp.evaluate(() => { GE_LIMITS.cpRefreshPrice = 0; show() }); await gp.click('[data-cprefresh]'); if (!(await txt('#modal')).includes('Free for now')) throw new Error('price 0 is not free'); await gp.click('#rf-go'); await W(2500);
+    if (!(await gp.evaluate(b => GS.balance === b - 5000, bal))) throw new Error('free refresh charged');
+    const as = await gp.evaluate(() => { GE_LIMITS.cpRefreshPrice = 5000; GS.dayOffset = 25; const d = cpAsOf(CP.tracked[0]); GS.dayOffset = 0; return d.getDate() + '/' + (d.getMonth() + 1) });
+    if (as !== '1/11') throw new Error('day-1 read not used: ' + as); });
   await step('Action plan: only fixed categories; a campaign action prefills Create campaign', async () => { await gp.click('[data-cpsel="kain.kita.id"]'); await W(300);
     const ks = await gp.evaluate(() => cpPlan(CP.tracked[0]).map(a => GE_ACTIONS[a.k] ? a.k : 'BAD:' + a.k)); if (!ks.length || ks.some(k => k.startsWith('BAD'))) throw new Error('plan: ' + ks);
     await gp.click('[data-cpgo="kain.kita.id|0"]'); await W(500); if (!(await gp.evaluate(() => GS.cj && GS.cj.from.cmp === 'kain.kita.id'))) throw new Error('not prefilled'); });
@@ -134,10 +148,10 @@ for (const t of ['outbox', 'ledger', 'limits', 'skip', 'end', 'cashier']) { cons
   let ok = true;
   try { await lp.goto(url + '#marketing/growth/campaigns'); await lp.waitForTimeout(1200);
     if (!(await lp.textContent('.g-cal')).includes('Ascension of the Prophet')) throw new Error('live holidays not shown');
-    await lp.goto(url + '#marketing/growth/competitors'); await lp.waitForTimeout(800); await lp.click('.cp-list [data-cpadd]'); await lp.fill('#cp-ah', 'toko.contoh'); await lp.fill('#cp-as', 'toko-contoh.id'); await lp.click('#cp-ago'); await lp.waitForTimeout(1200);
+    await lp.goto(url + '#marketing/growth/competitors'); await lp.waitForTimeout(800); await lp.click('.cp-list [data-cpadd]'); await lp.fill('#cp-ah', 'toko.contoh'); await lp.click('#cp-find'); await lp.waitForSelector('#cp-as'); await lp.fill('#cp-as', 'toko-contoh.id'); await lp.click('#cp-ago'); await lp.waitForTimeout(1200); await lp.click('[data-cpch="web"]');
     if (!(await lp.textContent('#view-cmp')).includes('Kemeja Uji')) throw new Error('live shop products not shown');
-    await lp.goto(url + '?fresh=1#marketing/growth/competitors'); await lp.waitForTimeout(800); await lp.click('.cp-list [data-cpadd]'); await lp.fill('#cp-ah', 'toko.lain'); await lp.fill('#cp-as', 'toko-lain.id'); await lp.click('#cp-ago'); await lp.waitForTimeout(1500);
-    if (!(await lp.textContent('#view-cmp')).includes('Read weekly by FLIK')) throw new Error('blocked shop has no fallback state');
+    await lp.goto(url + '?fresh=1#marketing/growth/competitors'); await lp.waitForTimeout(800); await lp.click('.cp-list [data-cpadd]'); await lp.fill('#cp-ah', 'toko.lain'); await lp.click('#cp-find'); await lp.waitForSelector('#cp-as'); await lp.fill('#cp-as', 'toko-lain.id'); await lp.click('#cp-ago'); await lp.waitForTimeout(1500); await lp.click('[data-cpch="web"]');
+    if (!(await lp.textContent('#view-cmp')).includes('Read by FLIK')) throw new Error('blocked shop has no fallback state');
     await lp.goto(url + '?live=0#marketing/growth/campaigns'); await lp.waitForTimeout(600); if ((await lp.textContent('.g-cal')).includes('Ascension of the Prophet')) throw new Error('?live=0 still live');
   } catch (e) { ok = false; console.log('FAIL live sources: ' + e.message.split('\n')[0]); }
   if (!ok || errors.length > n) { failed++; if (ok) console.log('FAIL live sources' + errors.slice(n).map(e => '\n     ' + e).join('')); } else console.log('ok   free public sources: live holidays, live shop, fallback states, ?live=0');
