@@ -7,8 +7,8 @@ The production build (real services, database, cut-out server) lives in FLIK's r
 | Read in this order | What it is |
 | --- | --- |
 | 1. [CONTEXT.md](CONTEXT.md) | Boundaries, what is real vs simulated, product rules, repo map, conventions, working agreement |
-| 2. [BUILD_SPEC.md](BUILD_SPEC.md) | Section 0 is the v4.1 tab structure (wins where it differs). Then screen by screen: routes, demo script for AG, Studio, competitors, Growth Engine, limits, templates, events |
-| 3. [TICKETS.md](TICKETS.md) | P0 foundation, then lanes A Studio · B Competitors · C Growth Engine · D Content · E Growth Engine tabs (v4.1), and the QA checklist |
+| 2. [BUILD_SPEC.md](BUILD_SPEC.md) | Section 0 is the v4.1 tab structure and 0.1 the v4.2 competitor tool chains and refresh (they win where they differ). Then screen by screen: routes, demo script for AG, Studio, competitors, Growth Engine, limits, templates, events |
+| 3. [TICKETS.md](TICKETS.md) | P0 foundation, then lanes A Studio · B Competitors · C Growth Engine · D Content · E Growth Engine tabs (v4.1) · F competitor tool chains and refresh (v4.2), and the QA checklist |
 
 How to start a Claude session on a ticket:
 

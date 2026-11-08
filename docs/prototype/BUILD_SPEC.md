@@ -2,7 +2,7 @@
 
 > **PROTOTYPE doc set** for `rzadwicahyo/flik-merchant-dashboard`. Front-end only, example data. Read `CONTEXT.md` first. The production build has its own docs outside this repo; do not use them here.
 
-Version: v4.1 prototype · 6 Nov 2026 · Owner: Reza
+Version: v4.2 prototype · 8 Nov 2026 · Owner: Reza
 
 ## 0. v4.1 restructure (Reza, 6 Nov 2026). Where this differs from sections 1, 2, 4 and 5, this section wins.
 
@@ -38,6 +38,17 @@ Old links (`#marketing/studio`, `#marketing/competitors`, `#studio/new`, `#marke
 **Campaign journey.** Channel WhatsApp (email later) → shopper categories (All, One-time, Repeat, VIP, At risk, Lapsed, Checkout not paid, or Selected shoppers) → pick shoppers by hand if Selected → Voucher (% or Rp off at checkout) or Cashback (credited after the shopper's first order that meets the minimum; the merchant receives price − cashback − FLIK fee − payment fee) → rules (value, max, minimum order, valid days, quota, template, language, image, send now or tomorrow) → review (WhatsApp cost from the balance or a payment link, one-order example) → submit. Results by voucher or cashback ID. **No holdout and no poster for now** (claim page and cashier stay for the seeded data).
 
 **Ideas for this week** live in the Campaign tab; a campaign idea opens Create campaign prefilled, a post idea opens Create content.
+
+## 0.1 v4.2 competitor tool chains and refresh (Reza, 8 Nov 2026). Wins over section 0 and section 4 where they differ.
+
+Source of the tools, costs and fallbacks: [Competitor data sources: tools, metrics and cost by channel](https://claude.ai/artifact/2iBtSwAMzenWGnncHt73Hj).
+
+- **Tool chain per channel.** FLIK tries the first tool; if it can't find the account or fails, the next one. Instagram: official Business Discovery → scraper. Facebook page: scraper → second scraper. Meta ads: Ad Library scraper → second scraper → official API. Website: Shopify `/products.json` → WooCommerce Store API → page reader. All tools fill one fixed metric list per channel; the merchant never sees which tool ran. A number the tool can't give shows **n/a**, never a different number.
+- **Refresh.** No weekly read. One free read on day `LIMITS.cpAutoDay` (1) of each month at 07:00. Any other time the merchant presses **Refresh now** (My Brand and Competitor tabs): all competitors + My Brand, every channel, for `LIMITS.cpRefreshPrice` (Rp5.000, example) from the balance or a payment link. `cpRefreshPrice: 0` makes it free ("Free for now"); `cpAutoDay: 0` turns the monthly read off. Both are in the Limits editor. Adding a competitor reads it once for free; fixing one link re-reads only that channel, free. Event `competitor_refresh {method, amount, competitors}`.
+- **Add competitor.** Step 1: the Instagram handle (marketplace links refused, private accounts refused before using a slot). Step 2: **Is this them?** shows the website (from the Instagram bio) and the Facebook page (from the website's links, or a search by name), each editable and optional; Meta ads are looked up with the Facebook page.
+- **Snapshot fills channel by channel.** Instagram and website first, then Facebook and ads; summary cells show "…" and the channel tab a loading line until each one is read.
+- **Pay per use (Reza, 8 Nov).** Studio charges only when the AI runs; Refresh now is charged as above; campaigns and WhatsApp are charged too. **Open with AG:** charge when the campaign is created (what the prototype does today) or a success fee after the shopper pays. Payments themselves carry the gateway fee + VAT and a configurable commission (some merchants 0%); FLIK Shipping COD is 3%.
+- **Channel states** (summary cells, channel tabs, My Brand cards, profile chips): **Updated {date}** per channel; loading; **Couldn't read** (private account, site blocks bots) with the reason; **Not found** (no Facebook page, so no ads either) with **Add Facebook page**; website **Fix link** / **Add website**. The action plan skips channels with no numbers.
 
 ## 1. Screens and routes
 
@@ -146,7 +157,7 @@ Export sheet: the clean full-size preview (first time it appears), formats with 
 | --- | --- | --- | --- |
 | `@kain.kita.id` | kainkita.example | Shopify | Running a 20% sale since 12 Oct; 3 new arrivals |
 | `@lunaloom.co` | lunaloom.example | WooCommerce | Price drops on 4 items; posts reels nightly |
-| `@sare.basic` | sare-basic.example | unsupported (custom) | Website shows "not supported", Instagram works |
+| `@sare.basic` | sare-basic.example | custom (page reader) | No Facebook page found → "Not found" + Add Facebook page; website read by the page reader |
 | `@private.label` | none | none | Private account → friendly state |
 
 ## 5. Growth Engine `#marketing/growth`

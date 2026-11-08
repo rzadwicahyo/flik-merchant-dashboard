@@ -192,7 +192,7 @@ function geLimits(){const keys=['regenPerDesign','designsPerDay','freeExportsPer
   <div class="db"><p class="d-sub" style="margin:0 0 14px">${geT('limits.sub')}</p>
   <div class="ge-limw"><table class="ge-lim"><thead><tr><th></th>${GE_ACCOUNTS.map(a=>`<th class="${a===GS.account?'on':''}" title="${geT('acct.'+a)}">${geT('acct.s.'+a)}</th>`).join('')}</tr></thead>
   <tbody>${keys.map(k=>`<tr><th>${geT('limits.'+k)}</th>${GE_ACCOUNTS.map(a=>`<td class="${a===GS.account?'on':''}"><input type="number" min="0" value="${GE_LIMITS[k][a]}" data-lk="${k}" data-la="${a}" aria-label="${geT('limits.'+k)}, ${geT('acct.'+a)}"></td>`).join('')}</tr>`).join('')}</tbody></table></div>
-  <div class="ge-lim2">${['leadExportPrice','exportPrice','waCost','llmPrice','matchMin'].map(k=>`<div class="fld"><label for="lk-${k}">${geT('limits.'+k)}</label><input id="lk-${k}" type="number" min="0" step="${k==='matchMin'?5:500}" value="${GE_LIMITS[k]}" data-lk="${k}"></div>`).join('')}</div>
+  <div class="ge-lim2">${['leadExportPrice','exportPrice','waCost','llmPrice','matchMin','cpRefreshPrice','cpAutoDay'].map(k=>`<div class="fld"><label for="lk-${k}">${geT('limits.'+k)}</label><input id="lk-${k}" type="number" min="0" ${k==='cpAutoDay'?'max="28" ':''}step="${k==='matchMin'?5:k==='cpAutoDay'?1:500}" value="${GE_LIMITS[k]}" data-lk="${k}"></div>`).join('')}</div>
   <p class="d-sub">${geT('limits.topup')}</p>
   <button class="btn btn-o" data-lreset>${geT('limits.reset')}</button></div>`;
   drawer.querySelectorAll('input[data-lk]').forEach(i=>i.onchange=()=>{const v=Math.max(0,+i.value||0);if(i.dataset.la)GE_LIMITS[i.dataset.lk][i.dataset.la]=v;else GE_LIMITS[i.dataset.lk]=v;track('limit_changed',{limit:i.dataset.lk,account:i.dataset.la||'all',value:v})});

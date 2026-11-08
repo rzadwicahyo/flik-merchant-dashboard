@@ -956,3 +956,23 @@ a.g-node:hover,button.g-node:hover{border-color:var(--primary);background:var(--
   .cp-grid,.cp-tops{grid-template-columns:repeat(2,minmax(0,1fr))}.cp-chip{min-width:0;flex:1 1 150px}.cp-src{flex-wrap:wrap}.cp-ph{flex-wrap:wrap}
   .b-chh{flex-wrap:wrap}.b-ms b{font-size:15px}.cr-f4-5.cr-tiles,.cr-f9-16.cr-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:900px){.g-two{grid-template-columns:minmax(0,1fr)}.g-two>.card{min-width:0;overflow-x:auto}}
+
+/* ===== Competitor refresh, channel states, "Is this them?" (Reza, 8 Nov 2026) ===== */
+.cp-rf{display:flex;align-items:center;gap:14px;padding:14px 18px;margin:16px 0 0}
+.cp-rf>div{flex:1;min-width:0}.cp-rf b{display:block;font-size:14.5px}.cp-rf>div>span{color:var(--muted);font-size:13px}
+.cp-rf .btn{flex:none}.cp-rf .btn .ai-dots{margin-right:4px}
+.cp-ref{margin-top:10px}
+.cp-chst{display:flex;align-items:center;gap:12px;padding:6px 0;color:var(--muted)}
+.cp-chst>div{flex:1;min-width:0}.cp-chst b{display:block;color:var(--ink);font-size:14px}.cp-chst span{font-size:13px}.cp-chst svg{flex:none}
+.b-ch .cp-chst{padding:10px 0}
+.cp-upd{display:flex;align-items:center;gap:5px;margin:0 0 10px;color:var(--muted);font-size:12.5px}
+.b-ch .cp-upd{margin:10px 0 0}.b-ch .cp-upd:empty{display:none}
+.cs-na{color:var(--muted);font-size:12.5px;font-weight:400}.cs-ld{color:var(--muted);letter-spacing:1px}
+.cs-warn{display:inline-grid;place-items:center;width:16px;height:16px;margin-left:6px;border-radius:50%;background:var(--warn-bg,#fdf0d5);color:var(--warn-tx,#8a5a00);font-size:11px;font-weight:700}
+.tab .cs-ld{margin-left:4px}
+.cp-cf{display:flex;align-items:center;gap:12px;padding:12px 14px;margin:0 0 14px;border:1px solid var(--line);border-radius:10px}
+.cp-cf>div{flex:1;min-width:0}.cp-cf b{display:block}.cp-cf small{color:var(--muted)}
+.cp-cfn{display:flex;align-items:center;gap:4px;margin-top:5px;color:var(--muted);font-size:12.5px}.cp-cfn svg{color:var(--ok-tx)}
+.cp-free{display:flex;align-items:center;gap:6px;padding:10px 12px;border-radius:8px;background:var(--hover);font-size:13.5px}.cp-free svg{color:var(--ok-tx)}
+.cp-src .st svg{margin-right:3px}
+@media (max-width:640px){.cp-rf{flex-wrap:wrap}.cp-rf .btn{width:100%;justify-content:center}.cp-chst{flex-wrap:wrap}.cp-chst .btn{width:100%;justify-content:center}}

@@ -50,10 +50,10 @@ The demo story AG must be able to follow (BUILD_SPEC section 2 has the click pat
 | FLIK ledger (balance debit) | The merchant's example balance goes down and a ledger line appears. |
 | Voucher engine | Vouchers live in a JS array; redemptions are generated for the result screen. |
 | Orders and shoppers | Example data, seeded and repeatable (use `mkRng`/`hsh` from `core.js`). |
-| Instagram Business Discovery | Fixture data per fictional competitor, with a 0.8 s fake load. `@private.label` fails on purpose to show the friendly state. An unknown handle gets clearly-labelled example data. |
-| Shopify `/products.json`, WooCommerce Store API | Fixtures for the fictional shops (`kainkita.example` Shopify, `lunaloom.example` WooCommerce, `sare-basic.example` unsupported, any other `.example` unreachable). A real domain is read **live** from the browser; if the browser is blocked (no CORS) it says "Read weekly by FLIK" instead of inventing prices. |
+| Competitor tool chains (Instagram, Facebook page, Meta ads) | Fixture data per fictional competitor. Each channel has a tool chain (official tool first, then fallbacks, see the [data-sources doc](https://claude.ai/artifact/2iBtSwAMzenWGnncHt73Hj)); the API drawer logs every tool tried, e.g. `instagram.businessDiscovery · not found, next tool`. Channels finish at different speeds (Instagram 0.6 s, Facebook 1.5 s, ads 2.1 s, website 0.8 s). `@private.label` is private and fails on purpose; `@sare.basic` has no Facebook page to show "not found" and Fix link; `@lunaloom.co`'s Facebook comes from the fallback tool, so its top post is "n/a". An unknown handle gets clearly-labelled example data. |
+| Shopify `/products.json`, WooCommerce Store API | Fixtures for the fictional shops (`kainkita.example` Shopify, `lunaloom.example` WooCommerce, `sare-basic.example` a custom site read by the page reader, any other `.example` unreachable → "couldn't read" with Fix link). A real domain is read **live** from the browser; if the browser is blocked (no CORS) it says "Read by FLIK" instead of inventing prices. |
 | Public holidays | Live from `date.nager.at` (free, no key); the built-in list in `GE_DATES` is the fallback. Shopping and cultural moments (11.11, 12.12, Hari Ibu…) are always built in. |
-| Nightly jobs (account status, weekly competitor refresh, campaign end) | Buttons in the prototype bar: **Skip 7 days** (moves the demo clock) and **End campaign**. |
+| Nightly jobs (account status, campaign end) and the monthly competitor read (day `LIMITS.cpAutoDay`, 07:00) | Buttons in the prototype bar: **Skip 7 days** (moves the demo clock; passing the 1st of a month counts as the free read) and **End campaign**. Between those, competitor data only changes when the merchant presses **Refresh now**. |
 
 ## 4. Who sees what
 
@@ -64,7 +64,7 @@ The prototype bar gets an **Account** switch (also `?account=` in the URL):
 | `anon` | Stranger on the public Studio page | Studio design + watermarked previews. Download/Use opens sign-up. |
 | `lead` | Signed up, not a FLIK merchant | Studio (limits for leads) + simplified competitor monitoring: 1 competitor, Instagram only, one-time snapshot. No Growth Engine (shows the "Become a FLIK merchant" card). |
 | `new` | FLIK merchant, under 30 days | Everything, with "new" limits. Few orders, so ideas lean on big dates and competitors. |
-| `active` (default) | FLIK merchant, Aruna Studio (fashion, online + offline) | Everything. Full competitor monitoring (3 competitors, Instagram + website, weekly), Growth Engine with history. |
+| `active` (default) | FLIK merchant, Aruna Studio (fashion, online + offline) | Everything. Full competitor monitoring (3 competitors; Instagram, Facebook, Meta ads and website; free read on the 1st of each month, paid Refresh now any time), Growth Engine with history. |
 | `top` | Top GMV band | Everything, top limits. |
 
 Since v4.1 (6 Nov) everything sits in one menu, Marketing › Growth Engine, with tabs My Brand, Competitor, Studio, Campaign (BUILD_SPEC section 0). A lead sees Studio and the one-time Competitor look; My Brand and Campaign show the merchant upsell.
@@ -80,7 +80,7 @@ Only the **owner** gets WhatsApp OTPs, notifications and reports. Show the owner
 5. **Limits are counters per account status** from one `LIMITS` object (BUILD_SPEC section 6). The prototype has a Limits editor in the prototype bar so AG can change values live.
 6. **Payment routing:** merchant picks a method. FLIK balance → direct ledger debit. Any other method → FLIK payment link, unlocked when paid. Leads always go to a payment link, but the lead export price is a config value, currently Rp0, so leads download free.
 7. **WhatsApp** uses FLIK's pre-approved templates only (12 types × Bahasa/English) with an image header per send. Max 1 marketing message per shopper per 7 days across all campaigns. Respect consent and opt-out.
-8. **Competitor sources:** Instagram (Business Discovery) and the competitor's own Shopify or WooCommerce site. **No marketplace scraping (Shopee, Tokopedia, etc.) and no TikTok.** If someone types a marketplace link, say it isn't supported, kindly.
+8. **Competitor sources:** Instagram, Facebook page, Meta ads and the competitor's own website, each through a tool chain (first tool, then fallbacks; [data-sources doc](https://claude.ai/artifact/2iBtSwAMzenWGnncHt73Hj)). The merchant never sees which tool ran. **Nothing is read on a timer** except the free monthly read (day `LIMITS.cpAutoDay`, 07:00); any other time the merchant presses Refresh now for `LIMITS.cpRefreshPrice` (0 = free). **No marketplace scraping (Shopee, Tokopedia, etc.) and no TikTok.** If someone types a marketplace link, say it isn't supported, kindly.
 9. **Offline poster only if Offline is a chosen channel.** It carries a normal QR code to a claim page (never a payment QRIS, which can't be printed), and the cashier redeems by the shopper's phone number.
 10. **Attribution** by voucher ID, or by holdout group (default 10% gets nothing).
 11. **Reports:** CSV download while running; a WhatsApp summary to the owner when the campaign ends. No PDF, no email.
